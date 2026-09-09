@@ -1,0 +1,26 @@
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Agent / tooling
+.github/
+.antigravitycli
+.mimocode/
+.agents/
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+
+# Local notes and build output
+notes/
+build/
+
+# Heavy binaries
+*.jar
+*.exe
+
+# Temporary diagram exports
+report/assets/diagram-sources/c4-exported/
