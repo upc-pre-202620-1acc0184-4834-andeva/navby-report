@@ -1,4 +1,4 @@
-PROJECT_NAME ?= upc-pre-[SEMESTER]-[NRC]-[GROUP]-report-[VERSION]
+PROJECT_NAME ?= TB1_1ACC0184_2026-20_CodigoAlum_ApellidoAlum
 OUTPUT_DIR=build
 PDF_DEFAULTS=pandoc/report.yaml
 
@@ -42,18 +42,18 @@ PDF=$(OUTPUT_DIR)/$(PROJECT_NAME).pdf
 
 # Docker configuration
 DOCKER_PLATFORM ?= --platform linux/amd64
-DOCKER = docker run --rm -v "$(abspath .):/app" -w /app
+DOCKER = docker run --rm -v "$(abspath .):/app" -w /app -e PLANTUML_LIMIT_SIZE=16384
 PANDOC_DOCKER = docker run $(DOCKER_PLATFORM) --rm -v "$(abspath .):/workspace" -w /workspace pandoc/extra:3.8.3
 
 # C4 Structurizr paths
 C4_WORKSPACE_FILE = report/assets/diagram-sources/c4-diagrams/workspace.dsl
 C4_EXPORT_DIR = report/assets/diagram-sources/c4-exported
 
-.PHONY: all pdf pdf-es pdf-en clean diagrams db-diagrams c4 single single-es single-en
+.PHONY: all pdf pdf-es pdf-en clean class-diagrams db-diagrams c4 single single-es single-en
 
-all: pdf c4 diagrams db-diagrams
+all: pdf c4 class-diagrams db-diagrams
 
-diagrams:
+class-diagrams:
 	@echo Generating class diagrams from PlantUML sources...
 	$(MKDIR_CLASS_DIAGRAMS)
 	$(DOCKER) ghcr.io/plantuml/plantuml -tpng -o "/app/$(CLASS_DIAGRAM_OUT)" "/app/report/assets/diagram-sources/class-diagrams/*.puml"
