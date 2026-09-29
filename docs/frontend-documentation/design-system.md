@@ -63,7 +63,7 @@ La paleta cromática oficial de Navby parte de los valores definidos en [`brandi
 
 La tipografía oficial del producto se organiza con estándares de rendimiento web de alto nivel:
 
-1. **Raptor V3:** Uso exclusivo de marca para el texto del isologo («avby»).
+1. **Raptor V3:** Uso exclusivo de marca para el texto del isologo («avby»), ubicada en formato WOFF2 en [`branding/raptor-v3/RaptorV3-Bold.woff2`](branding/raptor-v3/RaptorV3-Bold.woff2). Se declara en `global.css` como `@font-face` con `font-family: 'Raptor V3'` y peso `700` (Bold), configurada en el bloque `@theme` como `--font-isologo` y utilizable directamente con la clase utilitaria `font-isologo`.
 2. **Albert Sans:** Tipografía oficial para el 100% de la web y de la webapp, ubicada en formato WOFF2 en [`branding/albert-sans/`](branding/albert-sans/).
    * **Carga optimizada en `global.css`:**
      * `font-display: swap`: Muestra el texto de inmediato con una fuente nativa mientras se descarga Albert Sans, evitando pantallas en blanco (*Flash of Invisible Text*).
@@ -189,6 +189,16 @@ Todo el sistema de diseño está empaquetado en un **único archivo maestro** li
   font-display: swap;
   src: url('/fonts/albert-sans/AlbertSans-Italic-VariableFont_wght.woff2') format('woff2-variations'),
        url('/fonts/albert-sans/AlbertSans-Italic-VariableFont_wght.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Tipografía de Marca para el Isologo (Raptor V3 Bold - WOFF2) */
+@font-face {
+  font-family: 'Raptor V3';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/raptor-v3/RaptorV3-Bold.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
