@@ -77,7 +77,7 @@ curl -X GET "https://api.flightapi.io/roundtrip/${FLIGHT_API_KEY}/LIM/MIA/2026-1
 El endpoint `GET /multitrip` de FlightAPI **no se contempla en el alcance de Navby** debido a tres restricciones fundamentales:
 
 1. **Restricción rígida de tramos:** La API exige de forma mandatoria entre 3 y 5 tramos (`trips = 3..5`). No permite itinerarios simples de 2 tramos o trayectos flexibles.
-2. **Costo operativo desproporcionado:** Consume **5 créditos por consulta** (2.5 veces el costo de OneWay o RoundTrip), lo que agotaría de inmediato los 5 créditos diarios gratuitos del usuario en una sola búsqueda.
+2. **Costo operativo desproporcionado:** Consume **5 créditos de FlightAPI por consulta** (2.5 veces el costo de OneWay o RoundTrip), lo que distorsionaría la economía de créditos y el presupuesto operativo de la plataforma en una sola búsqueda.
 3. **Desconexión con la optimización en grafos:** La planificación multi-ciudad (*multi-city*) requiere que el usuario imponga ciudades y fechas intermedias fijas de forma manual. Por tanto, no constituye un problema de camino mínimo sobre un grafo de escala global, apartándose del propósito del motor algorítmico de Navby.
 
 ---
@@ -213,7 +213,7 @@ class FlightApiPort(Protocol):
 
 Dado que cada consulta consume créditos de pago (2 créditos por búsqueda), el backend aplica cuatro capas de contención:
 
-1. **Pre-filtrado Topológico sobre Grafo Local:** El motor de grafos evalúa todas las permutaciones teóricas y **solo invoca a FlightAPI para las 3 a 5 mejores rutas candidatas**, evitando el despilfarro de cuotas en trayectos inviables.
+1. **Pre-filtrado Topológico y Validación a Costo Cero ($0.00):** Antes de cualquier llamada externa, el grafo local valida la conectividad en $O(\alpha(V))$ mediante UFDS y resuelve la terminal óptima en metrópolis multiaeropuerto. Si no existe conexión comercial viable, la consulta se rechaza inmediatamente sin emitir la llamada HTTPS hacia FlightAPI, protegiendo el saldo de créditos del desarrollador.
 2. **Caché en Memoria con Redis (TTL de 30 minutos):** Las cotizaciones para una misma tupla `(origen, destino, fecha, cabina, pax)` se almacenan en Redis con un tiempo de vida (*TTL*) de 30 minutos. Las búsquedas concurrentes o repetidas se resuelven con latencia $< 10\text{ ms}$ y costo de $0$ créditos.
 3. **Control de Cuotas Transaccional en Base de Datos:** Antes de ejecutar la llamada externa, el caso de uso descuenta los créditos de la cuenta del usuario (`credits_wallet`). Si el saldo es insuficiente, la petición se rechaza anticipadamente con `Result.failure(InsufficientCreditsError)`.
 4. **Degradación Controlada (Circuit Breaker):** En caso de errores HTTP `402 Payment Required` (cuota general de la startup agotada) o `429 Too Many Requests`, el backend captura la excepción, notifica al administrador y sirve la última cotización en caché con una bandera visual de *precio referencial histórico*.
