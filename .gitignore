@@ -7,23 +7,9 @@
 
 # Agent / tooling
 .github/
-.antigravitycli
-.mimocode/
 .agents/
-.opencode/
-skills-lock.json
-docs/superpowers
-docs/backend-documentation/plans
-docs/atelier-report-docs/
+.superpowers/
+.codegraph/
 
-# Local notes and build output
-notes/
+# Build Output
 build/
-.inputs/
-
-# Heavy binaries
-*.jar
-*.exe
-
-# Temporary diagram exports
-report/assets/diagram-sources/c4-exported/

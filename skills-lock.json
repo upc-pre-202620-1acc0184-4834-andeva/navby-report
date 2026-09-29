@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "academic-report-reviewer": {
+      "source": "shouydev/agent-skills",
+      "sourceType": "github",
+      "skillPath": "packs/academic-writing/academic-report-reviewer/SKILL.md",
+      "computedHash": "c144fd0b252e65f00a193781663437a67e1f6f63eccb137756d31c3781ba3e27"
+    },
+    "academic-report-writer": {
+      "source": "shouydev/agent-skills",
+      "sourceType": "github",
+      "skillPath": "packs/academic-writing/academic-report-writer/SKILL.md",
+      "computedHash": "25b2352ed7f8d3f437acf19271b9ce1917cfee306e955789036c0acad225e061"
+    },
+    "api-designer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/api-designer/SKILL.md",
+      "computedHash": "06e7906fe1ca4d1db195ca244ff7cc05e87e2c8b634662abeedd501c4657e88e"
+    },
+    "architecture-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/backend-development/skills/architecture-patterns/SKILL.md",
+      "computedHash": "a66aaa5aa49b75bec12b6270dcde8794b1f0cc75fbb9ecb999e43f8b723b461f"
+    },
+    "ddd-strategic-design": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ddd-strategic-design/SKILL.md",
+      "computedHash": "97ac51aa67c15a5eb0fba11c5acb77f6492bef5e73cac6e99225efbe8a6ac5e3"
+    },
+    "domain-analysis": {
+      "source": "tech-leads-club/agent-skills",
+      "sourceType": "github",
+      "skillPath": "packages/skills-catalog/skills/(architecture)/domain-analysis/SKILL.md",
+      "computedHash": "5914beeaf1aa1fe57cd95cf0afb60ee1cccc58eedaddd123a43cad32d6a70077"
+    },
+    "postgres": {
+      "source": "planetscale/database-skills",
+      "sourceType": "github",
+      "skillPath": "skills/postgres/SKILL.md",
+      "computedHash": "3d4b3c578b7fcbc61e89b2731a248175e2aa740dc228a106b1a8b29b05ab000f"
+    },
+    "redis-best-practices": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "redis-best-practices/SKILL.md",
+      "computedHash": "c362f644a6e3ed9b69a86fef4aa41ebcb4ff15552f03b7431f00642af5d3d5f1"
+    },
+    "redis-core": {
+      "source": "redis/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/redis-core/SKILL.md",
+      "computedHash": "3b6196044dfba0f77942f20030faab03ca0741c396ba8d759c179710ebd2a7dd"
+    },
+    "rest-api-design": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "skillPath": "skills/rest-api-design/SKILL.md",
+      "computedHash": "e249c58df5d9d59407fc4de70b0d75bb336d917bbe0a75695d6ec8cf13cfaf35"
+    }
+  }
+}

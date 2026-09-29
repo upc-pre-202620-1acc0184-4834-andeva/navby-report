@@ -1,199 +1,225 @@
-# ANDEVA: STARTUP PROFILE
+# NAVBY: ESPECIFICACIÓN TÉCNICA GENERAL Y FUENTE DE VERDAD
 
 <!-- prettier-ignore -->
 > [!NOTE]
-> ### Mapa de Documentación y Guía de Rutas
+> ### Mapa de Documentación y Guía de Rutas Técnicas
 >
-> Este documento centraliza la visión de producto, features de negocio y perfil de startup de **Navby**. Para evitar duplicaciones y dispersión de diseño, actúa como el nodo enrutador central hacia las fuentes de verdad especializadas:
+> Este documento centraliza la especificación técnica general, la visión operativa del producto y el modelado algorítmico de **Navby**, actuando como el nodo enrutador principal y fuente de verdad técnica del repositorio. El desarrollo documental se estructura bajo una hoja de ruta progresiva:
 >
-> 1. **Consultas de Base de Datos y Persistencia:**
->    * Contexto funcional del producto: [navby-documentation.md](navby-documentation.md)
->    * Esquema relacional DDL (PostgreSQL, tablas, constraints, índices): [backend-documentation/navby-database-schema.md](backend-documentation/navby-database-schema.md)
->    * Aislamiento físico inter-contexto (sin FKs físicas cruzadas) y Transactional Outbox: [backend-documentation/navby-tactical-ddd-guide.md](backend-documentation/navby-tactical-ddd-guide.md)
->    * Diagramas relacionales PlantUML: [`report/assets/diagram-sources/database-diagrams/`](../report/assets/diagram-sources/database-diagrams/)
+> 1. **Definición General y Fuente de Verdad del Producto (Este Documento):**
+>    * Definición técnica de Navby, arquitectura desacoplada en dos etapas, flujo de ejecución, capacidades del sistema, modelo de créditos y teoría de grafos aplicada: [docs/navby-documentation.md](navby-documentation.md)
 >
-> 2. **Consultas de Bounded Contexts y Diseño Táctico DDD:**
->    * Rúbrica y especificación de capas (Domain, Interface, Application, Infrastructure): [project-statement.md](project-statement.md) (Sección Móviles)
->    * Arquitectura maestra, bounded contexts e infraestructura cloud: [backend-documentation/navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md)
->    * Esquema de persistencia del contexto: [backend-documentation/navby-database-schema.md](backend-documentation/navby-database-schema.md)
->    * Directrices tácticas canónicas (10 Mandamientos, `Result[T]`, Inmutabilidad, Assemblers): [backend-documentation/navby-tactical-ddd-guide.md](backend-documentation/navby-tactical-ddd-guide.md)
->    * Especificación del Shared Kernel y contratos base: [backend-documentation/navby-backend-tactical-specification.md](backend-documentation/navby-backend-tactical-specification.md)
->    * Especificación del Bounded Context solicitado (y contextos hermanos para integración OHS/ACL):
->      * Catálogo de contextos base: [`backend-documentation/bounded-contexts-description/`](backend-documentation/bounded-contexts-description/)
->      * Modelado táctico extendido: [`backend-documentation/extended-bounded-contexts-description/`](backend-documentation/extended-bounded-contexts-description/)
->      * Planes de implementación: [`backend-documentation/plans/`](backend-documentation/plans/)
+> 2. **Arquitectura de Plataforma Backend (`docs/backend-documentation/`):**
+>    * *Estado:* Consolidada y formalizada como fuente de verdad técnica oficial del backend.
+>    * *Especificación general de plataforma:* [docs/backend-documentation/navby-platform-documentation.md](backend-documentation/navby-platform-documentation.md)
+>    * *Catálogo y especificación de endpoints REST:* [docs/backend-documentation/navby-endpoints.md](backend-documentation/navby-endpoints.md)
+>    * *Especificación táctica canónica y DDD:* [docs/backend-documentation/navby-backend-tactical-specification.md](backend-documentation/navby-backend-tactical-specification.md)
+>    * *Esquema relacional y persistencia políglota:* [docs/backend-documentation/navby-database-schema.md](backend-documentation/navby-database-schema.md)
+>    * *Integración y Adaptador ACL de FlightAPI:* [docs/backend-documentation/flight-api-documentation.md](backend-documentation/flight-api-documentation.md)
+>    * *Catálogo detallado de Bounded Contexts:* [`docs/backend-documentation/extended-bounded-contexts-description/`](backend-documentation/extended-bounded-contexts-description/) ([IAM](backend-documentation/extended-bounded-contexts-description/bounded-context-iam.md), [Routing](backend-documentation/extended-bounded-contexts-description/bounded-context-routing.md), [Quotes](backend-documentation/extended-bounded-contexts-description/bounded-context-quotes.md), [Itineraries](backend-documentation/extended-bounded-contexts-description/bounded-context-itineraries.md), [Billing](backend-documentation/extended-bounded-contexts-description/bounded-context-billing.md) y [Shared Kernel](backend-documentation/extended-bounded-contexts-description/bounded-context-shared.md))
 >
-> 3. **Consultas de Datasets y Malla Aeroportuaria (OpenFlights):**
->    * Datasets definitivos limpios y listos para producción (3,354 nodos comerciales / 37,326 aristas únicas): [`navby-datasets/`](navby-datasets/)
->    * Documentación técnica del pipeline de limpieza y esquemas de datos: [navby-datasets/README.md](navby-datasets/README.md)
+> 3. **Ecosistema de Frontend (`docs/frontend-documentation/`):**
+>    * *Website público (Marketing):* [docs/frontend-documentation/navby-website-documentation.md](frontend-documentation/navby-website-documentation.md) (Astro 5, Tailwind CSS v4, GSAP 3, Lenis, Zod, Axe-core, Playwright, i18n nativo y accesibilidad WCAG 2.1 AA).
+>    * *Webapp interactiva (Planificador):* [docs/frontend-documentation/navby-webapp-documentation.md](frontend-documentation/navby-webapp-documentation.md) (React 19, TypeScript, Vite 6, MapLibre GL 2D, deck.gl, TanStack Query, Zustand, Radix UI, Sileo, Boneyard, i18n y accesibilidad WAI-ARIA).
+>    * *Sistema de diseño unificado:* [docs/frontend-documentation/design-system.md](frontend-documentation/design-system.md) (paleta canónica con acento naranja `#FF6B35`, isotipo en «N», isologo con Raptor V3 y guía de Tailwind CSS v4).
+>    * *Hoja de estilos maestra (`global.css`):* [docs/frontend-documentation/styles/global.css](frontend-documentation/styles/global.css) (Tailwind CSS v4 con directiva `@theme`, carga optimizada de Albert Sans WOFF2 con `unicode-range` y tokens de color).
+>    * *Activos de marca e identidad:* [`docs/frontend-documentation/branding/`](frontend-documentation/branding/) (isotipos e isologos SVG/PNG, fuentes WOFF2 locales de Albert Sans y Raptor V3, y paleta canónica en `pallette.txt`).
+>
+> 4. **Datasets Canónicos y Malla Aeroportuaria (OpenFlights):**
+>    * Datasets definitivos curados para producción (3,354 nodos aeroportuarios comerciales y 37,326 rutas dirigidas únicas): [`docs/backend-documentation/navby-datasets/`](backend-documentation/navby-datasets/)
+>    * Especificación técnica del pipeline de datos, esquemas CSV y fases de depuración topológica: [docs/backend-documentation/navby-datasets/README.md](backend-documentation/navby-datasets/README.md)
 >    * Análisis de preprocesamiento, métricas del grafo y conectividad: [`report/chapters/20-dataset-description/22-preprocessing-and-metrics.md`](../report/chapters/20-dataset-description/22-preprocessing-and-metrics.md)
->    * Datasets crudos de origen: [`backend-documentation/datasets/`](backend-documentation/datasets/)
 >
-> 4. **Consultas de Integraciones y APIs Externas:**
->    * Catálogo integral de servicios externos (OpenFlights, FlightAPI, Mercado Pago, Resend, Google Identity): [backend-documentation/navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md) §7
->    * Especificación técnica de FlightAPI (One Way, Round Trip, ACL, Redis, Circuit Breaker): [backend-documentation/flight-api-documentation.md](backend-documentation/flight-api-documentation.md)
->    * Integración de pasarela de pagos (Mercado Pago) y correo (Resend): [backend-documentation/navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md)
->
-> 5. **Consultas de Frontend y Experiencia de Usuario:**
->    * Landing pública institucional (Website Astro 5 + Tailwind v4 + GSAP 3 + Lenis): [frontend-architecture/navby-website-architecture.md](frontend-architecture/navby-website-architecture.md)
->    * Aplicación web interactiva (Webapp React 19 + MapLibre GL 2D + deck.gl + TanStack Query + Zustand + boneyard + Sileo): [frontend-architecture/navby-webapp-architecture.md](frontend-architecture/navby-webapp-architecture.md)
->
-> 6. **Consultas de Infraestructura Cloud, Despliegue y Presupuesto Azure:**
->    * Frontend en Vercel (Edge CDN para Website y hosting SPA estático para Webapp con coste $0).
->    * Backend Platform en Azure VM (`Standard_B2s`, Docker Compose: Caddy 2, FastAPI, PostgreSQL 16, Redis 7, viabilidad de crédito $100 USD): [backend-documentation/navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md) §4
->
-> 7. **Consultas del Reporte Académico Oficial (Complejidad Algorítmica 1ACC0184):**
->    * Reglas editoriales y moderación visual: [../GEMINI.md](../GEMINI.md)
->    * Rúbrica académica, hitos TB1/TB2 y dataset (≥ 1500 nodos): [project-statement.md](project-statement.md)
+> 5. **Memoria Académica Oficial (Complejidad Algorítmica 1ACC0184):**
+>    * Rúbricas oficiales, competencias de razonamiento y ética y Caso de Estudio 9: [docs/project-statement.md](project-statement.md)
 >    * Capítulos modulares del reporte: [`report/chapters/`](../report/chapters/)
->    * Estándar de tablas y figuras APA 7: [guidelines_tables_figures_apa7.md](guidelines_tables_figures_apa7.md)
->    * Manual de compilación y comandos Makefile: [how-to-use.md](how-to-use.md)
+>    * Estándar de tablas y figuras APA 7: [docs/tables-figures-apa-7-guidelines.md](tables-figures-apa-7-guidelines.md)
+>    * Plantilla de reporte académico APA 7 y entorno contenerizado Docker: [docs/report-guidelines.md](report-guidelines.md) y [`../Makefile`](../Makefile)
 >
-> 8. **Resumen Consolidado del Ecosistema Navby:**
->    * Visión ejecutiva, stack tecnológico y enrutador maestro a los subsistemas: [Resumen Consolidado](#resumen-consolidado-del-ecosistema-navby)
+> 6. **Contexto Comercial y Marketing de Producto (Referencia Externa Desacoplada):**
+>    * Startup Overview de Andeva, slogan oficial (*«El mejor vuelo. Al mejor precio.»*), buyer personas, modelo pay-per-use (10 créditos diarios y paquetes prepagados) y directrices de marca: [docs/product-marketing.md](product-marketing.md) y [.agents/product-marketing.md](../.agents/product-marketing.md)
+>
+> ---
+>
+> *Nota de Alcance:* Este documento centraliza exclusivamente especificaciones de ingeniería, fundamentos matemáticos y arquitectura de sistemas. Todo requerimiento comercial reside formalmente en [docs/product-marketing.md](product-marketing.md).
 
-## Descripción de la Startup
+## Definición Técnica del Sistema: Navby
 
-Andeva es un equipo especializado de ingeniería de software dedicado al diseño y desarrollo de soluciones tecnológicas de vanguardia. Nuestro propósito fundamental es resolver desafíos complejos a través de la innovación, construyendo herramientas digitales eficientes, escalables y centradas en el usuario que impulsen la transformación y el progreso en un entorno tecnológico exigente.
+**Navby** es una plataforma de software e infraestructura algorítmica diseñada para resolver el problema de planificación y optimización de rutas aéreas multicriterio sobre una red de transporte global modelada como un grafo dirigido y ponderado $G = (V, E, W)$, combinando la topología de la red con tarifas de mercado en tiempo real mediante una arquitectura desacoplada en dos etapas.
 
-## Significado del nombre
+A diferencia de los buscadores tradicionales que fuerzan al usuario a elegir entre extremos aislados (el vuelo más barato con escalas extenuantes o el vuelo más rápido a precios prohibitivos), Navby evalúa conjuntamente **costo monetario, número de escalas y duración total de viaje**. El sistema integra estas tres dimensiones en un motor de optimización multicriterio en memoria que calcula la **frontera de Pareto** y aplica una función de utilidad compuesta para determinar y presentar **las alternativas de vuelo óptimas no dominadas**.
 
-El nombre **Andeva** encapsula la esencia de nuestra identidad y nuestra vocación creadora. Nace de la fusión armónica de dos conceptos poderosos:
+### Arquitectura Desacoplada en Dos Etapas (Two-Stage Pipeline)
 
-* **Andes:** Representa nuestro lugar de origen y el profundo arraigo a la riqueza de la cultura peruana. Simboliza la majestuosidad, la solidez y la visión de altura con la que abordamos cada desafío tecnológico.
-* **Eva:** Cuyo significado universal es "la que da vida". Este concepto refleja directamente nuestro ADN tecnológico y carácter innovador: la capacidad de concebir ideas disruptivas y darles vida mediante la creación de productos de software de la más alta calidad.
+Para garantizar viabilidad económica, latencias de respuesta en milisegundos y protección rigurosa del presupuesto de APIs externas, el sistema opera bajo una estricta separación de responsabilidades:
 
-Juntos, Andeva expresa nuestro compromiso de crear tecnología viva, útil y trascendente desde el Perú hacia el futuro.
+1. **Etapa 1: Escudo de Conectividad, Resolución Topológica y Modelado en Grafo ($0.00 Costo de API):**
+   El backend mantiene en memoria RAM el grafo aeroportuario global compilado desde OpenFlights (**3,354 aeropuertos activos** y **37,326 rutas dirigidas únicas**). Antes de invocar cualquier servicio externo con costo:
+   * **Validación de conexidad en $O(\alpha(V))$:** Mediante una estructura UFDS (Union-Find Disjoint Sets), el sistema comprueba al instante si existe un camino comercial factible entre origen y destino. Si los aeropuertos no pertenecen a la misma componente conexa o carecen de enlaces comerciales, la consulta se descarta de inmediato a costo cero de API ($0.00 USD / 0 créditos).
+   * **Resolución de metrópolis multiaeropuerto:** En ciudades con múltiples terminales (Londres, Nueva York, Buenos Aires), el grafo resuelve el hub primario por grado de conectividad ($k$) u ofrece las terminales secundarias con base en la adyacencia de rutas.
+   * **Cota teórica geodésica:** Calcula el camino mínimo referencial mediante Dijkstra/A* sobre distancias ortodrómicas de Haversine, derivando la cota inferior teórica de duración ($T_{\min}$) requerida para normalizar el algoritmo multicriterio y proveyendo las coordenadas espaciales para el trazado de arcos geodésicos en el mapa cliente.
 
-## Objetivo
+2. **Etapa 2: Cotización de Mercado Selectiva y Motor Multicriterio en Tiempo Real:**
+   Una vez validada la viabilidad topológica de la consulta:
+   * **Consulta única hacia FlightAPI (2 créditos):** El backend ejecuta **una sola petición HTTPS** hacia el agregador oficial (**FlightAPI**, respaldado por Skyscanner), ya sea mediante `/onewaytrip` o `/roundtrip`. Esta llamada única extrae el universo completo de ofertas reales del mercado (vuelos directos, conexiones con 1 escala y conexiones con 2 escalas de múltiples aerolíneas) consumiendo exactamente **2 créditos de FlightAPI**.
+   * **Caché distribuida en Redis 7 (TTL 30 min):** Si la misma ruta, fecha y cabina ya fue cotizada recientemente, el resultado se entrega desde Redis en $< 5\text{ ms}$ a **0 créditos de costo externo**.
+   * **Motor de Optimización Multicriterio en Memoria:** El sistema recibe el array desordenado de ofertas de FlightAPI y ejecuta el algoritmo de optimización conjunta en Python: normaliza precio, tiempo y escalas, descarta opciones dominadas (frontera de Pareto) y clasifica las mejores combinaciones globales.
+   * **Entrega accionable:** Retorna al usuario las recomendaciones óptimas estructuradas, con desglose de segmentos, escalas, duraciones exactas, coordenadas geodésicas y enlaces directos de compra (*deepLinks*) oficiales.
 
-Diseñar y desarrollar soluciones de software innovadoras que empoderen a las organizaciones y a las personas. Buscamos brindar herramientas tecnológicas de primera categoría que optimicen procesos, fomenten la creatividad y resuelvan problemas complejos, garantizando siempre la máxima calidad técnica y una experiencia de usuario excepcional.
+---
 
-## Visión
+## Flujo Técnico de Ejecución del Sistema
 
-Ser el equipo de ingeniería de software líder y referente tecnológico a nivel internacional, reconocido por nuestra capacidad de innovar y dar vida a productos digitales excepcionales. Aspiramos a construir ecosistemas tecnológicos que definan los estándares del mañana, manteniendo siempre nuestro compromiso inquebrantable con la excelencia y el orgullo por nuestra identidad cultural.
+El procesamiento de una consulta de vuelo sigue una secuencia determinista a través de las capas del sistema:
 
-## Producto: Navby
+1. **Ingesta y Validación de Parámetros:**
+   El controlador REST (`GET /api/v1/routes/plan`) valida los parámetros canónicos: aeropuertos origen y destino (códigos IATA de 3 letras), fechas ISO-8601, pasajeros tipificados (`adults`, `children`, `infants`), clase de cabina (`Economy`, `Premium_Economy`, `Business`, `First`) y estrategia de ponderación requerida.
+2. **Validación Previa de Conectividad en $O(\alpha(V))$:**
+   Antes de consumir recursos de red o API externa, la estructura UFDS verifica en memoria RAM si origen y destino pertenecen a la misma componente conexa comercial. Si no existe conexión comercial registrada, la consulta se descarta inmediatamente en $O(1)$ sin consumo de créditos.
+3. **Resolución de Referencia Topológica en RAM:**
+   El motor de grafos ejecuta el cálculo geodésico sobre las listas de adyacencia:
+   * Determina la cota teórica de menor tiempo acumulado por Haversine ($T_{\min}$).
+   * Prepara los vectores de coordenadas geográficas de los arcos ortodrómicos para la visualización en el mapa 2D.
+4. **Verificación de Caché Fast-Path en Redis 7 (Cache-Aside):**
+   Se genera la clave canónica `quote:{origin}:{dest}:{date}:{cabin}:{pax}` en Redis 7. Si existe en caché (*cache hit*), se entrega de forma inmediata (< 5 ms) a costo de 0 créditos de FlightAPI.
+5. **Débito Transaccional y Petición Única a FlightAPI:**
+   En caso de *cache miss*, el servicio debita atómicamente la cuota correspondiente (**5 créditos Navby por búsqueda**) de la bolsa de créditos del usuario mediante un script Lua en Redis. Posteriormente, despacha **una sola petición HTTPS** hacia FlightAPI (`/onewaytrip` o `/roundtrip`), consumiendo exactamente 2 créditos del plan de la plataforma.
+6. **Ejecución del Motor de Optimización Multicriterio en Memoria:**
+   El backend procesa la respuesta cruda de FlightAPI (que contiene decenas de alternativas de vuelo) y ejecuta el algoritmo multicriterio:
+   * Evalúa conjuntamente la tarifa monetaria real, la duración exacta por tramo y el número de escalas comerciales.
+   * Filtra las opciones no dominadas de la frontera de Pareto y aplica el puntaje de conveniencia global.
+   * Selecciona las mejores recomendaciones integrales que balancean rapidez, precio y comodidad.
+7. **Entrega de Itinerarios Accionables:**
+   Se serializa la respuesta hacia el cliente con las mejores recomendaciones de vuelo, el desglose de escalas y aerolíneas operadoras, las coordenadas para el renderizado WebGL de arcos de vuelo en el frontend y los enlaces directos de compra (*deepLinks*).
 
-**Navby** es una plataforma web inteligente de **planificación y optimización de rutas aéreas** diseñada para encontrar las mejores alternativas de vuelo entre cualquier par de ciudades del mundo. Inspirada en la experiencia de reserva de **LATAM Airlines** y desarrollada a partir del Caso de Estudio N.° 9 de Complejidad Algorítmica, Navby resuelve el problema de la conectividad aérea combinando tres dimensiones críticas: **tiempo/distancia de vuelo, menor número de escalas posibles y el mejor precio de boletos en el mercado**.
+---
 
-A diferencia de los buscadores tradicionales que operan como cajas negras o los visualizadores académicos con grafos teóricos sin precios de mercado, Navby integra una arquitectura de dos etapas:
-1. **Modelado Topológico y Poda Algorítmica:** Construye una red aeroportuaria global sobre el dataset de **OpenFlights** (miles de aeropuertos como nodos y rutas comerciales como aristas) para encontrar y filtrar las rutas geodésicas más eficientes.
-2. **Cotización y Validación en Tiempo Real:** Confronta únicamente las mejores rutas candidatas con **FlightAPI** (mediante sus variantes *One Way Trip API* y *Round Trip API*), entregando al usuario las **3 mejores opciones con precios reales de boletos**.
+## Módulos y Capacidades Técnicas del Sistema
 
-Para garantizar la viabilidad económica y la protección de la infraestructura ante consultas masivas a APIs externas, Navby opera bajo un **modelo de créditos por uso**: cada usuario dispone de **5 créditos gratuitos diarios no acumulables** (que se renuevan cada 24 horas) y la posibilidad de adquirir **paquetes de créditos acumulables** para búsquedas extendidas.
+* **Escudo Topológico y Grafo en RAM:** Singleton en el ciclo de vida de FastAPI (`lifespan`) que mantiene la red global de OpenFlights en memoria (~10 MB), aislando la ejecución de algoritmos de conectividad y geodésicos en Python 3.12+.
+* **Adaptador ACL y Cotización de Mercado:** Módulo desacoplado en la Capa Anticorrupción que aísla el modelo de datos foráneo de FlightAPI, gestiona reintentos con *backoff* exponencial, Circuit Breaker y almacenamiento temporal en Redis 7.
+* **Motor de Optimización Multicriterio:** Componente de dominio puro que procesa las opciones de vuelo de mercado, normalizando costo, tiempo y escalas para calcular la frontera de Pareto y extraer las recomendaciones óptimas.
+* **Control Transaccional de Cuotas y Créditos:** Mecanismo en Redis mediante scripts Lua que aplica debitación atómica de cuota (**10 créditos diarios gratuitos** por usuario equivalentes a 2 búsquedas completas a razón de 5 créditos por consulta, renovados cada 24 horas, o paquetes prepagados adquiridos vía webhook de Mercado Pago) previo a cualquier invocación a la API externa.
+* **Persistencia Transaccional y Transactional Outbox:** Repositorios desacoplados sobre PostgreSQL 16 con SQLAlchemy 2.0 asíncrono. Los eventos de dominio se registran atómicamente en la tabla `outbox_events` dentro de la misma transacción de negocio, garantizando consistencia eventual sin requerir brokers de mensajería externos pesados.
+* **Motor Cartográfico WebGL 2D:** Renderizado cliente de alto rendimiento basado en MapLibre GL JS y deck.gl (`ArcLayer`), proyectando arcos geodésicos ortodrómicos calculados con la formulación de Haversine sobre Web Mercator plano 2D.
 
-### Problema que Busca Solucionar Navby
+---
 
-El transporte aéreo comercial global moviliza anualmente a más de 4,700 millones de pasajeros bajo una red altamente tensionada y jerárquica gobernada por centros de conexión (*hubs*). En este escenario, la búsqueda y planificación de vuelos presenta tres problemas estructurales críticos que perjudican tanto la experiencia del usuario como la viabilidad técnica del software:
+## Modelo de Monetización, Economía de Créditos y Catálogo de Paquetes
 
-1. **La Disyuntiva Multiobjetivo Ineficiente (Costo vs. Duración vs. Escalas):**
-   El viajero se enfrenta cotidianamente a un conflicto de optimización: los vuelos directos brindan máxima comodidad temporal pero con tarifas con frecuencia astronómicas; en contraste, los itinerarios con múltiples escalas ofrecen reducciones tarifarias a costa de multiplicar la fatiga, la duración total y el riesgo operativo. De acuerdo con estadísticas de la industria (SITA), más del 41% de las incidencias globales por pérdida o deterioro de equipaje ocurren durante transbordos aeroportuarios, sumado a la probabilidad latente de perder conexiones ante demoras en cascada en hubs congestionados. Los usuarios carecen de herramientas transparentes que equilibren formalmente estas tres dimensiones en recomendaciones claras.
+Navby opera bajo un modelo de consumo por uso (*Pay-per-use*) transparente y desacoplado, diseñado para alinear la economía del usuario con los costos computacionales y de APIs externas de la infraestructura:
 
-2. **Opacidad y Sesgo Comercial de las Plataformas Tradicionales (OTAs y GDS):**
-   Los motores de búsqueda convencionales y agregadores comerciales (Google Flights, Skyscanner, Kayak) funcionan como cajas negras condicionadas por alianzas comerciales cerradas (Star Alliance, SkyTeam, oneworld) y convenios corporativos privados. Estas plataformas descartan combinaciones interlineales lógicamente viables si no pertenecen a sus convenios de distribución, aplican podas no informadas y saturan la interfaz con cientos de alternativas redundantes o con desvíos absurdos, provocando sobrecarga cognitiva y parálisis de decisión en el comprador.
+### 1. Dinámica de Créditos y Equivalencias Técnicas
 
-3. **Explosión Combinatoria y Coste Prohibitivo de Consultas en Tiempo Real:**
-   Desde la perspectiva computacional, la red aeroportuaria global representa un grafo masivo libre de escala con miles de terminales y decenas de miles de conexiones comerciales. Si un motor intenta resolver itinerarios alternativos realizando consultas directas y exhaustivas contra APIs comerciales de vuelos en vivo (como FlightAPI o Amadeus), el sistema detona una **explosión combinatoria inmanejable** ($O(b^d)$) debido al elevado factor de ramificación en los hubs. Cada llamada a una API comercial conlleva una latencia de red sensible (1 a 3 segundos) y un costo financiero por transacción; consultar a ciegas combinaciones inviables agotaría las cuotas de API en minutos y haría financieramente insostenible el servicio.
+* **Consumo por Consulta:** Cada búsqueda integral de itinerario (ya sea Solo Ida o Ida y Vuelta) consume exactamente **5 créditos Navby**.
+* **Financiamiento de API Externa:** En caso de *Cache Miss* en Redis, los 5 créditos Navby del usuario financian la invocación única a FlightAPI (la cual debita 2 créditos comerciales al plan de la plataforma) y el cómputo de la frontera de Pareto. En caso de *Cache Hit*, la respuesta se entrega en $< 5\text{ ms}$ desde Redis sin penalizar al usuario ni incurrir en costos externos.
+* **Bolsa Diaria de Cortesía (`free_credits`):** Cada cuenta registrada recibe automáticamente **10 créditos diarios gratuitos** (equivalentes a 2 búsquedas completas por día), renovados cada 24 horas. Estos créditos no son acumulables y caducan al expirar el ciclo diario.
 
-4. **La Solución Integral de Navby: Arquitectura en Dos Etapas («Escudo OpenFlights»):**
-   Navby resuelve esta problemática desacoplando la exploración topológica de la cotización comercial mediante un enfoque innovador:
-   * **Etapa 1 (Exploración y Poda Algorítmica a Costo Cero):** El backend carga la red global de OpenFlights (3,354 aeropuertos y 37,326 rutas) en memoria RAM y ejecuta algoritmos exactos de grafos (BFS, Dijkstra, A*, Programación Dinámica y Backtracking acotado a $\le 2$ escalas con poda geométrica) para encontrar y filtrar en milisegundos las rutas geodésicas y temporalmente óptimas, con costo de API externa igual a $0.00.
-   * **Etapa 2 (Validación de Mercado Selectiva y Recomendación Accionable):** Únicamente las mejores rutas candidatas resultantes del filtro algorítmico se envían a cotizar contra FlightAPI (*One Way* o *Round Trip*). El sistema protege su infraestructura mediante una billetera de créditos por uso y entrega al usuario las **3 mejores opciones definitivas** con precios en vivo y enlaces directos de reserva, erradicando la sobrecarga cognitiva y garantizando la viabilidad económica del producto.
+### 2. Catálogo Canónico de Paquetes Prepagados (`credit_packages`)
 
-### Propuesta de valor
+Para usuarios que requieren planificar viajes extensos, comparar múltiples destinos o realizar búsquedas frecuentes, Navby ofrece paquetes de recarga prepagados acumulables a través de **Mercado Pago Checkout Pro** (con soporte en moneda local PEN y divisa internacional USD):
 
-Navby no es un simple buscador comercial ni una simulación teórica de aula. Su propuesta de valor se sustenta en:
+| Código Canónico (`package_code`) | Denominación Comercial | Créditos Navby | Búsquedas Equivalentes | Tarifa Oficial (PEN) | Tarifa Oficial (USD) | Política de Caducidad y Consumo |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| `pack_50` | Paquete Inicial / Escapada | 50 | 10 búsquedas | S/ 9.90 | $2.49 USD | Créditos comerciales perpetuos (`paid_credits`). Consumo posterior al agotamiento de la cuota diaria. |
+| `pack_100` | Paquete Frecuente / Viajero | 100 | 20 búsquedas | S/ 16.90 | $4.49 USD | Créditos comerciales perpetuos (`paid_credits`). Paquete recomendado para planificación exhaustiva de vacaciones. |
+| `pack_250` | Paquete Corporativo / Nómada | 250 | 50 búsquedas | S/ 34.90 | $8.99 USD | Créditos comerciales perpetuos (`paid_credits`). Diseñado para nómadas digitales y planificadores intensivos. |
 
-1. **Optimización Topológica Transparente (OpenFlights):** Descubre rutas y conexiones viables entre miles de aeropuertos del mundo (más de 1,500 nodos conectados), incluso cuando no hay vuelo directo comercial obvio, calculando la ruta geodésica mínima (Haversine) y minimizando escalas.
-2. **Confrontación con Tarifas Reales (FlightAPI):** Solo las mejores rutas candidatas se cotizan con FlightAPI (*One Way* y *Round Trip*), obteniendo precios vivos del mercado y enlaces de reserva directos.
-3. **Recomendación Multicriterio Accionable (El «Top 3»):** Presenta las 3 alternativas óptimas balanceando distancia/tiempo, escalas y costo final, evitando la sobrecarga cognitiva de cientos de opciones irrelevantes.
-4. **Sostenibilidad y Protección de Infraestructura:** El sistema de créditos por uso financia las llamadas a la API de terceros y blinda el backend contra abuso o scraping.
+### 3. Reglas de Negocio y Prelación de Saldo (Billing Bounded Context)
 
-## Features Principales (Business Core)
+1. **Orden de Prelación Estricta:** El motor de débito atómico (`atomic_debit.lua` en Redis) descuenta prioritariamente los créditos de cortesía (`free_credits`). Solo cuando el saldo de cortesía llega a cero, comienza a debitar de los créditos adquiridos (`paid_credits`).
+2. **Inmutabilidad y No Caducidad:** Los créditos adquiridos mediante paquetes prepagados (`paid_credits`) son **perpetuos**: nunca caducan, son acumulables entre recargas sucesivas y se asientan de forma auditable en el libro contable de PostgreSQL 16 (`credit_transactions`).
+3. **Cero Comisiones sobre Pasajes:** Navby no infla las tarifas ni actúa como comisionista de venta de boletos. Toda la monetización del producto se basa en el valor analítico y computacional del motor multicriterio, enlazando directamente al usuario con el proveedor oficial mediante *deepLinks*.
 
-### 1. Motor de Optimización Topológica de Rutas (Grafo OpenFlights)
-El corazón algorítmico del sistema. Modela los aeropuertos como nodos (con coordenadas de latitud/longitud) y las rutas comerciales como aristas ponderadas por distancia geodésica (fórmula de Haversine). Aplica algoritmos de recorrido y caminos mínimos (BFS para minimizar escalas, Dijkstra / A* con heurística admisible para distancia mínima) junto con poda por Backtracking para descartar rutas inviables o con desvíos excesivos, pre-filtrando el espacio de búsqueda antes de consumir cuota de API.
+---
 
-### 2. Cotización en Tiempo Real y Selección Multicriterio del «Top 3»
-Transforma las rutas topológicas en decisiones reales de compra. Una vez filtradas las mejores conexiones por el grafo, consulta la **FlightAPI** (*One Way Trip API* y *Round Trip API*) y ejecuta un ordenamiento multicriterio sobre las opciones retornadas, entregando al usuario los **3 vuelos con mejores precios** junto a sus aerolíneas operadoras, duración exacta y enlaces de reserva directos.
+## El Desafío Computacional y Económico de la Red Aérea
 
-### 3. Planificador Integral de Vuelos (Experiencia LATAM Airlines)
-Interfaz de configuración de viaje con la fidelidad y semántica de una aerolínea de primer nivel:
-* **Modalidad de viaje:** Solo ida (*One-way*) o ida y vuelta (*Round-trip*).
-* **Calendario de viaje:** Selección de fecha de salida y fecha de retorno opcional.
-* **Desglose de pasajeros:** Conteo diferenciado de adultos (titular y acompañantes), niños (2 a 11 años) e infantes (<2 años).
-* **Categoría de cabina:** Selección entre *Economy*, *Premium Economy*, *Business* y *First Class*.
+Para comprender el diseño de ingeniería de Navby, es fundamental dimensionar el doble reto del transporte aéreo:
 
-### 4. Gestión y Persistencia de Itinerarios Guardados
-Permite a los usuarios autenticados guardar los vuelos e itinerarios planificados (ruta, escalas, fechas, desglose de pasajeros y precios capturados) en su perfil personal para consultarlos, compararlos en el tiempo o eliminarlos, dotando al producto de persistencia relacional y uso recurrente.
+1. **El reto computacional (Explosión Combinatoria):**
+   La red aeroportuaria global contiene miles de terminales comerciales y decenas de miles de conexiones directas. En los principales centros de conexión (*hubs*), el elevado factor de ramificación generaría una explosión combinatoria inmanejable ($O(b^d)$) si se intentara explorar todas las combinaciones posibles a ciegas.
+2. **El reto económico y de latencia (Costo de APIs de Mercado):**
+   Cada llamada a una API comercial de vuelos en vivo implica latencias de red (1 a 3 segundos) y un costo financiero estricto por consulta (2 créditos por petición en FlightAPI). Consultar combinaciones inviables o disparar llamadas fragmentadas por tramo agotaría el saldo de la startup en cuestión de minutos y degradaría la experiencia del usuario.
 
-### 5. Billetera de Créditos de Uso y Modelo de Sostenibilidad
-Control de cuotas y financiamiento transparente del servicio:
-* **5 créditos diarios gratuitos:** Asignados a cada cuenta registrada, no acumulables y renovados automáticamente cada 24 horas.
-* **Créditos prepagados acumulables:** Paquetes adquiridos mediante pasarela de pago para viajeros frecuentes, sin vencimiento diario.
-* **Descuento transaccional:** Cada búsqueda con cotización descuenta créditos del usuario protegiendo la viabilidad financiera del backend.
-
-## Features Secundarios y de Apoyo
-
-* **Visualización en Mapa Plano 2D:** Representación cartográfica interactiva con arcos geodésicos entre ciudades y aeropuertos de conexión sobre un mapa 2D (sin globo terráqueo).
-* **Comparador Lado a Lado del Top 3:** Vista comparativa que resalta cuál de las tres alternativas es la más rápida, la más económica o la de menor cantidad de escalas.
-* **Historial de Consultas Rápidas:** Registro de búsquedas recientes para re-ejecutar trayectos frecuentes con un solo clic.
+**La Solución Arquitectónica de Navby: Desacoplamiento Topológico y Optimización Multicriterio**
+1. **El Grafo en RAM protege el presupuesto ($0.00 Costo):** Filtra aeropuertos desconectados mediante UFDS en $O(\alpha(V))$ y establece la referencia física de vuelo sin consumir un solo crédito.
+2. **Una sola llamada a FlightAPI por búsqueda (2 créditos):** Se consulta el par origen-destino en una única petición HTTP (ya sea One-Way o Round-Trip), obteniendo todas las alternativas reales de mercado.
+3. **El Motor Multicriterio agrega el valor diferencial:** Procesa en microsegundos el universo de opciones devuelto por la API externa, combinando costo, rapidez y escalas para entregar al usuario las recomendaciones óptimas sin abrumarlo con datos caóticos.
 
 ## Alcance del Proyecto
 
-El alcance de Navby está delimitado para resolver integralmente el problema de la planificación inteligente de vuelos bajo el Caso de Estudio N.° 9 de Complejidad Algorítmica y los estándares de ingeniería de software para plataformas comerciales de alta fidelidad, manteniendo fronteras operativas claras y justificadas.
+El alcance de Navby está delimitado para resolver integralmente el problema de la planificación y optimización inteligente de rutas aéreas sobre grafos a gran escala y bajo los estándares de ingeniería de software para plataformas de alta fidelidad, manteniendo fronteras operativas claras y justificadas.
 
 ### 1. Dentro del Alcance (In-Scope)
 
 #### A. Ámbito Algorítmico y Teoría de Grafos
-* **Modelado formal de la red aérea:** Representación de la malla aeroportuaria global mediante un grafo dirigido y ponderado $G = (V, E, W)$ construido sobre el dataset depurado de OpenFlights. El sistema integra exactamente **3,354 aeropuertos comerciales activos ($|V|$)** como vértices (superando en 2.2× el requisito mínimo de 1,500 nodos de la cátedra) y **37,326 rutas comerciales dirigidas únicas ($|E|$)** como aristas.
-* **Ponderación geodésica y temporal:** Cálculo de distancias ortodrómicas en kilómetros mediante la **fórmula de Haversine** con $R \approx 6,371\text{ km}$, modelando los pesos de las aristas como el tiempo de vuelo estimado $w_t(u, v) = \frac{d_H(u, v)}{v_{\text{crucero}}} + t_{\text{maniobra}}$ ($v_{\text{crucero}} = 800\text{ km/h}$, $t_{\text{maniobra}} = 30\text{ min}$) y penalización por escala de $t_{\text{conexión}} = 60\text{ min}$.
-* **Motor de rutas en tiempo real (Python Runtime):**
-  * **BFS (Breadth-First Search):** Búsqueda por niveles para identificar rutas con el mínimo número de escalas posibles ($k - 1$ conexiones).
-  * **Dijkstra y A\*:** Cálculo de caminos de menor tiempo de vuelo estimado acumulado sobre aristas ponderadas con pesos no negativos ($w_t \ge 0$), utilizando la distancia Haversine admisible y consistente en A* para acelerar la convergencia hacia el destino.
-  * **Backtracking con poda heurística:** Enumeración controlada de rutas alternativas viables, aplicando podas por límite de escalas ($\le 2$), cota de duración acumulada ($T \le 1.5 \times T_{\text{Dijkstra}}$) y desvío ortodrómico.
-  * **Programación Dinámica en Grafos:** Optimización multi-criterio que equilibra tiempo acumulado y número de conexiones mediante memoización sobre estados $(u, \text{escalas\_restantes})$ para derivar la frontera de Pareto del viaje.
-  * **Divide y Vencerás:** Descomposición geográfica de trayectos intercontinentales complejos a través de macro-regiones IATA y aeropuertos *gateway*.
-  * **DFS:** Validación de caminos simples y prevención estricta de ciclos en itinerarios multiconexión ($u \neq v$).
-* **Preprocesamiento, conectividad y benchmarking (Data Pipeline & Reporte):**
-  * **UFDS (Union-Find):** Poda de terminales aisladas ($k = 0$) y validación casi instantánea $O(\alpha(V))$ de conexidad previa entre aeropuertos.
-  * **SCC (Tarjan / Kosaraju):** Verificación de la componente conexa dominante y análisis de centralidad de hubs globales.
-  * **MST (Kruskal / Prim):** Determinación del esqueleto de conectividad de distancia mínima y análisis de resiliencia de la red.
-  * **Ordenamiento Topológico:** Secuenciación temporal estricta de las etapas de vuelo en el DAG del itinerario.
-  * **Validación experimental:** Comparación asintótica y empírica frente a **Fuerza Bruta**, **Bellman-Ford**, **Floyd-Warshall** y **Flujo Máximo**.
 
-#### B. Ámbito Funcional y Producto
-* **Planificador integral estilo LATAM Airlines:** Interfaz de configuración completa de viaje con soporte para trayectos de **Solo Ida (One-way)** e **Ida y Vuelta (Round-trip)**, selección de fechas de salida y retorno, selección de categoría de cabina (*Economy*, *Premium Economy*, *Business*, *First Class*) y desglose diferenciado de pasajeros (adultos, niños de 2 a 11 años e infantes menores de 2 años).
-* **Búsqueda y resolución de aeropuertos:** Búsqueda por ciudad o terminal aeroportuaria con autocompletado; resolución inteligente de aeropuertos principales por conectividad ($k$) en metrópolis multiaeropuerto con opción de selección manual, operando estrictamente sobre códigos canónicos IATA de 3 letras.
-* **Cotización en tiempo real y Top 3:** Consulta selectiva a **FlightAPI** (*One Way Trip API* y *Round Trip API*, consumiendo 2 créditos/request) aplicada exclusivamente sobre las mejores rutas candidatas del grafo, entregando las **3 opciones óptimas con tarifas reales de mercado**, aerolínea operadora, duración exacta y enlaces directos de compra (*deepLinks*).
-* **Gestión y persistencia de itinerarios:** Almacenamiento seguro en la cuenta del usuario para guardar, consultar, comparar y eliminar planes de vuelo e itinerarios cotizados.
-* **Modelo de sostenibilidad (Créditos por uso):** Asignación automática de **5 créditos gratuitos diarios no acumulables** (renovados cada 24 horas) y adquisición de paquetes de créditos prepagados acumulables mediante pasarela de pago para solventar las cotizaciones en vivo y proteger la infraestructura contra abusos o scraping.
-* **Identidad y autenticación:** Registro y acceso mediante credenciales locales con verificación de correo por código OTP (Resend) y autenticación federada Single Sign-On mediante Google Identity Services (OAuth 2.0 / OIDC).
-* **Visualización cartográfica 2D:** Renderizado interactivo de arcos geodésicos de vuelo y aeropuertos de conexión sobre un mapa plano interactivo 2D.
+El sistema modela la red aérea mundial como un grafo dirigido y ponderado $G = (V, E, W)$ construido sobre el dataset depurado de OpenFlights, integrando exactamente **3,354 aeropuertos comerciales activos ($|V|$)** y **37,326 rutas comerciales dirigidas únicas ($|E|$)**. Las distancias ortodrómicas se calculan mediante la **fórmula de Haversine** ($R \approx 6,371\text{ km}$), modelando el tiempo de vuelo estimado como $w_t(u, v) = \frac{d_H(u, v)}{v_{\text{crucero}}} + t_{\text{maniobra}}$ ($v_{\text{crucero}} = 800\text{ km/h}$, $t_{\text{maniobra}} = 30\text{ min}$) y penalización por conexión de $t_{\text{conexión}} = 60\text{ min}$.
+
+Para evitar la sobreingeniería en el sistema operativo y mantener una estricta eficiencia computacional, el repertorio de algoritmos se divide formalmente en dos ámbitos de ejecución:
+
+##### 1. Algoritmos del Producto (Runtime / Motor de Producción de Navby)
+Conjunto pragmático y de alto rendimiento que se ejecuta en memoria RAM dentro del ciclo de vida de la aplicación para resolver las consultas del usuario:
+* **UFDS (Union-Find Disjoint Sets):** Escudo previo que valida la conectividad topológica en $O(\alpha(V))$ (< 0.05 ms) antes de cualquier llamada externa. Si origen y destino no pertenecen a la misma componente conexa comercial, la búsqueda se cancela inmediatamente a costo de 0 créditos de FlightAPI.
+* **A\* (Búsqueda Heurística Admisible):** Algoritmo de camino mínimo punto a punto sobre el grafo con pesos Haversine ($O(E \log V)$). Guiado por la distancia ortodrómica directa al destino ($h(u) = d_H(u, \text{dest}) / v_{\text{crucero}}$), converge velozmente hacia el destino, derivando la cota inferior teórica de duración física ($T_{\min}$) para la normalización del motor multicriterio y proveyendo los waypoints para el renderizado de arcos en el mapa 2D.
+* **BFS (Búsqueda por Niveles):** Identifica la ruta con el mínimo número de escalas comerciales posibles ($k - 1$ saltos) en $O(V + E)$ sobre el grafo no ponderado, sirviendo como criterio de referencia para viajeros que priorizan minimizar transbordos.
+* **Motor Multicriterio (Frontera de Pareto y Utilidad Compuesta):** Algoritmo de optimización en memoria ($O(N \log N)$) que procesa las alternativas reales de mercado devueltas por FlightAPI, normalizando y evaluando simultáneamente precio, duración y escalas para filtrar opciones dominadas y entregar las mejores recomendaciones globales.
+
+##### 2. Algoritmos de Laboratorio y Benchmarking Asintótico (Offline)
+Implementaciones experimentales y scripts de análisis en Python que operan fuera del flujo de producción para generar las métricas de rendimiento, validación de cotas teóricas y comparativas asintóticas documentadas en `report/`:
+* **Dijkstra:** Búsqueda de caminos mínimos sin heurística ($O((V + E) \log V)$) implementada como línea base experimental para cuantificar empíricamente el ahorro de nodos explorados por A* en redes espaciales.
+* **Fuerza Bruta:** Demostración experimental de la explosión combinatoria ($O(b^d)$) en subgrafos pequeños ($N \le 10$) frente a A* y BFS.
+* **Bellman-Ford:** Demostración empírica de ineficiencia asintótica ($O(V \cdot E)$) frente a Dijkstra en grafos con pesos estrictamente no negativos ($w_t \ge 0$).
+* **Floyd-Warshall:** Precálculo de distancias todos-a-todos ($O(V^3)$) sobre el subgrafo denso de los 50 principales hubs mundiales para verificar la cota cúbica.
+* **Flujo Máximo (Edmonds-Karp / Dinic):** Modelado experimental de saturación y cuellos de botella en corredores troncales de alta densidad.
+* **Backtracking con Poda:** Demostración de exploración acotada de caminos alternativos y análisis de la efectividad de podas heurísticas por escalas y desvío geométrico.
+* **DFS:** Algoritmo de exploración en profundidad para detección general de ciclos y análisis de conectividad.
+* **SCC (Tarjan / Kosaraju) y MST (Kruskal / Prim):** Caracterización estructural de la componente dominante y análisis de resiliencia del esqueleto de transporte ejecutados durante la depuración del dataset.
+* **Ordenamiento Topológico:** Secuenciación temporal estricta de las etapas de vuelo en el DAG del itinerario ($t_{\text{salida}}^{i+1} > t_{\text{llegada}}^i + t_{\text{conexión}}$).
+* **Divide y Vencerás:** Descomposición experimental intercontinental por macro-regiones IATA y hubs de transferencia.
+
+#### B. Ámbito Funcional y Especificaciones de Producto
+
+Define las capacidades operativas, requerimientos funcionales y reglas de negocio del sistema expuestos hacia los clientes consumidores (Website, Webapp y controladores API REST), delimitando los contratos de entrada, procesamiento y persistencia:
+
+* **Planificación y parametrización de itinerarios:** Soporte para tipos de trayecto de solo ida (`ONE_WAY`) e ida y vuelta (`ROUND_TRIP`), validación de fechas de salida y retorno en formato estándar ISO-8601 (`YYYY-MM-DD`), selección de clase de cabina tipificada (`ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, `FIRST`) y desglose cuantitativo de pasajeros segmentado en adultos (`adults`), niños de 2 a 11 años (`children`) e infantes menores de 2 años (`infants`).
+* **Búsqueda y resolución canónica de aeropuertos:** Servicio de autocompletado por nombre de ciudad o terminal aeroportuaria; resolución determinista de aeropuertos primarios por grado de conectividad ($k$) en metrópolis multiaeropuerto con opción de selección manual de terminal secundaria, operando estrictamente sobre códigos canónicos IATA de 3 letras.
+* **Cotización en tiempo real y optimización multicriterio:** Despacho de una única petición HTTPS hacia FlightAPI (`/onewaytrip` o `/roundtrip`, consumiendo 2 créditos de la API externa), extracción del universo de ofertas de mercado y procesamiento en memoria mediante la frontera de Pareto y la función de utilidad compuesta (normalización conjunta de precio monetario, tiempo de vuelo y escalas), retornando las alternativas óptimas no dominadas junto con sus enlaces de reserva oficial (`deepLinks`).
+* **Persistencia y gestión de itinerarios:** Almacenamiento transaccional en PostgreSQL asociado al identificador de usuario (`user_id`), permitiendo operaciones CRUD (guardar, consultar, comparar métricas y eliminar itinerarios cotizados).
+* **Control de cuotas y bolsa de créditos transaccional:** Mecanismo de control de consumo y protección contra abusos orquestado atómicamente en Redis 7:
+  * *Cuota diaria gratuita:* Asignación de 10 créditos no acumulables restablecidos cada 24 horas (00:00 UTC), equivalentes a 2 cotizaciones completas (5 créditos Navby por búsqueda nueva con *cache miss*).
+  * *Bolsa de créditos prepagados:* Saldo persistente sin fecha de caducidad, acreditado de forma atómica mediante webhooks criptográficos de pasarela de pago (Mercado Pago Checkout Pro) en paquetes de 50, 100 y 250 créditos.
+* **Gestión de identidad y autenticación:** Control de acceso mediante credenciales locales con verificación de correo electrónico por código OTP de un solo uso (vía API de Resend) y autenticación federada Single Sign-On mediante Google Identity Services (OAuth 2.0 / OIDC) con emisión de tokens de sesión JWT.
+* **Proyección cartográfica WebGL 2D:** Renderizado cliente de alto rendimiento sobre mapa plano en proyección Web Mercator (MapLibre GL JS y deck.gl `ArcLayer`), visualizando arcos geodésicos ortodrómicos calculados con la formulación de Haversine y marcadores interactivos para aeropuertos de origen, escalas intermedias y destino.
 
 #### C. Ámbito de Ingeniería y Arquitectura (Visión General)
-* **Demarcación de tres aplicaciones desacopladas:**
-  * **Website (Marketing y Presencia Pública):** Sitio estático con **Astro 5** y **Tailwind CSS v4**, optimizado para Core Web Vitals, indexabilidad SEO y presentación institucional del producto.
-  * **Webapp (Aplicación Interactiva del Viajero):** SPA interactiva con **React 19**, **Vite**, **TypeScript**, **MapLibre GL JS** y **deck.gl**, enfocada en la planificación fluida y renderizado de arcos de vuelo sobre un mapa plano 2D.
-  * **Platform (Backend Core y Motor de Grafos):** API RESTful en **Python 3.12+** (mandatorio por cátedra) con **FastAPI**, **PostgreSQL 16** y **Redis 7**, que alberga el grafo mundial en memoria RAM (~10 MB), ejecuta los algoritmos de ruteo y orquesta las integraciones externas.
-* **Arquitectura pragmática sin sobreingeniería:** Se implementa un monolito modular con Clean Architecture y DDD táctico-lite; se prescinde de microservicios y de brokers de mensajería externos complejos (Kafka/RabbitMQ), resolviendo la consistencia inter-contexto mediante el patrón Transactional Outbox sobre PostgreSQL.
-* **Fuentes de verdad detalladas:** La especificación exhaustiva de capas, esquemas DDL, contratos OpenAPI, diagramas C4 y código canónico se delega a sus documentos maestros: [navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md), [navby-webapp-architecture.md](frontend-architecture/navby-webapp-architecture.md) y [navby-website-architecture.md](frontend-architecture/navby-website-architecture.md).
+
+Sintetiza la demarcación de responsabilidades técnicas, desacoplamiento estructural y estándares de diseño aplicados entre los componentes de la plataforma:
+
+* **Demarcación de responsabilidades:**
+  * **Website (Portal Web Público y Marketing):** Sitio web estático de alto rendimiento construido con **Astro 5** bajo arquitectura de islas, estilizado con **Tailwind CSS v4**, coreografía de animaciones con **GSAP 3**, desplazamiento cinemático suave con **Lenis**, enrutamiento estático multilingüe (`/es`, `/en`) y cumplimiento estricto de accesibilidad **WCAG 2.1 AA**, desplegado en Edge CDN de Vercel ($0 USD/mes), formalizado en [docs/frontend-documentation/navby-website-documentation.md](frontend-documentation/navby-website-documentation.md).
+  * **Webapp (Cliente Interactivo del Viajero):** SPA interactiva construida con **React 19**, **TypeScript**, **Vite 6**, motor cartográfico plano 2D **MapLibre GL JS** y arcos ortodrómicos WebGL con **deck.gl** (`ArcLayer`), sincronización de servidor con **TanStack Query**, estado global con **Zustand**, primitivas accesibles con **Radix UI**, notificaciones con **Sileo**, esqueletos adaptativos con **Boneyard** e internalización reactiva con `i18next`, formalizada en [docs/frontend-documentation/navby-webapp-documentation.md](frontend-documentation/navby-webapp-documentation.md).
+  * **Sistema de Diseño Unificado:** Hoja de estilos maestra en [docs/frontend-documentation/styles/global.css](frontend-documentation/styles/global.css) configurada con **Tailwind CSS v4** (`@theme`), paleta corporativa púrpura (`#604AFF`), acento naranja Aviation Sunset (`#FF6B35`), tipografía Albert Sans optimizada en WOFF2 local (`unicode-range`, `font-display: swap`) e isologo integrado con Raptor V3, formalizado en [docs/frontend-documentation/design-system.md](frontend-documentation/design-system.md).
+  * **Platform (Backend Core y Motor de Grafos):** Monolito modular en **Python 3.12+** con **FastAPI**, **uv**, **PostgreSQL 16**, **Redis 7** y **Caddy 2**, gobernado por Clean Architecture, Tactical DDD-lite, CQRS-lite y Transactional Outbox, que alberga el grafo mundial en memoria RAM (~10 MB), formalizado en [docs/backend-documentation/navby-platform-documentation.md](backend-documentation/navby-platform-documentation.md) y [`docs/backend-documentation/`](backend-documentation/).
+* **Organización documental:** El detalle técnico de cada ámbito se especifica progresivamente siguiendo la [Hoja de Ruta y Mapa de Navegación Documental](#hoja-de-ruta-y-mapa-de-navegación-documental).
 
 ---
 
 ### 2. Fuera del Alcance (Out-of-Scope / Exclusiones Justificadas)
 
+Establece los límites operativos y funcionales del sistema mediante la exclusión explícita de requerimientos y características que no forman parte de la arquitectura técnica del producto:
+
 1. **Consultas de vuelos multiciudad / multidestino (Multi Trip API):**
    * *Justificación:* El soporte de vuelos multidestino (`GET /multitrip`) queda formalmente excluido. La API externa impone una restricción rígida de 3 a 5 tramos obligatorios, exige una tarifa de 5 créditos por consulta y no permite la optimización de caminos mínimos por grafos de Navby. El alcance se concentra estrictamente en trayectos de **Solo Ida (One-way)** e **Ida y Vuelta (Round-trip)**.
 2. **Módulo abierto de exploración de conectividad aeroportuaria:**
-   * *Justificación:* Esta funcionalidad fue descartada del producto por considerarse innecesaria para la propuesta de valor comercial. El algoritmo DFS y las comprobaciones de conectividad se preservan exclusivamente como mecanismos internos de validación topológica (prevención de ciclos $u \neq v$ y aciclicidad de itinerarios), sin exponer un visor libre de conectividad independiente.
+   * *Justificación:* Esta funcionalidad fue descartada del sistema por no aportar a la optimización directa de rutas de vuelo. El algoritmo DFS y las comprobaciones de conectividad se preservan exclusivamente como mecanismos internos de validación topológica (prevención de ciclos $u \neq v$ y aciclicidad de itinerarios), sin exponer un visor libre de conectividad independiente.
 3. **Renderizado de mapas en globo terráqueo esférico 3D:**
    * *Justificación:* La visualización geográfica se restringe intencionalmente a un mapa plano 2D interactivo. El globo 3D introduce sobrecoste de cómputo GPU/WebGL innecesario en el navegador del usuario y dificulta la lectura visual simultánea de trayectos y escalas en comparación con una proyección plana clara.
 4. **Cobros periódicos recurrentes y suscripciones automáticas:**
    * *Justificación:* El modelo financiero se basa exclusivamente en compras puntuales prepagadas de paquetes de créditos de uso (*pay-per-use*) a través de Mercado Pago Checkout Pro. No se contemplan cargos automáticos mensuales recurrentes ni almacenamiento de datos sensibles de tarjetas bancarias.
 5. **Gestión de capacidad física de asientos y despacho operativo de aerolíneas:**
-   * *Justificación:* Aunque la rúbrica del curso menciona la «gestión de capacidad de vuelos / flujo máximo», Navby se sitúa desde la perspectiva del **usuario/viajero** (descubrimiento de rutas y optimización de tarifas de mercado). Navby no es un sistema interno de despacho operativo de aerolíneas ni un GDS/CRS encargado del inventario físico de asientos en cabina.
+   * *Justificación:* El modelo de dominio de Navby se sitúa estrictamente desde la perspectiva del **usuario/viajero** (descubrimiento de rutas y optimización de tarifas de mercado). Navby no opera como un sistema interno de despacho operativo de aerolíneas ni como un GDS/CRS encargado del inventario físico de asientos en cabina ni de la asignación de plazas por aeronave.
 6. **Procesamiento de pagos de pasajes y emisión de boletos (PNR):**
    * *Justificación:* Navby no opera como agencia de viajes intermediaria ni emite billetes aéreos (*Passenger Name Record*). La transacción final de compra del boleto se delega a las aerolíneas u OTAs oficiales mediante los enlaces de reserva directa (*deepLinks*) provistos por FlightAPI.
 7. **Radar y telemetría de vuelos en tiempo real (ADS-B):**
@@ -209,17 +235,18 @@ Navby interactúa con un conjunto acotado y desacoplado de servicios externos pa
 
 | Fuente / Servicio | Uso y Alcance en Navby | Naturaleza Técnica | Protocolo / Integración |
 | :--- | :--- | :--- | :--- |
-| **OpenFlights** | Catálogo mundial de aeropuertos (nodos) y rutas comerciales (aristas) para construir el grafo aéreo. | Dataset estático offline (depurado y versionado). | Ingesta local desde `docs/navby-datasets/`. |
-| **FlightAPI** | Consulta de tarifas reales, duraciones de vuelo y enlaces de reserva (*deepLinks*) para el Top 3. | API externa SaaS de pago (2 créditos/request). | HTTPS REST JSON hacia `api.flightapi.io` vía Adaptador ACL. |
-| **Mercado Pago** | Pasarela de pago para la compra de paquetes de créditos de uso (modelo prepago, sin suscripciones). | API externa SaaS de pagos y cobros electrónicos. | Checkout Pro / Webhooks HTTPS con firma criptográfica. |
-| **Resend** | Envíos de correos transaccionales: verificación OTP, restablecimiento de contraseña y recibos de compra. | API externa SaaS de mensajería transaccional. | HTTPS REST (puerto 443) con SDK oficial. |
-| **Google Identity Services** | Autenticación y registro federado mediante cuentas de Google (OAuth 2.0 / OIDC). | Servicio de identidad federada (IdP). | SDK de frontend + validación de `id_token` JWT en backend. |
+| **OpenFlights** | Catálogo mundial de aeropuertos (nodos) y rutas comerciales (aristas) para construir el grafo aéreo. | Dataset estático offline (depurado y versionado). | Ingesta local desde `docs/backend-documentation/navby-datasets/`. |
+| **FlightAPI** | Consulta de tarifas reales, duraciones de vuelo y enlaces de reserva (*deepLinks*) para los mejores vuelos recomendados. | API externa SaaS de pago (2 créditos/request). | HTTPS REST JSON hacia `api.flightapi.io` vía Adaptador ACL (con soporte de Mock en desarrollo). |
+| **Mercado Pago** | Pasarela de pago para la compra de paquetes de créditos de uso (modelo prepago, sin suscripciones). | API externa SaaS de pagos y cobros electrónicos. | Checkout Pro / Webhooks HTTPS con firma criptográfica (Sandbox completo en desarrollo). |
+| **Resend** | Envíos de correos transaccionales: verificación OTP, restablecimiento de contraseña y recibos de compra. | API externa SaaS de mensajería transaccional. | HTTPS REST (puerto 443) con SDK oficial `resend-py` (fallback a log de consola en local). |
+| **Google Identity Services** | Autenticación y registro federado mediante cuentas de Google (OAuth 2.0 / OIDC). | Servicio de identidad federada (IdP). | SDK de frontend + validación de `id_token` JWT en backend con `google-auth`. |
+| **CARTO Basemaps** | Teselas cartográficas vectoriales y capa base para el mapa plano 2D (Positron / Dark Matter). | Proveedor público de estilos cartográficos para WebGL. | HTTPS TileJSON consumido directamente por MapLibre GL JS en cliente (sin clave ni costo de API). |
 
 ---
 
 ### OpenFlights: Datasets del Grafo Aéreo y Limpieza de Datos
 
-La topología de rutas de Navby se sustenta en el repositorio abierto de **OpenFlights** ([openflights.org](https://openflights.org/data)). Los archivos originales residen en `docs/backend-documentation/datasets/` y los conjuntos limpios definitivos están centralizados en [`docs/navby-datasets/`](navby-datasets/).
+La topología de rutas de Navby se sustenta en el repositorio abierto de **OpenFlights** ([openflights.org](https://openflights.org/data)). Tras el proceso de depuración matemática y sanitización, los conjuntos de datos limpios y definitivos están centralizados en [`docs/backend-documentation/navby-datasets/`](backend-documentation/navby-datasets/).
 
 #### 1. Fases del Proceso de Depuración y Validación Matemática
 Conforme a la memoria de ingeniería y el análisis de consistencia topológica (`report/chapters/20-dataset-description/22-preprocessing-and-metrics.md`), los datos crudos fueron sometidos a un proceso de sanitización de 4 fases:
@@ -227,11 +254,11 @@ Conforme a la memoria de ingeniería y el análisis de consistencia topológica 
 1. **Fase 1 (Tipo de instalación aérea):** De las 12,668 instalaciones iniciales en `airports-extended.dat`, se retuvieron exclusivamente terminales aéreas comerciales (`type = "airport"`), descartando estaciones de tren (`station`), puertos marítimos (`port`) e infraestructuras militares o helipuertos.
 2. **Fase 2 (Integridad de código IATA):** Se filtraron los registros para conservar únicamente aquellos con identificador IATA de 3 letras mayúsculas válido (descartando nulos `\N`), consolidando exactamente **6,472 aeropuertos comerciales**.
 3. **Fase 3 (Validación de aristas activas):** Sobre las 67,663 rutas de `routes.dat`, se verificó la integridad referencial exigiendo que tanto el aeropuerto de origen como el de destino existan en el conjunto de aeropuertos comerciales válidos, reteniendo **67,305 rutas operativas**.
-4. **Fase 4 (Poda de vértices aislados):** Se purgaron 3,118 aeródromos sin vuelos comerciales ($k = 0$), resultando en un grafo conexo de **3,354 aeropuertos activos ($|V|$)** y **37,326 aristas dirigidas únicas ($|E|$)**, superando en 2.2× el requisito de 1,500 nodos del curso.
+4. **Fase 4 (Poda de vértices aislados):** Se purgaron 3,118 aeródromos sin vuelos comerciales ($k = 0$), resultando en un grafo conexo de **3,354 aeropuertos activos ($|V|$)** y **37,326 aristas dirigidas únicas ($|E|$)**, garantizando la representatividad y conectividad física de la red comercial global de pasajeros.
 
 #### 2. Catálogo de Datasets Utilizados (Verificados y Limpios)
 
-| Dataset en `docs/navby-datasets/` | Registros | Campos Clave | Rol en Navby |
+| Dataset en `docs/backend-documentation/navby-datasets/` | Registros | Campos Clave | Rol en Navby |
 | :--- | :---: | :--- | :--- |
 | **`airports.csv`** | **3,354** | `airport_id`, `name`, `city`, `country`, **`iata`**, `icao`, **`latitude`**, **`longitude`**, `altitude`, `timezone` | **Vértices del Grafo ($|V|$):** Nodos activos para ruteo algorítmico. |
 | **`routes_unique.csv`** | **37,326** | **`source_airport`**, **`destination_airport`**, **`distance_km`**, `operating_airlines`, `min_stops` | **Aristas del Grafo ($|E|$):** Conexiones dirigidas únicas con distancia Haversine precalculada. |
@@ -247,7 +274,7 @@ Conforme a la memoria de ingeniería y el análisis de consistencia topológica 
 
 Para transformar las mejores rutas candidatas del grafo en ofertas de compra accionables, Navby se integra con **FlightAPI** ([flightapi.io](https://www.flightapi.io)).
 
-* **Documentación técnica detallada:** Consulta la especificación exhaustiva de endpoints, esquemas JSON, adaptador ACL y resiliencia en [backend-documentation/flight-api-documentation.md](backend-documentation/flight-api-documentation.md).
+* **Especificación técnica del adaptador ACL:** La arquitectura detallada de integración, contratos de datos, resiliencia y gestión de cuotas de FlightAPI se encuentra formalizada en [docs/backend-documentation/flight-api-documentation.md](backend-documentation/flight-api-documentation.md).
 * **Endpoints consumidos:**
   * `GET /onewaytrip`: Cotización para viajes de solo ida (**2 créditos/request**).
   * `GET /roundtrip`: Cotización para viajes de ida y vuelta (**2 créditos/request**).
@@ -260,9 +287,25 @@ Las llamadas a Flight API **nunca se ejecutan desde el navegador**: son orquesta
 
 * **Custodia de secretos:** La clave de API reside únicamente en variables de entorno del servidor (`FLIGHT_API_KEY`).
 * **Caché en memoria (Redis):** Toda cotización se almacena con un TTL de 30 minutos. Búsquedas concurrentes o idénticas se resuelven a costo de $0$ créditos y latencia mínima.
-* **Pre-filtro algorítmico obligatorio:** El motor de grafos poda el universo de rutas posibles y **solo invoca la API para las 3 a 5 mejores opciones topológicas**, eliminando llamadas innecesarias.
+* **Pre-filtro algorítmico a costo cero ($0.00):** El motor de grafos en RAM valida la conectividad en $O(\alpha(V))$ mediante UFDS antes de cualquier llamada externa; si no existe conectividad comercial factible, la consulta se rechaza de inmediato consumiendo 0 créditos de FlightAPI, protegiendo el presupuesto operativo de la plataforma.
 * **Presupuesto transaccional de créditos:** El backend descuenta créditos antes de emitir la llamada externa; si el saldo es insuficiente, la petición se rechaza de forma preventiva.
 * **Degradación controlada (Circuit Breaker):** Ante fallos del proveedor o cuota general agotada (HTTP 402/429), el sistema entrega la última tarifa en caché indicando su antigüedad al usuario.
+
+### CARTO Basemaps: Teselas Cartográficas y Estilos WebGL
+
+Para renderizar la proyección cartográfica Web Mercator 2D en el cliente sobre la cual **deck.gl** traza los arcos geodésicos ortodrómicos de vuelo, Navby consume las teselas públicas de **CARTO Basemaps**:
+
+* **Estilo base:** `https://basemaps.cartocdn.com/gl/positron-gl-style/style.json` (variante clara de alto contraste) y `dark-matter-gl-style` (variante oscura opcional).
+* **Integración:** Consumo directo desde el cliente en **MapLibre GL JS** mediante especificación TileJSON / Vector Tiles estándar.
+* **Viabilidad operativa:** No requiere credenciales de API ni autenticación para entornos de código abierto o educativos, eliminando costos y cuotas de infraestructura cartográfica en el cliente.
+
+### Aislamiento y Resiliencia en Entorno de Desarrollo Local (Modo Sandbox y Mocks)
+
+Para permitir el desarrollo continuo y pruebas integrales del sistema sin incurrir en consumo prematuro de créditos de API ni bloqueos por dependencias de red externas, la arquitectura incorpora modos de aislamiento:
+
+1. **FlightAPI Mock Adapter:** En entorno local (`ENVIRONMENT=development` o en ausencia de `FLIGHT_API_KEY`), el adaptador ACL conmuta a un generador determinista de ofertas de mercado basado en fixtures JSON, proveyendo precios, aerolíneas y segmentos simulados para ejercitar el motor multicriterio y la interfaz gráfica a costo cero ($0.00).
+2. **Mercado Pago Sandbox:** Configuración de credenciales de prueba (`TEST-ACCESS-TOKEN`) que habilita el flujo completo de Checkout Pro y emisión de webhooks locales con tarjetas de prueba ficticias en moneda PEN y USD.
+3. **Resend Console Fallback:** Ante la ausencia de un dominio corporativo validado en DNS durante etapas tempranas de desarrollo, el servicio transaccional registra el código OTP directamente en el flujo de salida estándar del backend (`logger.info`), permitiendo completar el flujo de registro y verificación localmente sin bloqueos de entrega.
 
 ## Decisiones de Diseño Clave
 
@@ -284,316 +327,185 @@ El usuario interactúa en la interfaz buscando por nombre de ciudad o terminal a
 * Si el usuario lo prefiere, la interfaz web permite seleccionar explícitamente cualquiera de los aeropuertos secundarios disponibles en la metrópoli.
 * Toda la ejecución algorítmica interna en el motor de grafos y las peticiones externas a FlightAPI se ejecutan de manera estricta y canónica sobre los **códigos IATA de 3 letras**.
 
-### 3. Algoritmos y técnicas del curso: selección técnica, propósito y clasificación
+### 3. Buscador inteligente y resolución de destinos sin aeropuerto mediante Haversine Nearest Neighbor
 
-Para satisfacer con rigor las competencias de la asignatura de **Complejidad Algorítmica (1ACC0184)** y resolver eficientemente el **Caso de Estudio N.° 9 (Planificación de vuelos - LATAM Airlines)**, las técnicas algorítmicas se estructuran en tres ámbitos operativos claramente diferenciados:
+Para garantizar una experiencia de búsqueda fluida y evitar frustraciones de navegación en la Webapp sin incurrir en costos de almacenamiento ni sobreingeniería de datos, el sistema adopta una arquitectura de búsqueda geográfica desacoplada:
 
-#### A. Algoritmos del Motor de Rutas en Tiempo Real (Runtime / Platform Engine - Core Domain)
+* **Autosuficiencia del Dataset Aeroportuario (Principio Anti-Sobreingeniería de Base de Datos):**
+  Navby **no implementa una base de datos relacional de países y ciudades en PostgreSQL**. Almacenar un nomenclátor global masivo (como GeoNames con más de 150,000 entidades, divisiones administrativas y tablas PostGIS asociadas) generaría un sobrecosto severo de almacenamiento, mantenimiento y tiempo de respuesta. En su lugar, el dataset canónico de OpenFlights consolidado en Navby (`docs/backend-documentation/navby-datasets/airports.csv`) contiene **3,354 nodos aeroportuarios comerciales**, donde cada registro incluye de forma intrínseca su ciudad de servicio (`city`), país (`country`), código IATA de 3 letras (`iata`), nombre oficial (`name`) y coordenadas geográficas ortodrómicas (`latitude`, `longitude`). Esta información se indexa en memoria en el backend y se exporta como un catálogo estático ligero en el cliente (~180 KB), permitiendo resolver búsquedas directas por ciudad, país o aeropuerto en $< 1\text{ ms}$ a costo cero de red y base de datos.
 
-Operan en memoria RAM sobre el grafo $G = (V, E)$ de OpenFlights (3,354 nodos y 37,326 aristas) para calcular las mejores rutas candidatas en milisegundos antes de invocar FlightAPI:
+* **Tratamiento de Destinos Turísticos y Ciudades sin Aeropuerto Comercial:**
+  En la práctica, numerosos viajeros planifican itinerarios hacia localidades de alta demanda turística o metrópolis regionales que carecen de pista aérea comercial directa o que no están presentes en la red de OpenFlights (por ejemplo, Machu Picchu, Máncora, Toledo, Cannes o Andorra la Vella). En estos escenarios, el sistema no bloquea al usuario con un error de "destino no encontrado", sino que aplica un flujo de **resolución por proximidad geográfica**:
+  1. **Geocodificación Liviana en Cliente:** Si el término ingresado en el buscador flotante no coincide con ningún aeropuerto comercial de la red de Navby, la interfaz solicita de manera asíncrona las coordenadas geográficas $(\phi_{\text{destino}}, \lambda_{\text{destino}})$ de la localidad a través del geocodificador del mapa interactivo (MapLibre GL / Nominatim / Photon).
+  2. **Búsqueda por Vecino Más Cercano (Haversine Nearest Neighbor en $O(V)$):** Con las coordenadas de la ciudad, el motor evalúa la distancia ortodrómica contra los 3,354 aeropuertos de la red en memoria mediante la fórmula de Haversine:
+     $$d = 2 R \arcsin \left( \sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \cos \phi_1 \cos \phi_2 \sin^2\left(\frac{\Delta \lambda}{2}\right)} \right)$$
+     Dado el tamaño acotado del conjunto de nodos ($V = 3,354$), este barrido lineal se ejecuta en **menos de 0.08 milisegundos**, identificando instantáneamente el aeropuerto comercial operativo más cercano (o una terna de aeropuertos alternativos de proximidad).
+  3. **Experiencia de Usuario sin Callejones sin Salida (*Zero-Dead-End UX*):** La interfaz despliega un banner informativo contextual:
+     > *«La ciudad de **Máncora** no cuenta con aeropuerto comercial en la red de Navby. El aeropuerto más cercano es **Capitán FAP Víctor Montes Arias (TYL - Talara)** a 68 km de distancia.»*
+  4. **Fijación Asistida en 1 Clic:** El usuario dispone de una acción rápida (*«Seleccionar TYL como destino»*) que fija automáticamente el código IATA en el formulario de ruta, reubica la cámara del mapa plano 2D (`flyTo`) hacia las coordenadas del aeropuerto y permite continuar de inmediato con el cálculo del itinerario óptimo.
 
-1. **BFS (Breadth-First Search - Búsqueda en Anchura):**
-   * *Propósito:* Encontrar la ruta con el **mínimo número de escalas** ($k - 1$ conexiones, equivalente al menor número de aristas en el grafo no ponderado).
-   * *Justificación de negocio:* Satisface al segmento de viajeros que prioriza vuelos directos o con una sola escala para minimizar el cansancio de transbordos, independientemente de la distancia kilométrica total.
-   * *Complejidad:* $O(V + E)$ en tiempo, $O(V)$ en memoria.
-2. **Dijkstra (Algoritmo Voraz de Caminos Mínimos):**
-   * *Propósito:* Calcular la ruta con el **menor tiempo total estimado de vuelo** sobre aristas ponderadas con pesos no negativos ($w_t(u, v) \ge 0$).
-   * *Justificación de negocio:* Ofrece la opción geodésicamente más veloz acumulando tiempos de vuelo Haversine y penalizaciones de escala, explorando el grafo mediante una cola de prioridad indexada (*min-heap*).
-   * *Complejidad:* $O((V + E) \log V)$ en tiempo, $O(V)$ en memoria.
-3. **A\* (Búsqueda Voraz con Heurística Admisible):**
-   * *Propósito:* Acelerar la obtención de la ruta de menor tiempo orientando la exploración espacial hacia el aeropuerto de destino.
-   * *Justificación de negocio:* Emplea la función de evaluación $f(u) = g(u) + h(u)$, donde $h(u) = d_H(u, \text{destino}) / v_{\text{crucero}}$ es la distancia Haversine en línea recta al destino dividida por la velocidad crucero. Al cumplir las propiedades de admisibilidad ($h(u) \le d^*(u)$) y consistencia triangular, garantiza optimalidad matemática expandiendo una fracción mínima de vértices en comparación con Dijkstra, reduciendo la latencia de respuesta en la webapp.
-   * *Complejidad:* $O(E \log V)$ en el peor caso, con tiempo empírico significativamente inferior.
-4. **Backtracking con Poda Heurística:**
-   * *Propósito:* Enumerar un conjunto diverso de **rutas alternativas viables** (directas, con 1 escala o con 2 escalas) para enriquecer las opciones del usuario.
-   * *Justificación de negocio:* Realiza una búsqueda exhaustiva controlada podando ramas inviables: descarta trayectos que excedan 2 escalas ($k - 1 > 2$), rutas cuyo tiempo supere una cota ($T > 1.5 \times T_{\text{Dijkstra}}$) o caminos que impliquen alejamiento geométrico o retrocesos respecto al destino.
-   * *Complejidad:* Acotada por poda a $O(b_{\text{efectivo}}^d)$ con factor de ramificación efectivo $b_{\text{efectivo}} \ll \bar{b} \approx 22.26$ y profundidad $d \le 3$.
-5. **Programación Dinámica en Grafos (Optimización Multi-criterio):**
-   * *Propósito:* Computar itinerarios óptimos balanceando simultáneamente tiempo de vuelo y número de escalas mediante subestructura óptima y memoización sobre estados $(u, \text{escalas\_restantes})$.
-   * *Justificación de negocio:* Construye la frontera de Pareto del viaje, permitiendo asignar un puntaje compuesto de conveniencia antes de someter las 3 mejores rutas candidatas a cotización de mercado.
-   * *Complejidad:* $O(K \cdot (V + E))$ donde $K \le 2$ representa el número máximo de escalas admitidas.
-6. **Divide y Vencerás (Divide & Conquer):**
-   * *Propósito:* Descomponer la búsqueda de rutas intercontinentales complejas particionando el grafo mundial en macro-regiones aéreas IATA (Américas, Europa/África, Asia/Pacífico).
-   * *Justificación de negocio:* Resuelve el trayecto en subproblemas regionales independientes conectando a través de aeropuertos *gateway* (hubs de transferencia intercontinental), reduciendo el espacio de búsqueda.
-   * *Complejidad:* $O(V_{\text{regional}} + E_{\text{regional}})$.
-7. **DFS (Búsqueda en Profundidad):**
-   * *Propósito:* Detección de ciclos y validación de aciclicidad en itinerarios multiconexión para asegurar caminos simples sin aeropuertos repetidos ($u \neq v$), además de comprobaciones locales de conectividad. *(Nota: el feature de explorador libre de conectividad aeroportuaria fue descartado del producto para mantener el foco en la planificación y compra de vuelos).*
-   * *Complejidad:* $O(V + E)$ en tiempo, $O(V)$ en memoria.
+### 4. Algoritmos y técnicas: clasificación por ámbito de ejecución
 
-#### B. Algoritmos de Preprocesamiento, Conectividad y Estructura del Grafo (Offline / Data Pipeline)
+Para garantizar un rendimiento óptimo en producción y responder con rigor al modelado formal del problema de rutas aéreas sin incurrir en sobreingeniería en la plataforma, las técnicas algorítmicas se dividen estrictamente en dos esferas de ejecución:
 
-Garantizan la integridad matemática y topológica de la red aérea durante la ingesta y preparación de los datasets:
+#### A. Algoritmos del Producto (Runtime / Motor de Producción)
 
-1. **UFDS (Union-Find Disjoint Sets):**
-   * *Propósito:* Agrupación y particionamiento disjunto de aeropuertos por conectividad.
-   * *Uso en Navby:* En la Fase 4 de limpieza, permitió aislar la componente conexa comercial gigante (3,354 nodos con $k > 0$) de los 3,118 aeródromos aislados; en tiempo de ejecución, permite verificar en tiempo casi constante $O(\alpha(V))$ si dos aeropuertos están conectados antes de iniciar una búsqueda de ruta; además, actúa como estructura de soporte para el algoritmo de Kruskal.
-   * *Complejidad:* $O(\alpha(V))$ por operación de búsqueda/unión.
-2. **SCC (Componentes Fuertemente Conexas - Tarjan / Kosaraju):**
-   * *Propósito:* Detección de componentes fuertemente conexas en el grafo dirigido.
-   * *Uso en Navby:* Demuestra que la red comercial global forma una única componente dominante con reciprocidad casi simétrica de rutas y permite clasificar y jerarquizar los aeropuertos *hubs* globales en el capítulo de análisis del dataset.
-   * *Complejidad:* $O(V + E)$ en tiempo y memoria.
-3. **MST (Árbol de Expansión Mínima - Kruskal / Prim):**
-   * *Propósito:* Construcción de la red base de interconexión con el costo acumulado de distancia mínima global y regional.
-   * *Uso en Navby:* Permite contrastar la topología comercial real frente al árbol generador mínimo, cuantificando en el reporte académico la densidad, redundancia de rutas y tolerancia a fallos del sistema aéreo.
-   * *Complejidad:* $O(E \log V)$ para Kruskal (ordenamiento de aristas + UFDS) o Prim.
-4. **Ordenamiento Topológico (Kahn / DFS post-order):**
-   * *Propósito:* Planificación y secuenciación cronológica de las etapas de vuelo en el DAG de itinerarios con escalas múltiples, asegurando que se cumplan las dependencias temporales estrictas entre salidas y llegadas ($t_{\text{salida}}^{i+1} > t_{\text{llegada}}^i + t_{\text{conexión}}$).
-   * *Complejidad:* $O(V_{\text{itinerario}} + E_{\text{itinerario}})$.
+Operan en memoria RAM durante el ciclo de vida de la aplicación para resolver las búsquedas del usuario de forma rápida, determinista y económica:
 
-#### C. Algoritmos de Benchmarking y Validación Asintótica (Reporte Académico / Experimentación)
+1. **UFDS (Union-Find Disjoint Sets - Escudo Topológico):**
+   * *Propósito:* Validar en tiempo casi constante $O(\alpha(V))$ (< 0.05 ms) si el aeropuerto de origen y el de destino pertenecen a la misma componente comercial conexa.
+   * *Rol de negocio:* Si no existe conexión comercial registrada, la consulta se descarta de inmediato a costo de 0 créditos, protegiendo el presupuesto de API de la plataforma.
+   * *Complejidad:* $O(\alpha(V))$ en tiempo.
+2. **A\* (Camino Geodésico Óptimo en Memoria):**
+   * *Propósito:* Calcular la ruta física más veloz sobre aristas ponderadas por tiempo estimado Haversine ($w_t \ge 0$).
+   * *Rol de negocio:* A* acelera la convergencia guiado por la heurística admisible $h(u) = d_H(u, \text{destino}) / v_{\text{crucero}}$. Determina la cota teórica inferior de duración ($T_{\min}$) para la normalización del motor multicriterio y genera los vectores espaciales para proyectar los arcos ortodrómicos sobre el mapa plano 2D en el cliente.
+   * *Complejidad:* $O(E \log V)$ en tiempo.
+3. **BFS (Búsqueda por Niveles para Mínimas Escalas):**
+   * *Propósito:* Identificar la ruta con el menor número de escalas posibles ($k - 1$ conexiones) sobre el grafo no ponderado.
+   * *Rol de negocio:* Ofrece al usuario una alternativa directa o con el mínimo de conexiones físicas posibles, priorizando la simplicidad del trayecto frente a la duración continua.
+   * *Complejidad:* $O(V + E)$ en tiempo.
+4. **Motor Multicriterio (Frontera de Pareto y Utilidad Compuesta):**
+   * *Propósito:* Optimización conjunta multi-objetivo sobre las tarifas y duraciones reales obtenidas de FlightAPI.
+   * *Rol de negocio:* El núcleo de recomendación de Navby; descarta opciones de vuelo dominadas y pondera precio, duración y escalas para presentar las alternativas óptimas balanceando de forma simultánea costo monetario, tiempo de vuelo y escalas.
+   * *Complejidad:* $O(N \log N)$ donde $N$ es el número de itinerarios cotizados por la API externa.
 
-Implementados en Python para la sección experimental de validación de resultados y contraste de complejidad:
+#### B. Algoritmos de Laboratorio y Benchmarking Asintótico (Offline)
 
-1. **Fuerza Bruta:**
-   * *Propósito:* Búsqueda exhaustiva sin poda de todas las rutas posibles entre dos terminales en subgrafos pequeños ($N \le 10$).
-   * *Uso en Navby:* Actúa como línea base teórica de optimalidad absoluta y evidencia empíricamente la explosión combinatoria $O(b^d)$ al comparar sus tiempos de cómputo frente a Dijkstra, A* y Backtracking con poda.
+Implementaciones experimentales y scripts de análisis en Python que operan fuera del flujo de producción para generar las métricas de rendimiento, validación de cotas teóricas y comparativas asintóticas documentadas en `report/`:
+
+1. **Dijkstra:**
+   * *Propósito:* Búsqueda de caminos mínimos sin heurística mediante cola de prioridad sobre aristas ponderadas.
+   * *Uso en Navby:* Actúa como línea base experimental para cuantificar empíricamente el ahorro de nodos explorados por A* en redes espaciales y justificar la adopción de la heurística de Haversine.
+   * *Complejidad:* $O((V + E) \log V)$.
+2. **Fuerza Bruta:**
+   * *Propósito:* Búsqueda exhaustiva sin poda de todas las rutas posibles en subgrafos pequeños ($N \le 10$).
+   * *Uso en Navby:* Actúa como línea base teórica de optimalidad y evidencia empíricamente la explosión combinatoria $O(b^d)$ al comparar sus tiempos de cómputo frente a A* y BFS.
    * *Complejidad:* $O(V!)$ o $O(b^d)$.
-2. **Bellman-Ford:**
-   * *Propósito:* Algoritmo de caminos mínimos basado en relajación exhaustiva de todas las aristas durante $|V|-1$ iteraciones.
-   * *Uso en Navby:* Se incluye en el reporte para contrastar experimentalmente su elevado costo computacional frente a Dijkstra y demostrar analíticamente por qué no es eficiente en grafos de transporte con pesos estrictamente positivos ($w_t \ge 0$).
+3. **Bellman-Ford:**
+   * *Propósito:* Algoritmo de caminos mínimos con relajación iterativa de todas las aristas durante $|V|-1$ iteraciones.
+   * *Uso en Navby:* Demuestra experimentalmente en el reporte su elevado costo asintótico frente a Dijkstra en grafos con pesos estrictamente positivos ($w_t \ge 0$).
    * *Complejidad:* $O(V \cdot E)$.
-3. **Floyd-Warshall:**
+4. **Floyd-Warshall:**
    * *Propósito:* Algoritmo de programación dinámica para caminos mínimos de todos contra todos.
-   * *Uso en Navby:* Se evalúa sobre subgrafos densos de aeropuertos de alta conectividad (ej. los 50 principales *hubs* globales) para precalcular matrices de distancias inter-hub y verificar empíricamente la cota asintótica cúbica.
+   * *Uso en Navby:* Se evalúa sobre el subgrafo denso de los 50 principales hubs mundiales para precalcular matrices de distancias inter-hub y verificar la cota cúbica.
    * *Complejidad:* $O(V^3)$ en tiempo, $O(V^2)$ en memoria.
-4. **Flujo Máximo (Edmonds-Karp / Dinic):**
-   * *Propósito:* Modelado de capacidad de transporte y saturación de tráfico.
-   * *Uso en Navby:* Utilizado en el análisis experimental del reporte para modelar la capacidad máxima de vuelos en corredores troncales y detectar cuellos de botella de conectividad.
+5. **Flujo Máximo (Edmonds-Karp / Dinic):**
+   * *Propósito:* Modelado de capacidad de transporte y corte mínimo en redes dirigidas.
+   * *Uso en Navby:* Modela experimentalmente la saturación y cuellos de botella en corredores troncales de alta densidad.
    * *Complejidad:* $O(V \cdot E^2)$ para Edmonds-Karp o $O(V^2 \cdot E)$ para Dinic.
+6. **Backtracking con Poda:**
+   * *Propósito:* Búsqueda en profundidad acotada para explorar múltiples caminos alternativos.
+   * *Uso en Navby:* Demuestra la efectividad de podas heurísticas por escalas ($\le 2$) y desvíos angulares frente a la exploración ciega.
+   * *Complejidad:* $O(b_{\text{efectivo}}^d)$ acotado.
+7. **DFS (Búsqueda en Profundidad):**
+   * *Propósito:* Exploración exhaustiva de caminos y detección de componentes y ciclos en grafos generales.
+   * *Uso en Navby:* Análisis de conectividad estructural profunda y detección de ciclos en grafos no dirigidos y dirigidos.
+   * *Complejidad:* $O(V + E)$ en tiempo, $O(V)$ en memoria.
+8. **SCC (Tarjan / Kosaraju) y MST (Kruskal / Prim):**
+   * *Propósito:* Caracterización estructural de la componente gigante dominante y análisis de resiliencia del árbol generador mínimo sobre la red de OpenFlights durante la fase de depuración del dataset.
+   * *Complejidad:* $O(V + E)$ para SCC; $O(E \log V)$ para MST.
+9. **Ordenamiento Topológico (DAG):**
+   * *Propósito:* Secuenciación temporal estricta de las etapas de vuelo en itinerarios con conexiones múltiples ($t_{\text{salida}}^{i+1} > t_{\text{llegada}}^i + t_{\text{conexión}}$).
+   * *Complejidad:* $O(V_{\text{itinerario}} + E_{\text{itinerario}})$.
+10. **Divide y Vencerás:**
+    * *Propósito:* Partición geográfica del grafo en macro-regiones IATA y hubs *gateway* para analizar la descomposición en subproblemas regionales independientes.
+    * *Complejidad:* $O(V_{\text{regional}} + E_{\text{regional}})$.
 
 #### Resumen y Mapeo Comparativo de Técnicas
 
 | Técnica Algorítmica | Propósito y Caso de Uso en Navby | Complejidad Temporal | Ámbito de Ejecución |
 | :--- | :--- | :---: | :--- |
-| BFS | Ruta con mínimo número de escalas (menos aristas). | $O(V + E)$ | Runtime (Motor de Rutas) |
-| Dijkstra | Ruta con menor tiempo estimado de vuelo (pesos Haversine). | $O((V + E) \log V)$ | Runtime (Motor de Rutas) |
-| A* | Búsqueda voraz guiada por distancia Haversine admisible. | $O(E \log V)$ | Runtime (Motor de Rutas) |
-| Backtracking con poda | Enumeración acotada de rutas alternativas viables ($\le 2$ escalas). | $O(b_{\text{efectivo}}^d)$ | Runtime (Motor de Rutas) |
-| Programación Dinámica (DP) | Optimización multi-criterio balanceando tiempo y escalas. | $O(K \cdot (V + E))$ | Runtime (Motor de Rutas) |
-| Divide y Vencerás | Descomposición por macro-regiones IATA y hubs gateway. | $O(V_{\text{regional}} + E_{\text{regional}})$ | Runtime (Motor de Rutas) |
-| DFS | Detección de ciclos y validación de caminos simples en itinerarios. | $O(V + E)$ | Runtime (Validación) |
-| UFDS | Poda de nodos aislados y validación instantánea de conexidad. | $O(\alpha(V))$ | Data Pipeline / Engine |
-| SCC (Tarjan / Kosaraju) | Detección de la componente conexa dominante y análisis de hubs. | $O(V + E)$ | Data Pipeline / Reporte |
-| MST (Kruskal / Prim) | Esqueleto de conectividad de distancia mínima y resiliencia. | $O(E \log V)$ | Data Pipeline / Reporte |
-| Ordenamiento Topológico | Secuenciación temporal de tramos y escalas en el DAG de viaje. | $O(V + E)$ | Data Pipeline / Itinerarios |
-| Fuerza Bruta | Línea base de optimalidad y demostración de explosión combinatoria. | $O(b^d)$ | Benchmarks / Reporte |
-| Bellman-Ford | Contraste comparativo frente a Dijkstra en grafos con pesos no negativos. | $O(V \cdot E)$ | Benchmarks / Reporte |
-| Floyd-Warshall | Caminos mínimos todos-contra-todos en subgrafos densos de hubs. | $O(V^3)$ | Benchmarks / Reporte |
-| Flujo Máximo | Análisis de saturación y capacidad teórica en corredores troncales. | $O(V \cdot E^2)$ | Benchmarks / Reporte |
+| **UFDS** | Escudo de conexidad previa a costo cero ($0.00). | $O(\alpha(V))$ | **Producción (Runtime)** |
+| **A\*** | Búsqueda voraz guiada por heurística Haversine admisible. | $O(E \log V)$ | **Producción (Runtime)** |
+| **BFS** | Ruta de menor número de escalas comerciales ($k-1$). | $O(V + E)$ | **Producción (Runtime)** |
+| **Motor Multicriterio (Pareto)** | Optimización conjunta de precio, duración y escalas. | $O(N \log N)$ | **Producción (Runtime)** |
+| **Dijkstra** | Línea base omnidireccional para cuantificar mejora de A*. | $O((V + E) \log V)$ | Laboratorio (Académico) |
+| **Backtracking con Poda** | Demostración de podas heurísticas por escalas ($\le 2$). | $O(b_{\text{efectivo}}^d)$ | Laboratorio (Académico) |
+| **DFS** | Detección general de ciclos y exploración profunda. | $O(V + E)$ | Laboratorio (Académico) |
+| **Fuerza Bruta** | Demostración experimental de explosión combinatoria ($N \le 10$). | $O(b^d)$ / $O(V!)$ | Laboratorio (Académico) |
+| **Bellman-Ford** | Demostración empírica de ineficiencia vs Dijkstra. | $O(V \cdot E)$ | Laboratorio (Académico) |
+| **Floyd-Warshall** | Matriz inter-hub en subgrafo denso de 50 principales hubs. | $O(V^3)$ | Laboratorio (Académico) |
+| **Flujo Máximo** | Modelado de saturación de capacidad en corredores troncales. | $O(V \cdot E^2)$ | Laboratorio (Académico) |
+| **SCC (Tarjan)** | Análisis de la componente fuertemente conexa dominante. | $O(V + E)$ | Laboratorio (Dataset) |
+| **MST (Kruskal / Prim)** | Esqueleto de conectividad de distancia mínima y resiliencia. | $O(E \log V)$ | Laboratorio (Dataset) |
+| **Ordenamiento Topológico** | Secuenciación temporal de etapas en el DAG del itinerario. | $O(V_{\text{itin}} + E_{\text{itin}})$ | Laboratorio (Dataset) |
+| **Divide y Vencerás** | Descomposición experimental por macro-regiones IATA. | $O(V_{\text{reg}} + E_{\text{reg}})$ | Laboratorio (Académico) |
 
-#### Ciclo de Vida y Flujo Operativo de los Algoritmos (Diagrama ASCII)
+    [Petición del Usuario (u, v)]
+                 │
+                 ▼
+        1. UFDS (Conexidad previa en O(α(V))) ──> ¿Desconectados? ──> [Rechazo a Costo $0.00]
+                 │ (Conectados)
+                 ▼
+        2. A* (Camino físico óptimo Haversine en O(E log V))
+           ├──> Cota teórica T_min (duración mínima física)
+           └──> Coordenadas ortodrómicas para MapLibre GL 2D
+                 │
+        3. BFS (Ruta de mínimas escalas teóricas en O(V + E))
+                 │
+                 ▼
+        [Consulta a Redis 7 / Llamada Única a FlightAPI (2 créditos)]
+                 │ (Retorna 30-50 ofertas reales de mercado)
+                 ▼
+        4. MOTOR MULTICRITERIO (Frontera de Pareto y Utilidad Compuesta en O(N log N))
+           ├──> Normaliza precio, tiempo y escalas usando T_min
+           ├──> Descarta opciones dominadas (Pareto)
+           └──> Retorna las mejores recomendaciones con deepLinks oficiales
 
-El siguiente diagrama ilustra la arquitectura de ejecución y el encadenamiento integral de las 14 técnicas algorítmicas a través de las fases del sistema, desde la ingesta de datos hasta la respuesta al usuario y el banco experimental:
+### 5. Resumen Consolidado del Stack Tecnológico
 
-```text
-====================================================================================================
-                        FASE 0: PREPROCESAMIENTO Y TOPOLOGÍA (OFFLINE / STARTUP)
-====================================================================================================
- [OpenFlights Datasets] ────────┐
- (airports.dat, routes.dat)    │
-                               ▼
-            ┌─────────────────────────────────────────┐
-            │   UFDS (Union-Find Disjoint Sets)       │ ──> Poda de 3,118 aeródromos aislados (k=0).
-            │               [O(α(V))]                 │ ──> Aísla la componente comercial gigante (3,354 nodos).
-            └─────────────────────────────────────────┘
-                               │
-                               ▼
-            ┌─────────────────────────────────────────┐
-            │       SCC (Tarjan / Kosaraju)           │ ──> Valida componente fuertemente conexa dominante.
-            │              [O(V + E)]                 │ ──> Clasifica hubs globales y simetría de rutas.
-            └─────────────────────────────────────────┘
-                               │
-                               ▼
-            ┌─────────────────────────────────────────┐
-            │      MST (Kruskal con UFDS / Prim)      │ ──> Genera el árbol de expansión mínima de distancia.
-            │             [O(E log V)]                │ ──> Cuantifica redundancia y resiliencia de la red.
-            └─────────────────────────────────────────┘
-                               │
-                               ▼
-            ┌─────────────────────────────────────────┐
-            │   Carga del Grafo en Memoria RAM        │ ──> Singleton en FastAPI lifespan (~10 MB).
-            │  (3,354 nodos / 37,326 aristas únicas)  │ ──> Listas de adyacencia con pesos Haversine wt(u,v).
-            └─────────────────────────────────────────┘
+Navby se estructura técnica y operativamente en componentes complementarios bajo un riguroso criterio anti-sobreingeniería, coordinando su evolución según la hoja de ruta documental:
 
-====================================================================================================
-                  FASE 1: PETICIÓN DE RUTA Y VALIDACIÓN INSTANTÁNEA (RUNTIME)
-====================================================================================================
- [Usuario en Webapp] ──> Introduce: Origen (u), Destino (v), Fechas, Pasajeros, Cabina
-                               │
-                               ▼
-            ┌─────────────────────────────────────────┐
-            │   Verificación Rápida de Conexidad      │
-            │          UFDS: find(u) == find(v)       │
-            └─────────────────────────────────────────┘
-                               │
-               ┌───────────────┴───────────────┐
-               │ ¿Conectados en el Grafo?     │
-               └───────────────┬───────────────┘
-                      NO       │       SÍ
-         ┌─────────────────────┘       └─────────────────────────────┐
-         ▼                                                           ▼
-┌────────────────────────────────┐                 ┌──────────────────────────────────┐
-│ Rechazo Inmediato en O(1)      │                 │  ¿Ruta Intercontinental Lejana?  │
-│ Mensaje: Ruta Inviable en Red  │                 └─────────────────┬────────────────┘
-│ (0 ms de cómputo desperdiciado)│                                   │
-└────────────────────────────────┘                       SÍ          │          NO
-                                     ┌───────────────────────────────┘          │
-                                     ▼                                          ▼
-                      ┌─────────────────────────────┐           ┌────────────────────────────┐
-                      │    DIVIDE Y VENCERÁS        │           │  Ruta Intra-regional       │
-                      │ Descomposición por macro-   │           │  (Búsqueda directa sobre   │
-                      │ regiones IATA y gateways    │           │   el grafo continental)    │
-                      └──────────────┬──────────────┘           └──────────────┬─────────────┘
-                                     │                                         │
-                                     └────────────────────┬────────────────────┘
-                                                          │
-                                                          ▼
-====================================================================================================
-             FASE 2: MOTOR POLIMÓRFICO DE RUTAS (RoutePlanningStrategy EN MEMORIA RAM)
-====================================================================================================
-                     ┌─────────────────────────────────────────────────────────┐
-                     │            ORQUESTADOR DE ESTRATEGIAS EN RAM            │
-                     │  (Cómputo en paralelo / selección de criterio de viaje) │
-                     └────────────────────────────┬────────────────────────────┘
-                                                  │
-         ┌──────────────────┬─────────────────────┼─────────────────────┬──────────────────┐
-         ▼                  ▼                     ▼                     ▼                  ▼
-┌─────────────────┐┌─────────────────┐  ┌─────────────────┐  ┌────────────────────┐┌───────────────┐
-│     B F S       ││   DIJKSTRA      │  │      A *        │  │ BACKTRACKING CON   ││ PROGRAMACIÓN │
-│ (Menor Escalas) ││ (Menor Tiempo)  │  │ (Búsqueda Guíada│  │ PODA HEURÍSTICA    ││ DINÁMICA (DP)│
-│                 ││                 │  │    Admisible)   │  │ (Rutas Alternativas││ (Frontera de │
-│   [O(V + E)]    ││ [O((V+E) log V)]│  │  [O(E log V)]   │  │    Viables)        ││   Pareto)    │
-└────────┬────────┘└────────┬────────┘  └────────┬────────┘  └─────────┬──────────┘└───────┬───────┘
-         │                  │                    │                     │                   │
-         │  Minimiza        │  Minimiza peso     │  f(n) = g(n) + h(n) │ • Poda escalas ≤ 2│ Recurrencia:
-         │  aristas (k-1    │  Haversine wt(u,v) │  h(n): Haversine al │ • Duración ≤ 1.5x │ f(u, k) =
-         │  conexiones)     │  vía Min-Heap      │  destino admisible  │ • Sin desvíos 180°│ min[w+f(v,k-1)]
-         │                  │                    │  Podas espaciales   │ • Aciclicidad DFS │ Estados
-         │                  │                    │  ultra-rápidas      │                   │ acotados
-         └──────────────────┼────────────────────┴─────────────────────┼───────────────────┘
-                            │                                          │
-                            ▼                                          ▼
-            ┌──────────────────────────────────────────────────────────────────┐
-            │          CONSOLIDACIÓN DE RUTAS TOPOLÓGICAS CANDIDATAS           │
-            │           (3 a 5 itinerarios óptimos pre-seleccionados)          │
-            └─────────────────────────────────┬────────────────────────────────┘
-                                              │
-                                              ▼
-====================================================================================================
-                 FASE 3: VALIDACIÓN Y ORDENAMIENTO DE ITINERARIO (DAG)
-====================================================================================================
-                                              │
-                                              ▼
-            ┌──────────────────────────────────────────────────────────────────┐
-            │              DFS (Búsqueda en Profundidad): Aciclicidad          │
-            │   Valida camino simple: aeropuertos no repetidos (u ≠ v).        │
-            └─────────────────────────────────┬────────────────────────────────┘
-                                              │
-                                              ▼
-            ┌──────────────────────────────────────────────────────────────────┐
-            │         ORDENAMIENTO TOPOLÓGICO (Grafo Acíclico Dirigido)        │
-            │   Secuenciación temporal estricta de escalas:                    │
-            │   t_salida(vuelo_i+1) > t_llegada(vuelo_i) + t_conexion_min     │
-            └─────────────────────────────────┬────────────────────────────────┘
-                                              │
-                                              ▼
-====================================================================================================
-           FASE 4: ESCUDO OPENFLIGHTS Y COTIZACIÓN DE MERCADO (QUOTES CONTEXT)
-====================================================================================================
-                                              │
-                                              ▼
-            ┌──────────────────────────────────────────────────────────────────┐
-            │               CONSULTA A FAST-PATH REDIS 7 (Cache-Aside)         │
-            └─────────────────────────────────┬────────────────────────────────┘
-                                              │
-                              ┌───────────────┴───────────────┐
-                              │    ¿Existe en Caché Local?    │
-                              └───────────────┬───────────────┘
-                                     SÍ       │       NO
-                        ┌─────────────────────┘       └──────────────────────┐
-                        ▼                                                    ▼
-            ┌───────────────────────┐                        ┌───────────────────────────────┐
-            │ Retorna cotización    │                        │ Débito Atómico en Redis (Lua) │
-            │ desde memoria         │                        │ (1 o 2 créditos según viaje)  │
-            │ (0 llamadas a API)    │                        └───────────────┬───────────────┘
-            └───────────┬───────────┘                                        │
-                        │                                                    ▼
-                        │                                    ┌───────────────────────────────┐
-                        │                                    │  Llamada HTTPS a FlightAPI    │
-                        │                                    │  (One Way o Round Trip API)   │
-                        │                                    │  Solo para el Top de Rutas    │
-                        │                                    └───────────────┬───────────────┘
-                        │                                                    │
-                        └─────────────────────┬──────────────────────────────┘
-                                              │
-                                              ▼
-            ┌──────────────────────────────────────────────────────────────────┐
-            │          PRESENTACIÓN ACCIONABLE AL VIAJERO («TOP 3»)            │
-            │   • 3 mejores opciones reales (precio USD/PEN, escalas, duración)│
-            │   • Enlaces directos de reserva (deepLinks de aerolíneas)        │
-            │   • Renderizado de arcos ortodrómicos WebGL con deck.gl en mapa  │
-            └──────────────────────────────────────────────────────────────────┘
-
-====================================================================================================
-             FASE 5: BANCO EXPERIMENTAL Y VALIDACIÓN ASINTÓTICA (REPORTE ACADÉMICO)
-====================================================================================================
-  (Scripts de experimentación en Python para validar formalmente las complejidades teóricas)
-
-   [Subgrafos Pequeños N ≤ 10]          [Grafos con Pesos wt ≥ 0]         [Top 50 Hubs Mundiales]
-               │                                   │                                 │
-               ▼                                   ▼                                 ▼
-   ┌───────────────────────┐           ┌───────────────────────┐         ┌───────────────────────┐
-   │    FUERZA BRUTA       │           │     BELLMAN-FORD      │         │    FLOYD-WARSHALL     │
-   │      [O(b^d)]         │           │      [O(V · E)]       │         │        [O(V³)]        │
-   │ Demuestra explosión   │           │ Demuestra lentitud    │         │ Matriz todos-a-todos  │
-   │ combinatoria vs A*    │           │ innecesaria vs        │         │ en subgrafo denso de  │
-   │ y Dijkstra.           │           │ Dijkstra.             │         │ aeropuertos troncales.│
-   └───────────────────────┘           └───────────────────────┘         └───────────────────────┘
-                                                   │
-                                                   ▼
-                                       ┌───────────────────────┐
-                                       │     FLUJO MÁXIMO      │
-                                       │ (Edmonds-Karp/Dinic)  │
-                                       │      [O(V · E²)]      │
-                                       │ Modela capacidad y    │
-                                       │ cuellos de botella en │
-                                       │ corredores troncales. │
-                                       └───────────────────────┘
-```
-
-### 4. Resumen Consolidado del Stack Tecnológico
-
-Navby se concibe como un ecosistema desacoplado en tres aplicaciones complementarias e independientes (Website, Webapp y Platform). Cada subsistema adopta la tecnología estrictamente adecuada para su naturaleza operativa bajo un riguroso criterio anti-sobreingeniería, delegando sus especificaciones profundas a sus respectivos documentos de arquitectura:
-
-| Componente | Tipo de Aplicación | Stack Principal | Despliegue / Hosting | Criterio Anti-sobreingeniería | Fuente de Verdad |
+| Component | Tipo de Aplicación | Stack Principal | Despliegue / Hosting | Enfoque de Ingeniería | Estado Documental |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Website** | Sitio Público / Landing | Astro 5, TypeScript, Tailwind CSS v4, GSAP 3, Lenis, MDX | Vercel (Edge CDN) | SSG puro e Islands Architecture; cero JS innecesario, smooth scroll y animaciones fluidas sin servidor dinámico. | [navby-website-architecture.md](frontend-architecture/navby-website-architecture.md) |
-| **Webapp** | Cliente Interactivo (SPA) | React 19, TypeScript, Vite 6, MapLibre GL, deck.gl, TanStack Query, Zustand, boneyard, Sileo | Vercel (SPA Estática) | Sidebar interactiva y buscador flotante de ciudades sobre mapa plano 2D WebGL; sin SSR pesado ni globo 3D. | [navby-webapp-architecture.md](frontend-architecture/navby-webapp-architecture.md) |
-| **Platform** | Backend Core & Grafos | Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 (async), Caddy 2 | Azure VM (Standard_B2s, 2 vCPU / 4 GB) | Mandatorio Python por cátedra; monolito modular con grafo en RAM (~10 MB), Outbox en Postgres sin Kafka. $100 cubren >3 meses. | [navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md) |
+| **Website** | Portal Web Público (SSG) | Astro 5, Tailwind CSS v4, GSAP 3, Lenis, Zod, Axe-core, Playwright | Vercel (Edge CDN Global) | Arquitectura de islas, cero JS innecesario, animaciones cinemáticas, i18n nativo y WCAG 2.1 AA. | Consolidado en [docs/frontend-documentation/navby-website-documentation.md](frontend-documentation/navby-website-documentation.md). |
+| **Webapp** | Cliente Interactivo (SPA) | React 19, TypeScript, Vite 6, MapLibre GL 2D, deck.gl, CARTO Basemaps, TanStack Query, Zustand | Vercel (SPA Estática con reescritura) | Arquitectura por capas, consumo de APIs, renderizado WebGL 2D, Sileo, Boneyard e i18n reactivo. | Consolidado en [docs/frontend-documentation/navby-webapp-documentation.md](frontend-documentation/navby-webapp-documentation.md). |
+| **Design System** | Sistema de Diseño Unificado | Tailwind CSS v4 (`@theme`), Albert Sans WOFF2 (`unicode-range`), Raptor V3, Tokens CSS | Repositorio compartido (`docs/frontend-documentation/styles/`) | Tokens semánticos, isotipo estilizado «N», acento Aviation Sunset (`#FF6B35`), accesibilidad y contraste WCAG. | Consolidado en [docs/frontend-documentation/design-system.md](frontend-documentation/design-system.md). |
+| **Platform** | Backend Core & Grafos | Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 (async), Caddy 2 | Azure VM (Standard_B2s, 2 vCPU / 4 GB) | Monolito modular con grafo en RAM (~10 MB), Clean Architecture, CQRS-lite, Outbox en Postgres sin Kafka. | Consolidado en [docs/backend-documentation/navby-platform-documentation.md](backend-documentation/navby-platform-documentation.md). |
+| **Datasets** | Pipeline & Topología | OpenFlights (CSV depurado, Haversine, UFDS) | Almacenamiento local versionado | Sanitización matemática en 4 fases; 3,354 nodos comerciales activos y 37,326 rutas dirigidas únicas. | Canónico y consolidado en [docs/backend-documentation/navby-datasets/README.md](backend-documentation/navby-datasets/README.md). |
 
-## Resumen Consolidado del Ecosistema Navby
+---
 
-Este apartado centraliza y consolida la visión ejecutiva y los componentes del ecosistema de **Navby**, sirviendo como síntesis de alto nivel y enrutador hacia las especificaciones técnicas detalladas de cada subsistema:
+## Hoja de Ruta y Mapa de Navegación Documental
 
-### 1. Visión Ejecutiva y Componentes del Sistema
+El repositorio organiza el desarrollo técnico y documental conforme a las responsabilidades de ingeniería acordadas:
 
-El ecosistema de Navby está compuesto por tres piezas desacopladas diseñadas bajo principios de modularidad, alta eficiencia y moderación de sobreingeniería:
+1. **Definición General y Fuente de Verdad Técnica de Navby:**
+   * Archivo: [docs/navby-documentation.md](navby-documentation.md)
+   * Centraliza qué es el producto, cómo funciona la arquitectura de dos etapas, el flujo de procesamiento determinista, la economía de créditos y el catálogo algorítmico sobre grafos.
 
-1. **Navby Website (Landing pública de conversión):** Sitio web estático enfocado en presentación institucional, comunicación de propuesta de valor, optimización SEO y conversión hacia el aplicativo principal. Especificación completa en [navby-website-architecture.md](frontend-architecture/navby-website-architecture.md).
-2. **Navby Webapp (Cliente interactivo de usuario):** Aplicación de una sola página (SPA) centrada en un mapa interactivo plano 2D, donde el usuario explora rutas globales, resuelve itinerarios multiconexión y visualiza cotizaciones de mercado en tiempo real. Especificación completa en [navby-webapp-architecture.md](frontend-architecture/navby-webapp-architecture.md).
-3. **Navby Platform (Backend Core y Motor Algorítmico):** Monolito modular en Python 3.12+ que encapsula el motor de grafos en memoria RAM (OpenFlights con 3,354 nodos comerciales y 37,326 aristas únicas), la orquestación de casos de uso bajo DDD-lite, la persistencia transaccional y la integración protegida con proveedores externos. Especificación completa en [navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md).
+2. **Arquitectura y Plataforma Backend (`docs/backend-documentation/`):**
+   * *Visión General y Plataforma:* [docs/backend-documentation/navby-platform-documentation.md](backend-documentation/navby-platform-documentation.md) (monolito modular, FastAPI, uv, PostgreSQL 16, Redis 7, Caddy 2 y catálogo de Bounded Contexts).
+   * *Catálogo y Especificación de Endpoints RESTful:* [docs/backend-documentation/navby-endpoints.md](backend-documentation/navby-endpoints.md) (especificación exhaustiva de todos los endpoints perimetrales con contratos request/response, schemas, códigos de error y telemetría de benchmarking).
+   * *Especificación Táctica Canónica:* [docs/backend-documentation/navby-backend-tactical-specification.md](backend-documentation/navby-backend-tactical-specification.md) (los 10 mandamientos arquitectónicos, Shared Kernel, Value Objects transversales y taxonomía de errores).
+   * *Esquema Relacional y Persistencia:* [docs/backend-documentation/navby-database-schema.md](backend-documentation/navby-database-schema.md) (esquema DDL PostgreSQL 16, Redis 7, Transactional Outbox y aislamiento físico sin foreign keys cruzadas).
+   * *Integración con FlightAPI:* [docs/backend-documentation/flight-api-documentation.md](backend-documentation/flight-api-documentation.md) (adaptador ACL, endpoints `/onewaytrip` y `/roundtrip`, Circuit Breaker y consumo de créditos).
+   * *Especificaciones Detalladas por Bounded Context:* Directorio [`docs/backend-documentation/extended-bounded-contexts-description/`](backend-documentation/extended-bounded-contexts-description/) con diccionarios de clases, casos de uso CQRS-lite y contratos:
+     * [Bounded Context IAM](backend-documentation/extended-bounded-contexts-description/bounded-context-iam.md): Identidad, autenticación local y federada Google OAuth, JWT y rotación de tokens.
+     * [Bounded Context Routing](backend-documentation/extended-bounded-contexts-description/bounded-context-routing.md): Topología de red, grafo en memoria RAM, algoritmos UFDS, A*, BFS y distancias Haversine.
+     * [Bounded Context Quotes](backend-documentation/extended-bounded-contexts-description/bounded-context-quotes.md): Inteligencia tarifaria, integración con FlightAPI y optimización multicriterio de Pareto.
+     * [Bounded Context Itineraries](backend-documentation/extended-bounded-contexts-description/bounded-context-itineraries.md): Planificación, guardado, versionado y custodia de itinerarios por usuario.
+     * [Bounded Context Billing](backend-documentation/extended-bounded-contexts-description/bounded-context-billing.md): Billetera de créditos, cuota diaria, paquetes prepagados y webhooks de Mercado Pago.
+     * [Bounded Context Shared Kernel](backend-documentation/extended-bounded-contexts-description/bounded-context-shared.md): Primitivas de dominio, monad `Result[T, E]`, agregados base y tipos transversales.
 
-### 2. Mapa de Navegación Documental de Arquitectura
+3. **Ecosistema de Frontend (`docs/frontend-documentation/`):**
+   * *Website público (Landing / Marketing):* [docs/frontend-documentation/navby-website-documentation.md](frontend-documentation/navby-website-documentation.md): Especificación técnica de herramientas y frameworks del portal web público en Astro 5 bajo arquitectura de islas, Tailwind CSS v4, coreografía de animaciones con GSAP 3, desplazamiento cinemático suave con Lenis, enrutamiento estático multilingüe (`/es`, `/en`) y auditoría automatizada de accesibilidad WCAG 2.1 AA con Playwright y `axe-core`.
+   * *Webapp interactiva (Aplicación SPA):* [docs/frontend-documentation/navby-webapp-documentation.md](frontend-documentation/navby-webapp-documentation.md): Especificación técnica de herramientas y frameworks del cliente interactivo SPA en React 19, TypeScript y Vite 6, motor de mapa plano 2D MapLibre GL con teselas vectoriales de CARTO, arcos geodésicos acelerados por WebGL con deck.gl (`ArcLayer`), sincronización de servidor con TanStack Query, estado global con Zustand, primitivas accesibles Radix UI, notificaciones con Sileo, esqueletos de carga adaptativos con Boneyard y motor reactivo de internacionalización `i18next`.
+   * *Sistema de diseño unificado:* [docs/frontend-documentation/design-system.md](frontend-documentation/design-system.md): Especificación canónica de diseño, construcción geométrica del isotipo (trayectoria aerodinámica e infinito que estiliza una «N»), isologo con tipografía Raptor V3 Bold, color de acento oficial Aviation Sunset Orange (`#FF6B35`), carga optimizada de Albert Sans en WOFF2 con `unicode-range` y guía de integración con Tailwind CSS v4.
+   * *Hoja de estilos maestra (`global.css`):* [docs/frontend-documentation/styles/global.css](frontend-documentation/styles/global.css): Archivo CSS autocontenido listo para producción con directiva `@theme` de Tailwind CSS v4, fuentes `@font-face` locales y variables semánticas de color.
+   * *Estilos modulares:* Directorio [`docs/frontend-documentation/styles/`](frontend-documentation/styles/) ([`typography.css`](frontend-documentation/styles/typography.css), [`theme.css`](frontend-documentation/styles/theme.css) e [`index.css`](frontend-documentation/styles/index.css)).
+   * *Activos de marca e iconografía:* Directorio [`docs/frontend-documentation/branding/`](frontend-documentation/branding/) con isotipos, isologos en formatos SVG/PNG/ICO, fuentes WOFF2 locales de Albert Sans y Raptor V3, y paleta canónica en [`pallette.txt`](frontend-documentation/branding/pallette.txt).
 
-Para profundizar en la ingeniería de cada subsistema, consultar sus documentos rectores dedicados:
+4. **Malla Aeroportuaria y Datasets Canónicos (`docs/backend-documentation/navby-datasets/`):**
+   * Especificación de datos y pipeline: [docs/backend-documentation/navby-datasets/README.md](backend-documentation/navby-datasets/README.md)
+   * Catálogo de datasets: `airports.csv` (3,354 nodos), `routes_unique.csv` (37,326 aristas dirigidas únicas), `routes.csv` (67,305 rutas operativas), `airports_commercial_all.csv` (6,472 aeropuertos), `airlines.csv`, `countries.csv` y `planes.csv`.
+   * Análisis topológico y métricas: [`report/chapters/20-dataset-description/22-preprocessing-and-metrics.md`](../report/chapters/20-dataset-description/22-preprocessing-and-metrics.md)
 
-* **Arquitectura de Frontend (Website):** [docs/frontend-architecture/navby-website-architecture.md](frontend-architecture/navby-website-architecture.md)
-  * Stack (Astro 5, Tailwind v4, GSAP 3, Lenis), UX de marketing, arquitectura de islas, estructura de carpetas y despliegue en Vercel Edge CDN.
-* **Arquitectura de Frontend (Webapp):** [docs/frontend-architecture/navby-webapp-architecture.md](frontend-architecture/navby-webapp-architecture.md)
-  * Stack (React 19, Vite 6, MapLibre GL 2D, deck.gl, TanStack Query, Zustand, boneyard, Sileo), UX del mapa interactivo, arquitectura por capas, estructura feature-based, flujo de datos y despliegue en Vercel SPA.
-* **Arquitectura Maestra de Backend (Platform):** [docs/backend-documentation/navby-platform-architecture.md](backend-documentation/navby-platform-architecture.md)
-  * Stack (Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7, Caddy 2), Clean Architecture, Tactical DDD-lite, CQRS-lite, Transactional Outbox, Bounded Contexts, modelo de grafos en memoria RAM, catálogo de servicios externos y despliegue contenerizado en Azure VM ($100 USD de crédito).
-* **Especificaciones Tácticas Detalladas de Backend:**
-  * Guía y Código Canónico DDD: [docs/backend-documentation/navby-tactical-ddd-guide.md](backend-documentation/navby-tactical-ddd-guide.md)
-  * Especificación Táctica por Capas: [docs/backend-documentation/navby-backend-tactical-specification.md](backend-documentation/navby-backend-tactical-specification.md)
-  * Esquema Relacional Físico: [docs/backend-documentation/navby-database-schema.md](backend-documentation/navby-database-schema.md)
+5. **Memoria Académica Oficial y Guías de Redacción (Complejidad Algorítmica 1ACC0184):**
+   * Caso de Estudio 9 y rúbricas: [docs/project-statement.md](project-statement.md)
+   * Capítulos modulares del reporte: [`report/chapters/`](../report/chapters/)
+   * Estándar de tablas y figuras APA 7: [docs/tables-figures-apa-7-guidelines.md](tables-figures-apa-7-guidelines.md)
+   * Plantilla de reporte académico APA 7 y entorno contenerizado Docker: [docs/report-guidelines.md](report-guidelines.md) y automatización con [`../Makefile`](../Makefile).
+
+6. **Marketing de Producto y Contexto Comercial:**
+   * Visión de startup Andeva, slogan oficial (*«El mejor vuelo. Al mejor precio.»*), posicionamiento, buyer personas y modelo comercial pay-per-use: [docs/product-marketing.md](product-marketing.md) y [.agents/product-marketing.md](../.agents/product-marketing.md).

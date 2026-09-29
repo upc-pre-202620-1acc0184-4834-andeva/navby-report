@@ -1,0 +1,15 @@
+surface black: #262626
+surface white: #F8F8FA
+bordes para cards fondo negro: #EBEBEB
+bordes para cards fondo blanco y subtitulos para negro y blanco: #C6C6C6
+text white y card blancas: #FFFFFF
+text black: #262626
+card negras: #272727
+primary-color: #604AFF
+primary-color-dark: #4B37FB
+primary-color-soft: #DFDBFF
+accent-color: #FF6B35
+accent-color-soft: #FFE8DF
+success: #3AC530
+error: #FB2C36
+warning: #F0B100
