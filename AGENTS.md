@@ -1,4 +1,4 @@
-# Guía de Trabajo y Reglas del Proyecto (GEMINI.md)
+# Guía de Trabajo y Reglas del Proyecto
 
 Este documento establece las instrucciones, convenciones arquitectónicas, estándares de ingeniería, criterios de redacción académica y flujos de trabajo que rigen el repositorio `navby-report`.
 
@@ -19,9 +19,10 @@ El repositorio gestiona dos ámbitos documentales claramente diferenciados:
 
 ### 1.2. Ámbito de Ingeniería de Software: Documentación Extendida del Sistema (`docs/`)
 * **Propósito:** Guía maestra de arquitectura e ingeniería para el ecosistema desacoplado de Navby:
-  * **Backend Platform (`docs/backend-documentation/`):** Monolito modular en Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7 y Caddy 2, gobernado por Clean Architecture, Tactical-Level DDD-lite, CQRS-lite y Transactional Outbox.
-  * **Frontend Ecosistema (`docs/frontend-architecture/`):** Website público en Astro 5 SSG con GSAP 3 y Lenis; y Webapp interactiva en React 19 SPA con mapa plano 2D MapLibre GL, deck.gl, TanStack Query, Zustand, boneyard y Sileo.
-  * **Datasets Canónicos (`docs/navby-datasets/`):** Pipeline depurado de OpenFlights consolidando 3,354 nodos aeroportuarios comerciales y 37,326 aristas dirigidas únicas (colapso de arcos paralelos desde un multigrafo original de 67,305 rutas comerciales concurrentes multioperador).
+  * **Backend Platform (`docs/backend-documentation/`):** Monolito modular en Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7 y Caddy 2, gobernado por Clean Architecture, Tactical-Level DDD-lite, CQRS-lite y Transactional Outbox. Incluye la arquitectura de plataforma, especificación táctica canónica, catálogo de endpoints RESTful (`navby-endpoints.md`), esquema relacional DDL, integración con FlightAPI y los diccionarios tácticos de los Bounded Contexts en `docs/backend-documentation/extended-bounded-contexts-description/`.
+  * **Datasets Canónicos (`docs/backend-documentation/navby-datasets/`):** Pipeline depurado de OpenFlights consolidando 3,354 nodos aeroportuarios comerciales y 37,326 aristas dirigidas únicas (colapso de arcos paralelos desde un multigrafo original de 67,305 rutas comerciales concurrentes multioperador).
+  * **Frontend Ecosistema (`docs/frontend-documentation/`):** Especificación técnica de herramientas y frameworks del portal web público (`navby-website-documentation.md`) en Astro 5, de la aplicación interactiva SPA (`navby-webapp-documentation.md`) en React 19, TypeScript y Vite con mapa plano 2D MapLibre GL, deck.gl, TanStack Query, Zustand, i18n y accesibilidad WAI-ARIA/WCAG 2.1 AA, y del sistema de diseño unificado (`design-system.md`, `styles/`).
+  * **Marketing y Producto (`docs/product-marketing.md`):** Visión de startup Andeva, posicionamiento comercial, buyer personas y modelo pay-per-use (cuota diaria gratuita y paquetes prepagados).
 * **Origen metodológico:** Adopta la estructura de la rúbrica del curso **Aplicaciones Para Dispositivos Móviles** para el modelado de software empresarial de alta fidelidad.
 * **Destino:** Todo este desarrollo técnico reside en la carpeta `docs/`, manteniéndose desacoplado y separado de la entrega académica de `report/`.
 
@@ -107,6 +108,7 @@ Cada Bounded Context se documenta y estructura en cuatro capas desacopladas:
 ### 3.3. Estándar de Frontend y Experiencia de Usuario (Website y Webapp)
 * **Website (`navby-website`):** Sitio público estático construido con Astro 5 bajo arquitectura de islas, Tailwind CSS v4, coreografía de animaciones con GSAP 3, desplazamiento suave con Lenis (`@darkroom.engineering/lenis`) y despliegue global en Edge CDN de Vercel ($0 USD/mes).
 * **Webapp (`navby-webapp`):** Cliente interactivo (SPA) construido con React 19, TypeScript y Vite 6. Renderizado de mapa plano 2D Web Mercator con MapLibre GL JS y arcos ortodrómicos WebGL con deck.gl (`ArcLayer`). Arquitectura por capas desacoplada (Presentation, Application, Domain, Infrastructure), sidebar izquierda interactiva bidireccional, buscador flotante de ciudades, skeletons adaptativos de carga con boneyard y notificaciones toast reactivas con Sileo. Despliegue estático en Vercel con reglas de reescritura SPA.
+* **Sistema de Diseño Unificado (`design-system.md`, `styles/`):** Hoja de estilos maestra única en `styles/global.css` configurada con Tailwind CSS v4 (`@theme`), paleta corporativa púrpura (`#604AFF`), acento naranja Aviation Sunset (`#FF6B35`), tipografía Albert Sans optimizada en WOFF2 local (`unicode-range`, `font-display: swap`), e isologo integrado con Raptor V3.
 * **Backend Platform (`navby-platform`):** Monolito modular en Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7 y Caddy 2 orquestado con Docker Compose. Despliegue en Azure VM `Standard_B2s` (2 vCPUs, 4 GB RAM) con aislamiento estricto de red (solo puertos 80, 443 y 22 SSH expuestos) y viabilidad de crédito de $100 USD para >3 meses 24/7 (>6 a 8 meses con Auto-Shutdown).
 
 ---
@@ -160,15 +162,27 @@ Para garantizar el ordenamiento determinista en la concatenación de Pandoc (`$(
 
 ```text
 navby-report/
-├── docs/                                  # Documentación de ingeniería extendida (Backend, Arquitectura, Guías)
-│   ├── backend-documentation/             # Especificaciones tácticas DDD, esquemas BD, arquitectura, FlightAPI
-│   ├── frontend-architecture/             # Especificaciones de Frontend (Website Astro y Webapp React/MapLibre)
-│   ├── navby-datasets/                    # Datasets depurados definitivos (airports, routes_unique, routes, etc.)
-│   ├── guidelines_tables_figures_apa7.md  # Guía de formato APA 7
-│   ├── how-to-use.md                      # Manual del entorno de compilación
-│   ├── navby-documentation.md             # Biblia de producto, visión funcional y enrutador de verdad
-│   └── project-statement.md               # Rúbricas oficiales (Complejidad Algorítmica y Móviles)
-├── report/                                # Reporte académico oficial de tesis (Complejidad Algorítmica)
+├── docs/                                      # Documentación de ingeniería extendida (Backend, Datasets, Guías)
+│   ├── backend-documentation/                 # Plataforma Backend, DDD táctico, esquemas BD, FlightAPI
+│   │   ├── extended-bounded-contexts-description/ # Especificaciones tácticas de IAM, Routing, Quotes, etc.
+│   │   ├── navby-datasets/                    # Datasets canónicos depurados (airports, routes_unique, etc.)
+│   │   ├── flight-api-documentation.md        # Integración con FlightAPI y Adaptador ACL
+│   │   ├── navby-backend-tactical-specification.md # 10 mandamientos tácticos y Shared Kernel
+│   │   ├── navby-database-schema.md           # Modelo DDL PostgreSQL 16 y Redis 7
+│   │   ├── navby-endpoints.md                 # Catálogo y especificación de endpoints RESTful
+│   │   └── navby-platform-documentation.md    # Arquitectura maestra del backend
+│   ├── frontend-documentation/                # Herramientas y frameworks de Frontend (Website Astro y Webapp React/MapLibre)
+│   │   ├── branding/                          # Activos de marca (isotipos, isologos, fuentes WOFF2 Albert Sans)
+│   │   ├── styles/                            # Tokens CSS unificados (global.css, typography.css, theme.css)
+│   │   ├── design-system.md                   # Sistema de diseño canónico, paleta, logos y tipografías
+│   │   ├── navby-website-documentation.md     # Herramientas, frameworks, i18n y a11y del portal público
+│   │   └── navby-webapp-documentation.md      # Herramientas, frameworks, mapa WebGL, i18n y a11y de la webapp
+│   ├── navby-documentation.md                 # Biblia de producto, visión técnica y enrutador de verdad
+│   ├── product-marketing.md                   # Perfil de Andeva, buyer personas y modelo de monetización
+│   ├── project-statement.md                   # Rúbricas oficiales (Complejidad Algorítmica y Móviles)
+│   ├── report-guidelines.md                   # Plantilla de reporte académico APA 7 y entorno Docker/Makefile
+│   └── tables-figures-apa-7-guidelines.md     # Estándar de tablas y figuras APA 7
+├── report/                                    # Reporte académico oficial de tesis (Complejidad Algorítmica)
 │   ├── front-matter/                      # Rango 01 - 09: Secciones preliminares (carátula, dedicatoria, resumen)
 │   ├── chapters/                          # Rango 10 - 89: Capítulos temáticos del cuerpo principal
 │   │   ├── 10-problem-description/        #   Capítulo 1 (archivos 11 al 19)
@@ -228,9 +242,14 @@ Al redactar o editar documentos en `report/`, es mandatorio acatar las siguiente
 
 ## 8. Habilidades (Skills) Especializadas
 
-* `academic-report-writer`: Directrices académicas para la redacción y edición de capítulos en `report/`.
-* `academic-report-reviewer`: Auditoría, detección de exceso de backticks y control de calidad editorial APA 7.
+* `academic-report-writer`: Directrices de redacción académica, estilo formal y moderación visual para la elaboración del reporte de tesis en `report/` (APA 7).
+* `academic-report-reviewer`: Auditoría rigurosa y control de calidad editorial APA 7, detección de filtraciones de rúbrica, comillas excesivas, inconsistencias de dominio y formato visual.
 * `docs-writer`: Estándares de redacción técnica para archivos `.md` y la carpeta `docs/`.
-* `architecture-patterns`: Patrones de arquitectura limpia, hexagonal y diseño desacoplado.
-* `ddd-strategic-design` & `domain-modeling`: Modelado estratégico y táctico de Bounded Contexts y lenguaje ubicuo.
-* `postgres` & `redis-core`: Estándares de modelado para persistencia relacional y almacenamiento de claves en memoria.
+* `architecture-patterns`: Patrones de arquitectura limpia, hexagonal (Ports & Adapters) y diseño táctico desacoplado.
+* `ddd-strategic-design`: Diseño estratégico de DDD (subdominios, bounded contexts, lenguaje ubicuo y mapas de contexto).
+* `domain-analysis`: Mapeo de dominios de negocio, análisis de cohesión y delimitación de límites de servicio.
+* `api-designer`: Diseño de contratos de API RESTful y GraphQL, especificaciones OpenAPI 3.1 y modelado de recursos.
+* `rest-api-design`: Estándares de diseño de endpoints REST, métodos HTTP, códigos de estado, idempotencia y versionado.
+* `postgres`: Mejores prácticas para bases de datos PostgreSQL, diseño de esquemas, optimización de consultas e indexación.
+* `redis-core`: Modelado de estructuras de datos en memoria (Strings, Hashes, Sets, Sorted Sets), TTLs y nomenclatura de claves.
+* `redis-best-practices`: Prácticas avanzadas para Redis en caché distribuida, alta disponibilidad, pipelines y scripts Lua atómicos.
