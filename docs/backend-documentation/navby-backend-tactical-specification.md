@@ -408,7 +408,7 @@ El Bounded Context de Routing constituye el núcleo algorítmico primario de Nav
 * **Capacidades Funcionales:**
   * Búsqueda de rutas óptimas mediante A* con heurística geodésica admisible de Haversine ($O(E \log V)$).
   * Búsqueda de rutas con mínimo número de escalas mediante BFS ($O(V + E)$).
-  * Resolución inteligente para ciudades sin aeropuerto comercial mediante el algoritmo Haversine Nearest Neighbor ($O(V)$ en < 0.1 ms).
+  * Resolución y autocompletado de ciudades con aeropuertos comerciales y soporte para metrópolis multiaeropuerto.
   * Catálogo y autocompletado en tiempo real de aeropuertos por código IATA, nombre de terminal, ciudad o país.
   * Extracción de métricas de topología de red (grado medio, diámetro aproximado, hubs más conectados).
 * **Límites de Responsabilidad (Fronteras):**
@@ -418,7 +418,7 @@ El Bounded Context de Routing constituye el núcleo algorítmico primario de Nav
 
 #### 5.1.2. Decisiones de Diseño e Integraciones Críticas
 * **Almacenamiento 100% en Memoria RAM (Zero-PostgreSQL):** La red de vuelos proviene del dataset canónico consolidado de OpenFlights, compuesto por **3,354 aeropuertos comerciales activos** y **37,326 rutas dirigidas únicas**. El grafo completo en adyacencias ocupa aproximadamente **10.4 MB de memoria RAM**, lo que hace innecesario el uso de tablas relacionales en PostgreSQL para este contexto. Se carga de forma determinista al iniciar el contenedor en menos de 1.2 segundos.
-* **Buscador de Ciudades sin Aeropuerto:** Cuando el usuario ingresa una ciudad que carece de terminal aérea (como *Cusco* si se busca a nivel metropolitano, *Andahuaylas* o pequeñas urbes europeas), el algoritmo de vecino más cercano evalúa la distancia ortodrómica contra los 3,354 nodos en RAM y retorna el aeropuerto comercial más próximo, la distancia en kilómetros y un mensaje informativo para la interfaz de usuario.
+* **Búsqueda y Resolución por Ciudades:** El sistema soporta la búsqueda orientada a ciudades de servicio. Para ciudades con un único aeropuerto, la asociación al código IATA es automática y transparente. En metrópolis multiaeropuerto (ej. Tokio, Nueva York, Londres), selecciona por defecto todas las terminales comerciales de la metrópoli, permitiendo opcionalmente filtrar por un aeropuerto específico.
 
 ---
 
@@ -841,7 +841,7 @@ El Bounded Context de Quotes es el motor de inteligencia tarifaria en tiempo rea
 * **Métodos:**
   * `+ static create_from_offers(criteria: QuoteSearchCriteria, offers: list[FlightOffer], from_cache: bool) -> QuoteSession`: Factoría que inicializa la sesión, ejecuta el cálculo de Pareto y emite `QuotesFetchedFromExternalProviderEvent` o `QuotesServedFromCacheEvent`.
   * `+ get_offers() -> tuple[FlightOffer, ...]`: Retorna la colección inmutable de ofertas ordenadas por rango de Pareto.
-  * `+ get_podium() -> ParetoPodium`: Retorna las 3 ofertas laureadas (Mejor Precio, Más Rápido, Mejor Equilibrio).
+  * `+ get_podium() -> ParetoPodium`: Retorna las 3 ofertas laureadas (Top 1, Top 2 y Top 3 de Mayor Valor Global).
   * `+ total_offers_count() -> int`: Retorna la cantidad de opciones evaluadas.
 
 #### 6.2.2. Entities
@@ -862,9 +862,9 @@ El Bounded Context de Quotes es el motor de inteligencia tarifaria en tiempo rea
   * `total_duration_minutes: int` — Duración total del viaje desde despegue inicial hasta aterrizaje final.
   * `booking_url: str` — Enlace profundo (deep link) hacia la pasarela de compra oficial de la aerolínea.
   * `pareto_rank: int` — Nivel de no-dominancia asignado por el optimizador (1 = frontera óptima).
-  * `is_best_price: bool` — Distintivo si posee la tarifa más baja.
-  * `is_fastest: bool` — Distintivo si posee el menor tiempo total.
-  * `is_best_value: bool` — Distintivo si posee el balance óptimo precio/duración.
+  * `is_top_1: bool` — Distintivo de 1.er lugar en la optimización de Pareto (máximo valor global).
+  * `is_top_2: bool` — Distintivo de 2.º lugar en la optimización de Pareto (alternativa de alto valor).
+  * `is_top_3: bool` — Distintivo de 3.er lugar en la optimización de Pareto (alternativa de alto valor).
 
 ##### 2. `FlightOfferLeg`
 * **Módulo:** `src.modules.quotes.domain.model.entities.flight_offer_leg`
@@ -887,7 +887,7 @@ El Bounded Context de Quotes es el motor de inteligencia tarifaria en tiempo rea
 
 ##### 2. `ParetoPodium`
 * **Módulo:** `src.modules.quotes.domain.model.value_objects.pareto_podium`
-* **Atributos:** `best_price_offer_id: str | None`, `fastest_offer_id: str | None`, `best_value_offer_id: str | None`.
+* **Atributos:** `top_1_offer_id: str | None`, `top_2_offer_id: str | None`, `top_3_offer_id: str | None`.
 
 ##### 3. `QuotaUsage`
 * **Módulo:** `src.modules.quotes.domain.model.value_objects.quota_usage`
@@ -916,10 +916,10 @@ El Bounded Context de Quotes es el motor de inteligencia tarifaria en tiempo rea
     * $\text{escalas}(A) \le \text{escalas}(B)$
     * Con al menos una desigualdad estricta ($<$).
   * `compute_pareto_fronts(offers: list[FlightOffer]) -> list[FlightOffer]`: Asigna a cada oferta su rango ordinal de no-dominancia (`pareto_rank`), identificando el conjunto no dominado (Frontera de Rango 1).
-  * `build_navby_podium(ranked_offers: list[FlightOffer]) -> ParetoPodium`: Normaliza los criterios en el espacio $[0, 1]$ respecto al mínimo y máximo de la muestra y calcula la distancia euclidiana mínima al punto ideal $(0, 0, 0)$ para otorgar los 3 laureles oficiales:
-    1. *Mejor Precio:* Oferta con el menor importe absoluto.
-    2. *Vuelo Más Rápido:* Oferta con el menor tiempo total de viaje.
-    3. *Mejor Equilibrio:* Oferta de Rango 1 con la menor distancia al punto ideal.
+  * `build_navby_podium(ranked_offers: list[FlightOffer]) -> ParetoPodium`: Normaliza los criterios en el espacio $[0, 1]$ respecto al mínimo y máximo de la muestra, calcula la distancia euclidiana mínima $d_i = \sqrt{\bar{p}_i^2 + \bar{t}_i^2 + \bar{s}_i^2}$ al punto ideal utópico $(0, 0, 0)$ sobre las ofertas de la Frontera de Pareto (Rango 1), y otorga deterministamente los 3 laureles oficiales:
+    1. *Top 1 Recomendado por Navby (Oro):* Oferta no dominada con la menor distancia euclidiana normalizada al punto ideal (máximo valor global del mercado al balancear precio, duración y escalas).
+    2. *Top 2 Alternativa de Alto Valor (Plata):* Segunda oferta no dominada con menor distancia euclidiana al punto ideal.
+    3. *Top 3 Alternativa de Alto Valor (Bronce):* Tercera oferta no dominada con menor distancia euclidiana al punto ideal.
 
 #### 6.2.7. Domain Exceptions (`src/modules/quotes/domain/exceptions/`)
 
@@ -978,15 +978,15 @@ class FlightOfferSchema(BaseModel):
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int
-    is_best_price: bool
-    is_fastest: bool
-    is_best_value: bool
+    is_top_1: bool
+    is_top_2: bool
+    is_top_3: bool
     legs: list[FlightLegOfferSchema]
 
 class ParetoPodiumSchema(BaseModel):
-    best_price_offer: FlightOfferSchema | None
-    fastest_offer: FlightOfferSchema | None
-    best_value_offer: FlightOfferSchema | None
+    top_1_offer: FlightOfferSchema | None = None
+    top_2_offer: FlightOfferSchema | None = None
+    top_3_offer: FlightOfferSchema | None = None
 
 class QuoteSearchResponseSchema(BaseModel):
     session_id: str
@@ -1124,9 +1124,9 @@ package "src.modules.quotes.domain" {
         - totalDurationMinutes: int
         - bookingUrl: String
         - paretoRank: int
-        - isBestPrice: bool
-        - isFastest: bool
-        - isBestValue: bool
+        - isTop1: bool
+        - isTop2: bool
+        - isTop3: bool
     }
 
     class FlightOfferLeg <<Entity>> {
@@ -1182,7 +1182,7 @@ entity "navby:quotes:cache:{origin}:{dest}:{date}" as QuoteCacheKey {
     + destination: "MAD"
     + departure_date: "2026-11-15"
     + total_offers: 18
-    + podium: {best_price_id, fastest_id, best_value_id}
+    + podium: {top_1_id, top_2_id, top_3_id}
     + offers: [...]
 }
 
@@ -2673,7 +2673,6 @@ Al hacer clic en el botón interactivo **[Ver detalles]**, la aplicación despli
 | **A* (Haversine Heuristic)** | $O(E \log V)$ | **8.4 ms** | **~42** | **Óptimo.** La heurística admisible poda el 98.7% del espacio de búsqueda. |
 | **BFS (Escalas Mínimas)** | $O(V + E)$ | **12.1 ms** | **~180** | **Excelente para escalas.** Garantiza la menor cantidad de vuelos sin ponderar distancia. |
 | **Dijkstra Clásico** | $O((V + E) \log V)$ | **34.6 ms** | **~1,240** | **Correcto pero ineficiente.** Explora en círculos concéntricos sin dirección hacia el destino. |
-| **Bellman-Ford** | $O(V \cdot E)$ | **1,420.0 ms** | **3,354** | **Inviable para runtime.** Evalúa todas las aristas $V-1$ veces; útil solo para validación teórica. |
 
 ---
 
@@ -2720,7 +2719,7 @@ La calidad y determinismo del backend se validan mediante tres niveles de prueba
 #### 10.3.1. Pruebas Unitarias de Algoritmos (`tests/unit/`)
 * Verificación de admisibilidad matemática de la heurística de Haversine ($h(n) \le d^*(n, \text{dest})$).
 * Búsqueda en grafos acíclicos sintéticos de prueba con caminos y costes conocidos a priori.
-* Validación del buscador de vecino más cercano (`NearestNeighborSearchService`) confirmando que ciudades sin aeropuerto (ej. *Cusco* metropolitano o urbes intermedias) resuelven la terminal correcta en $< 0.1$ ms.
+* Validación del servicio de autocompletado y resolución de ciudades confirmando que metrópolis multiaeropuerto (ej. Tokio, Nueva York) y ciudades estándar resuelven las terminales correctas en $< 0.1$ ms.
 * Pruebas de la optimización de Pareto validando que ninguna oferta dominada reciba un rango 1.
 
 #### 10.3.2. Pruebas de Integración con Testcontainers (`tests/integration/`)

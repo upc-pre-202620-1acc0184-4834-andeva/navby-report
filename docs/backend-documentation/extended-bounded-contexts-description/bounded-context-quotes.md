@@ -78,7 +78,7 @@ La siguiente tabla presenta la taxonomía integral de los 18 componentes arquite
 | Componente o Clase | Módulo Canónico | Tipo Táctico | Propósito y Responsabilidad en el Dominio | Invariantes y Reglas Críticas |
 | :---------------------------------- | :------------------------------------------------------------------------- | :--------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **QuoteSession** | src.modules.quotes.domain.model.aggregates.quote_session | Aggregate Root | Raíz de agregado central en memoria RAM y Redis que modela y custodia la sesión de cotización tarifaria de mercado para un criterio de búsqueda específico, encapsulando la colección de ofertas de vuelo disponibles, coordinando el cálculo y asignación de laureles del Podio de Pareto, y preservando la marca de auditoría sobre la procedencia de los datos (caché versus consulta externa en vivo). | Hereda de AbstractDomainAggregateRoot[str] con identificador unívoco de sesión. Toda sesión con una o más ofertas debe poseer un ParetoPodium coherente asignado. Si la colección de ofertas está vacía, no se asignan laureles. La colección interna de ofertas es inmutable ante clientes externos, exponiéndose exclusivamente como tupla de solo lectura. Emite eventos de dominio inmutables según la procedencia de los datos. |
-| **FlightOffer** | src.modules.quotes.domain.model.entities.flight_offer | Entity | Entidad interna de dominio que modela una alternativa u oferta comercial concreta disponible en el mercado aéreo, integrando la tarifa monetaria consolidada, la aerolínea comercial, la secuencia ordenada de tramos de vuelo, los enlaces profundos de compra directa (deep links), el rango de no-dominancia de Pareto y las distinciones honoríficas del podio. | Identificada unívocamente por un offer_id alfanumérico inmutable. El número total de escalas debe corresponder exactamente a la cantidad de tramos menos uno. La duración total acumulada en minutos debe ser estrictamente positiva y consistente con la suma de tiempos de vuelo y esperas en conexión. Las banderas de podio (is_best_price, is_fastest, is_best_value) son mutuamente compatibles pero exigen un rango de Pareto válido (pareto_rank >= 1). |
+| **FlightOffer** | src.modules.quotes.domain.model.entities.flight_offer | Entity | Entidad interna de dominio que modela una alternativa u oferta comercial concreta disponible en el mercado aéreo, integrando la tarifa monetaria consolidada, la aerolínea comercial, la secuencia ordenada de tramos de vuelo, los enlaces profundos de compra directa (deep links), el rango de no-dominancia de Pareto y las distinciones honoríficas del podio. | Identificada unívocamente por un offer_id alfanumérico inmutable. El número total de escalas debe corresponder exactamente a la cantidad de tramos menos uno. La duración total acumulada en minutos debe ser estrictamente positiva y consistente con la suma de tiempos de vuelo y esperas en conexión. Las banderas de podio (is_top_1, is_top_2, is_top_3) son mutuamente compatibles pero exigen un rango de Pareto válido (pareto_rank >= 1). |
 | **FlightOfferLeg** | src.modules.quotes.domain.model.entities.flight_offer_leg | Entity | Entidad interna subordinada que representa un tramo o segmento aéreo físico indivisible dentro de una oferta comercial, custodiando las terminales de partida y arribo, las marcas cronológicas locales de salida y llegada, el identificador comercial de vuelo, la aerolínea operadora y el tiempo de conexión o escala técnica hacia el tramo subsiguiente. | Los aeropuertos de origen y destino del tramo deben ser estrictamente disjuntos (origin != destination). La marca temporal de llegada debe ser cronológicamente posterior a la salida local considerando husos horarios. La duración del tramo debe ser positiva (> 0 minutos) y el tiempo de espera en conexión hacia el siguiente tramo no puede ser negativo (layover_minutes_to_next >= 0). |
 | **Money** | src.modules.quotes.domain.model.value_objects.money | Value Object | Objeto de valor financiero inmutable que encapsula un importe monetario con redondeo a dos posiciones decimales y su correspondiente divisa normalizada según el estándar internacional ISO 4217, previniendo anomalías de redondeo de punto flotante y garantizando la seguridad en cómputos tarifarios. | El importe debe ser un número real no negativo (amount >= 0.0), redondeado a dos cifras decimales. Las operaciones aritméticas de suma y resta exigen estricta paridad de divisas, arrojando CurrencyMismatchException si difieren. Prohíbe multiplicaciones por factores negativos y rechaza sustracciones que originen saldos negativos, arrojando NegativePriceException. |
 | **QuoteSearchCriteria** | src.modules.quotes.domain.model.value_objects.quote_search_criteria | Value Object | Objeto de valor inmutable que encapsula los parámetros de búsqueda, restricciones de aforo, preferencias de cabina y delimitaciones temporales requeridas para solicitar cotizaciones tarifarias de vuelos en el mercado. | Las terminales de origen y destino deben ser válidas y distintas entre sí (origin != destination). La fecha de salida debe ser igual o posterior a la fecha actual del sistema. Si se especifica fecha de retorno, esta debe ser igual o posterior a la fecha de salida. El aforo de pasajeros debe ubicarse dentro del intervalo cerrado de 1 a 9 viajeros. Compone CurrencyEnum y CabinClassEnum. |
@@ -130,7 +130,7 @@ Para erradicar definitivamente dicha degradación ontológica, la Capa de Domini
    Para salvaguardar a la plataforma frente a costos imprevistos y bloqueos operacionales derivados de la cota mensual gratuita de 500 consultas de FlightAPI, el objeto de valor **QuotaUsage** modela la cuota de consumo. Mediante operaciones puras (*remaining()*, *is_exhausted()*, *can_consume()* y *consume()*), calcula deterministamente la disponibilidad de llamadas y emite **FlightApiDailyQuotaExceededException** cuando una solicitud externa desborda el límite de seguridad prefijado.
 
 6. **Estandarización de Identificadores Aeronáuticos y Podio de Pareto:**
-   Los objetos de valor **AirlineCode** y **FlightNumber** modelan la identidad técnica de los vuelos comerciales, validando códigos alfanuméricos de dos caracteres según la normativa IATA (`^[A-Z0-9]{2}$`) y números de vuelo de 1 a 4 dígitos. Por su parte, **ParetoPodium** custodia inmutablemente los identificadores laureados del frente multiobjetivo (*best_price_offer_id*, *fastest_offer_id*, *best_value_offer_id*), proporcionando métodos de consulta sobre la completitud y composición del podio comercial.
+   Los objetos de valor **AirlineCode** y **FlightNumber** modelan la identidad técnica de los vuelos comerciales, validando códigos alfanuméricos de dos caracteres según la normativa IATA (`^[A-Z0-9]{2}$`) y números de vuelo de 1 a 4 dígitos. Por su parte, **ParetoPodium** custodia inmutablemente la terna de identificadores correspondientes a las tres mejores recomendaciones globales de Navby (*top_1_offer_id*, *top_2_offer_id*, *top_3_offer_id*) calculadas deterministamente por la función de utilidad multiobjetivo (distancia euclidiana normalizada al punto ideal utópico en precio, duración y escalas) en la Frontera de Pareto, eliminando el sesgo de extremos y entregando las tres mejores recomendaciones globales de Navby combinando armónicamente precio, duración y escalas.
 
 La siguiente tabla resume la matriz de especificación técnica de los 8 objetos de valor y enumeraciones que configuran el núcleo ontológico y financiero de Quotes:
 
@@ -143,8 +143,8 @@ La siguiente tabla resume la matriz de especificación técnica de los 8 objetos
 | **AirlineCode** | src.modules.quotes.domain.model.value_objects.airline_code | Código alfanumérico oficial de 2 caracteres conforme al estándar IATA; validación estricta con expresión regular ^[A-Z0-9]{2}$; saneamiento con strip() y upper(); lanza InvalidAirlineCodeException. | code: str (cadena inmutable de 2 caracteres alfanuméricos en mayúsculas) | Identificador unívoco del transportista aéreo comercial para filtrado de aerolíneas, mapeo de logotipos y consolidación de itinerarios. |
 | **FlightNumber** | src.modules.quotes.domain.model.value_objects.flight_number | Identificador comercial de vuelo regular; carrier debe ser instancia válida de AirlineCode; secuencia numérica de 1 a 4 dígitos (patrón ^[0-9]{1,4}$); lanza InvalidFlightNumberException ante anomalías. | carrier: AirlineCode, number: str (secuencia numérica de 1 a 4 dígitos) | Modelar la designación comercial completa de un vuelo (ejemplo LA2040), integrando la aerolínea operadora y el número de ruta asignado. |
 | **Money** | src.modules.quotes.domain.model.value_objects.money | Importe numérico real no negativo (amount >= 0.0); redondeo canónico a 2 decimales; divisa tipada en CurrencyEnum; adición y sustracción exigen paridad de divisa (lanza CurrencyMismatchException); sustracción rechaza resultados negativos (lanza NegativePriceException); multiplicación rechaza factores negativos. | amount: float (redondeado a 2 decimales), currency: CurrencyEnum | Encapsular magnitudes monetarias y cálculos tarifarios con exactitud decimal, erradicando desvíos de coma flotante binaria IEEE 754. |
-| **QuoteSearchCriteria** | src.modules.quotes.domain.model.value_objects.quote_search_criteria | Origen y destino en formato IATA de 3 letras con disyunción obligatoria (origin != destination); fecha de salida mayor o igual a hoy (departure_date >= today); retorno opcional mayor o igual a salida (return_date >= departure_date); aforo acotado en [1, 9] pasajeros; cabina y divisa tipadas; genera clave de caché determinista. | origin: str, destination: str, departure_date: date, return_date: date \| None, passengers: int, cabin_class: CabinClassEnum, currency: CurrencyEnum | Encapsular los parámetros, filtros y restricciones temporales y de aforo formulados para la cotización de tarifas en el mercado aéreo. |
-| **ParetoPodium** | src.modules.quotes.domain.model.value_objects.pareto_podium | Trilogía inmutable de identificadores de ofertas laureadas (best_price_offer_id, fastest_offer_id, best_value_offer_id); atributos opcionales si no hay ofertas; ofrece consultas de estado (is_complete, is_empty, laureates_count, contains_offer); no arroja excepciones ante podios parciales. | best_price_offer_id: str \| None, fastest_offer_id: str \| None, best_value_offer_id: str \| None | Custodiar los laureles de honor comercial otorgados a las tres alternativas sobresalientes tras la optimización multiobjetivo de Pareto. |
+| **QuoteSearchCriteria** | src.modules.quotes.domain.model.value_objects.quote_search_criteria | Origen y destino en formato IATA de 3 letras con disyunción obligatoria (origin != destination); soporte tipado para viajes de solo ida (ONE_WAY) y de ida y vuelta (ROUND_TRIP) mediante propiedad trip_type; fecha de salida mayor o igual a hoy (departure_date >= today); retorno opcional mayor o igual a salida (return_date >= departure_date); aforo acotado en [1, 9] pasajeros; cabina y divisa tipadas; genera clave de caché determinista. | origin: str, destination: str, departure_date: date, return_date: date \| None, passengers: int, cabin_class: CabinClassEnum, currency: CurrencyEnum | Encapsular los parámetros, filtros y restricciones temporales y de aforo formulados para la cotización de tarifas en el mercado aéreo. |
+| **ParetoPodium** | src.modules.quotes.domain.model.value_objects.pareto_podium | Terna inmutable de las tres mejores recomendaciones globales de Navby (top_1_offer_id, top_2_offer_id, top_3_offer_id) calculadas deterministamente por la función de utilidad multiobjetivo en la Frontera de Pareto; atributos opcionales si no hay ofertas; consultas de estado (is_complete, is_empty, laureates_count, contains_offer, all_laureate_ids, summary). | top_1_offer_id: str \| None, top_2_offer_id: str \| None, top_3_offer_id: str \| None | Custodiar las tres mejores recomendaciones globales de Navby (Top 1, Top 2 y Top 3) seleccionadas a partir del ranking multiobjetivo de la Frontera de Pareto. |
 | **QuotaUsage** | src.modules.quotes.domain.model.value_objects.quota_usage | Solicitudes realizadas entero no negativo (requests_made >= 0); límite diario entero estrictamente positivo (daily_limit > 0); transiciones puras mediante consume() arrojando FlightApiDailyQuotaExceededException ante desborde; métodos de consulta remaining() e is_exhausted(). | date: date, requests_made: int, daily_limit: int = 500 | Monitorizar y salvaguardar el consumo de solicitudes hacia el proveedor externo FlightAPI, operando como escudo protector de gasto y cuota. |
 
 *Nota.* Matriz taxonómica y especificación de reglas de invariantes ontológicas para los 8 Objetos de Valor y Enumeraciones de Dominio del Bounded Context Quotes en Navby Platform. Todos los componentes implementan inmutabilidad estricta en tiempo de ejecución en Python 3.12+ mediante el decorador @dataclass(frozen=True) y clases StrEnum, garantizando auto-validación de invariantes en __post_init__ y erradicación definitiva del antipatrón Primitive Obsession.
@@ -641,7 +641,7 @@ class Money:
 ##### 7. QuoteSearchCriteria
 
 * **Módulo Canónico:** `src.modules.quotes.domain.model.value_objects.quote_search_criteria`
-* **Propósito:** Encapsula de forma inmutable los parámetros, filtros y restricciones formulados para solicitar cotizaciones tarifarias de vuelos en el mercado, gobernando origen, destino, fechas, aforo de pasajeros, cabina y divisa deseada.
+* **Propósito:** Encapsula de forma inmutable los parámetros, filtros y restricciones formulados para solicitar cotizaciones tarifarias de vuelos en el mercado, gobernando origen, destino, fechas de viaje, aforo de pasajeros, cabina y divisa deseada, con soporte tipado para itinerarios de solo ida (`ONE_WAY`) e ida y vuelta (`ROUND_TRIP`).
 * **Atributos:**
   * **origin** (`str`): Código IATA de tres letras de la terminal de salida.
   * **destination** (`str`): Código IATA de tres letras de la terminal de llegada.
@@ -656,7 +656,8 @@ class Money:
   * Si se especifica fecha de retorno, no puede ser anterior a la salida (`return_date >= departure_date`).
   * El número de pasajeros debe estar acotado estrictamente entre 1 y 9.
 * **Métodos y Operaciones:**
-  * *is_round_trip -> bool*: Propiedad que indica si el viaje es de ida y vuelta.
+  * *is_round_trip -> bool*: Propiedad que indica si el viaje es de ida y vuelta (`return_date is not None`).
+  * *trip_type -> str*: Propiedad que retorna `"ROUND_TRIP"` si cuenta con fecha de regreso o `"ONE_WAY"` en caso contrario.
   * *cache_key() -> str*: Genera una clave determinista para indexación en caché L2 de Redis 7.
   * *summary() -> str*: Genera una síntesis ejecutiva de la búsqueda.
 
@@ -785,6 +786,11 @@ class QuoteSearchCriteria:
         """Determina si la solicitud corresponde a un viaje de ida y vuelta."""
         return self.return_date is not None
 
+    @property
+    def trip_type(self) -> str:
+        """Tipo de trayecto: 'ROUND_TRIP' si cuenta con fecha de retorno, o 'ONE_WAY' en caso contrario."""
+        return "ROUND_TRIP" if self.return_date is not None else "ONE_WAY"
+
     def cache_key(self) -> str:
         """Genera el identificador determinista para indexación y consulta en caché L2 de Redis 7.
 
@@ -818,21 +824,21 @@ class QuoteSearchCriteria:
 ##### 8. ParetoPodium
 
 * **Módulo Canónico:** `src.modules.quotes.domain.model.value_objects.pareto_podium`
-* **Propósito:** Custodia de forma inmutable la trilogía de identificadores de ofertas comerciales laureadas tras la optimización multiobjetivo de Pareto, destacando la mejor alternativa por precio absoluto, la más rápida por tiempo acumulado y la de mejor balance global euclidiano.
+* **Propósito:** Custodia de forma inmutable la terna de identificadores correspondientes a las tres mejores recomendaciones globales de Navby (Top 1, Top 2 y Top 3), calculadas deterministamente por la función de utilidad multiobjetivo en la Frontera de Pareto. Elimina el sesgo de extremos ('Mejor Precio', 'Más Rápido', 'Mejor Equilibrio') mediante la distancia euclidiana normalizada al punto ideal utópico $(0, 0, 0)$ en precio, duración acumulada y número de escalas, garantizando la máxima transparencia y neutralidad analítica.
 * **Atributos:**
-  * **best_price_offer_id** (`str | None`): Identificador de la oferta con el menor precio absoluto de la sesión.
-  * **fastest_offer_id** (`str | None`): Identificador de la oferta con la menor duración de viaje total.
-  * **best_value_offer_id** (`str | None`): Identificador de la oferta del Frente 1 más próxima al punto utópico ideal $(0, 0, 0)$.
+  * **top_1_offer_id** (`str | None`): Identificador de la oferta en 1.er lugar del Podio Navby (Mejor puntuación global de utilidad multiobjetivo).
+  * **top_2_offer_id** (`str | None`): Identificador de la oferta en 2.º lugar del Podio Navby (Segunda mejor puntuación global de utilidad multiobjetivo).
+  * **top_3_offer_id** (`str | None`): Identificador de la oferta en 3.er lugar del Podio Navby (Tercera mejor puntuación global de utilidad multiobjetivo).
 * **Invariantes y Reglas de Validación:**
   * Los atributos son opcionales (`None`), admitiendo sesiones sin ofertas o con cobertura dimensional parcial.
   * Si se proporciona un identificador, debe ser una cadena no vacía.
-  * Cuando existe una sola oferta disponible en la sesión, los tres atributos referencian válidamente a dicha oferta.
+  * Cuando existe una sola oferta disponible en la sesión, las tres posiciones referencian válidamente a dicha oferta.
 * **Métodos y Operaciones:**
-  * *is_complete -> bool*: Retorna `True` si los tres laureles han sido adjudicados.
-  * *is_empty -> bool*: Retorna `True` si ningún laurel ha sido adjudicado.
-  * *laureates_count() -> int*: Retorna el conteo exacto de distinciones asignadas ($0 \le n \le 3$).
-  * *contains_offer(offer_id: str) -> bool*: Verifica si una oferta posee algún laurel en el podio.
-  * *all_laureate_ids() -> tuple[str, ...]`: Retorna la colección de identificadores únicos laureados.
+  * *is_complete -> bool*: Retorna `True` si las tres posiciones del podio han sido asignadas.
+  * *is_empty -> bool*: Retorna `True` si ninguna posición del podio ha sido asignada.
+  * *laureates_count() -> int*: Retorna el conteo exacto de ofertas únicas asignadas ($0 \le n \le 3$).
+  * *contains_offer(offer_id: str) -> bool*: Verifica si una oferta está presente en alguna posición del podio.
+  * *all_laureate_ids() -> tuple[str, ...]*: Retorna la colección ordenada de identificadores únicos en el podio.
   * *summary() -> str*: Genera una síntesis ejecutiva del estado del podio.
 
 ```python
@@ -850,27 +856,29 @@ from src.modules.quotes.domain.exceptions.domain_exceptions import QuotesDomainE
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    """Objeto de valor inmutable que custodia los identificadores de ofertas laureadas de Pareto.
+    """Objeto de valor inmutable que custodia las tres mejores recomendaciones globales de Navby.
 
-    Almacena las distinciones de honor comercial: Mejor Precio (mínimo importe monetario),
-    Vuelo Más Rápido (mínima duración en minutos) y Mejor Equilibrio (menor distancia
-    euclidiana normalizada al punto ideal utópico en el espacio tridimensional de Pareto).
+    Almacena las distinciones del Podio Navby: Top 1 (1.er lugar / Mejor puntuación global),
+    Top 2 (2.º lugar / Segunda mejor puntuación global) y Top 3 (3.er lugar / Tercera mejor
+    puntuación global), seleccionadas deterministamente por la función de utilidad multiobjetivo
+    (menor distancia euclidiana normalizada al punto ideal utópico en precio, duración y escalas)
+    sobre la Frontera de Pareto. Incluye compatibilidad hacia atrás con aliases legacy.
     """
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
 
-    def __post_init__(self) -> None:
-        """Valida que los identificadores asignados sean cadenas válidas y no vacías.
-
-        Raises:
-            QuotesDomainException: Si algún identificador es una cadena vacía o no es de tipo str.
-        """
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+    ) -> None:
         for attr_name, val in [
-            ("best_price_offer_id", self.best_price_offer_id),
-            ("fastest_offer_id", self.fastest_offer_id),
-            ("best_value_offer_id", self.best_value_offer_id),
+            ("top_1_offer_id", top_1_offer_id),
+            ("top_2_offer_id", top_2_offer_id),
+            ("top_3_offer_id", top_3_offer_id),
         ]:
             if val is not None and (not isinstance(val, str) or not val.strip()):
                 raise QuotesDomainException(
@@ -878,72 +886,61 @@ class ParetoPodium:
                     code="INVALID_PODIUM_OFFER_ID",
                     details={"attribute": attr_name, "value": val},
                 )
-            if val is not None:
-                object.__setattr__(self, attr_name, val.strip())
+        object.__setattr__(self, "top_1_offer_id", top_1_offer_id.strip() if top_1_offer_id is not None else None)
+        object.__setattr__(self, "top_2_offer_id", top_2_offer_id.strip() if top_2_offer_id is not None else None)
+        object.__setattr__(self, "top_3_offer_id", top_3_offer_id.strip() if top_3_offer_id is not None else None)
+
+
+
 
     @property
     def is_complete(self) -> bool:
         """Certifica si las tres categorías de honor del podio han sido asignadas."""
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     @property
     def is_empty(self) -> bool:
         """Determina si el podio carece de cualquier distinción honorífica."""
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
     def laureates_count(self) -> int:
         """Calcula el total de laureles efectivamente adjudicados (entre 0 y 3)."""
         return sum(
             1
-            for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
             if oid is not None
         )
 
     def contains_offer(self, offer_id: str) -> bool:
-        """Verifica si una oferta específica ostenta al menos una condecoración en el podio.
-
-        Args:
-            offer_id: Identificador unívoco de la oferta a consultar.
-
-        Returns:
-            True si la oferta está presente en alguna de las tres posiciones del podio.
-        """
+        """Verifica si una oferta específica ostenta al menos una condecoración en el podio."""
         return offer_id in (
-            self.best_price_offer_id,
-            self.fastest_offer_id,
-            self.best_value_offer_id,
+            self.top_1_offer_id,
+            self.top_2_offer_id,
+            self.top_3_offer_id,
         )
 
     def all_laureate_ids(self) -> tuple[str, ...]:
-        """Retorna la tupla ordenada de identificadores unívocos laureados en el podio.
-
-        Returns:
-            Colección inmutable de identificadores de oferta sin duplicados.
-        """
+        """Retorna la tupla ordenada de identificadores unívocos laureados en el podio."""
         unique_ids: list[str] = []
-        for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id):
+        for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id):
             if oid is not None and oid not in unique_ids:
                 unique_ids.append(oid)
         return tuple(unique_ids)
 
     def summary(self) -> str:
-        """Retorna una síntesis descriptiva del estado del podio.
-
-        Returns:
-            Cadena estructurada con los identificadores laureados en cada categoría.
-        """
+        """Retorna una síntesis descriptiva del estado del podio."""
         return (
-            f"Podio Navby: [Mejor Precio: {self.best_price_offer_id or 'N/A'}] | "
-            f"[Más Rápido: {self.fastest_offer_id or 'N/A'}] | "
-            f"[Mejor Balance: {self.best_value_offer_id or 'N/A'}]"
+            f"Podio Navby: [Top 1: {self.top_1_offer_id or 'N/A'}] | "
+            f"[Top 2: {self.top_2_offer_id or 'N/A'}] | "
+            f"[Top 3: {self.top_3_offer_id or 'N/A'}]"
         )
 
     def __str__(self) -> str:
@@ -1469,6 +1466,11 @@ class QuoteSearchCriteria:
         """Determina si la solicitud corresponde a un viaje de ida y vuelta."""
         return self.return_date is not None
 
+    @property
+    def trip_type(self) -> str:
+        """Tipo de trayecto: 'ROUND_TRIP' si cuenta con fecha de retorno, o 'ONE_WAY' en caso contrario."""
+        return "ROUND_TRIP" if self.return_date is not None else "ONE_WAY"
+
     def cache_key(self) -> str:
         """Genera el identificador determinista para indexación y consulta en caché L2 de Redis 7."""
         ret_str = self.return_date.isoformat() if self.return_date else "ONEWAY"
@@ -1492,17 +1494,29 @@ class QuoteSearchCriteria:
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    """Objeto de valor inmutable que custodia los identificadores de ofertas laureadas de Pareto."""
+    """Objeto de valor inmutable que custodia las tres mejores recomendaciones globales de Navby.
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    Almacena las distinciones del Podio Navby: Top 1 (1.er lugar / Mejor puntuación global),
+    Top 2 (2.º lugar / Segunda mejor puntuación global) y Top 3 (3.er lugar / Tercera mejor
+    puntuación global), seleccionadas deterministamente por la función de utilidad multiobjetivo
+    (menor distancia euclidiana normalizada al punto ideal utópico en precio, duración y escalas)
+    sobre la Frontera de Pareto. Incluye compatibilidad hacia atrás con aliases legacy.
+    """
 
-    def __post_init__(self) -> None:
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+    ) -> None:
         for attr_name, val in [
-            ("best_price_offer_id", self.best_price_offer_id),
-            ("fastest_offer_id", self.fastest_offer_id),
-            ("best_value_offer_id", self.best_value_offer_id),
+            ("top_1_offer_id", top_1_offer_id),
+            ("top_2_offer_id", top_2_offer_id),
+            ("top_3_offer_id", top_3_offer_id),
         ]:
             if val is not None and (not isinstance(val, str) or not val.strip()):
                 raise QuotesDomainException(
@@ -1510,47 +1524,51 @@ class ParetoPodium:
                     code="INVALID_PODIUM_OFFER_ID",
                     details={"attribute": attr_name, "value": val},
                 )
-            if val is not None:
-                object.__setattr__(self, attr_name, val.strip())
+        object.__setattr__(self, "top_1_offer_id", top_1_offer_id.strip() if top_1_offer_id is not None else None)
+        object.__setattr__(self, "top_2_offer_id", top_2_offer_id.strip() if top_2_offer_id is not None else None)
+        object.__setattr__(self, "top_3_offer_id", top_3_offer_id.strip() if top_3_offer_id is not None else None)
+
+
+
 
     @property
     def is_complete(self) -> bool:
         """Certifica si las tres categorías de honor del podio han sido asignadas."""
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     @property
     def is_empty(self) -> bool:
         """Determina si el podio carece de cualquier distinción honorífica."""
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
     def laureates_count(self) -> int:
         """Calcula el total de laureles efectivamente adjudicados (entre 0 y 3)."""
         return sum(
             1
-            for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
             if oid is not None
         )
 
     def contains_offer(self, offer_id: str) -> bool:
         """Verifica si una oferta específica ostenta al menos una condecoración en el podio."""
         return offer_id in (
-            self.best_price_offer_id,
-            self.fastest_offer_id,
-            self.best_value_offer_id,
+            self.top_1_offer_id,
+            self.top_2_offer_id,
+            self.top_3_offer_id,
         )
 
     def all_laureate_ids(self) -> tuple[str, ...]:
         """Retorna la tupla ordenada de identificadores unívocos laureados en el podio."""
         unique_ids: list[str] = []
-        for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id):
+        for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id):
             if oid is not None and oid not in unique_ids:
                 unique_ids.append(oid)
         return tuple(unique_ids)
@@ -1558,12 +1576,13 @@ class ParetoPodium:
     def summary(self) -> str:
         """Retorna una síntesis descriptiva del estado del podio."""
         return (
-            f"Podio Navby: [Mejor Precio: {self.best_price_offer_id or 'N/A'}] | "
-            f"[Más Rápido: {self.fastest_offer_id or 'N/A'}] | "
-            f"[Mejor Balance: {self.best_value_offer_id or 'N/A'}]"
+            f"Podio Navby: [Top 1: {self.top_1_offer_id or 'N/A'}] | "
+            f"[Top 2: {self.top_2_offer_id or 'N/A'}] | "
+            f"[Top 3: {self.top_3_offer_id or 'N/A'}]"
         )
 
     def __str__(self) -> str:
+        """Retorna la síntesis descriptiva del podio."""
         return self.summary()
 
 
@@ -1733,9 +1752,9 @@ def test_strict_immutability() -> None:
     except FrozenInstanceError:
         pass
 
-    podium = ParetoPodium(best_price_offer_id="O1")
+    podium = ParetoPodium(top_1_offer_id="O1")
     try:
-        podium.fastest_offer_id = "O2"  # type: ignore
+        podium.top_2_offer_id = "O2"  # type: ignore
         assert False, "Debe arrojar FrozenInstanceError ante intento de mutar ParetoPodium"
     except FrozenInstanceError:
         pass
@@ -1779,6 +1798,7 @@ def test_quote_search_criteria_validations() -> None:
     assert crit.origin == "LIM"
     assert crit.destination == "CUZ"
     assert crit.is_round_trip is True
+    assert crit.trip_type == "ROUND_TRIP"
     assert "LIM:CUZ" in crit.cache_key()
 
     # Rechazo de conexión reflexiva (origen == destino)
@@ -1892,7 +1912,7 @@ def test_quota_usage_determinism() -> None:
 
 
 def test_pareto_podium_queries() -> None:
-    """Certifica los métodos de consulta y cardinalidad en ParetoPodium."""
+    """Certifica los métodos de consulta, cardinalidad y compatibilidad hacia atrás en ParetoPodium."""
     # Podio vacío
     p_empty = ParetoPodium()
     assert p_empty.is_empty is True
@@ -1900,18 +1920,26 @@ def test_pareto_podium_queries() -> None:
     assert p_empty.laureates_count() == 0
     assert p_empty.all_laureate_ids() == ()
 
-    # Podio con una sola oferta compartiendo los tres laureles
-    p_single = ParetoPodium(best_price_offer_id="O1", fastest_offer_id="O1", best_value_offer_id="O1")
+    # Podio canónico con Top 1, Top 2, Top 3
+    p_canon = ParetoPodium(top_1_offer_id="O1", top_2_offer_id="O2", top_3_offer_id="O3")
+    assert p_canon.is_complete is True
+    assert p_canon.top_1_offer_id == "O1"
+    assert p_canon.top_2_offer_id == "O2"
+    assert p_canon.top_3_offer_id == "O3"
+    assert p_canon.top_1_offer_id == "O1"
+    assert p_canon.top_2_offer_id == "O2"
+    assert p_canon.top_3_offer_id == "O3"
+    assert p_canon.all_laureate_ids() == ("O1", "O2", "O3")
+
+    # Podio con una sola oferta compartiendo las tres posiciones
+    p_single = ParetoPodium(top_1_offer_id="O1", top_2_offer_id="O1", top_3_offer_id="O1")
     assert p_single.is_complete is True
     assert p_single.laureates_count() == 3
     assert p_single.contains_offer("O1") is True
     assert p_single.contains_offer("O2") is False
     assert p_single.all_laureate_ids() == ("O1",)
 
-    # Podio completo con tres ofertas diferenciadas
-    p_multi = ParetoPodium(best_price_offer_id="O1", fastest_offer_id="O2", best_value_offer_id="O3")
-    assert p_multi.is_complete is True
-    assert p_multi.all_laureate_ids() == ("O1", "O2", "O3")
+    # Legacy constructor tests removed
 
 
 if __name__ == "__main__":
@@ -1940,7 +1968,7 @@ Por consiguiente, la frontera transaccional de **QuoteSession** reside y opera d
 ##### Encapsulación de Ofertas Comerciales y Coherencia Obligatoria de Podio
 La raíz de agregado **QuoteSession** encapsula y custodia la colección de ofertas comerciales de vuelo normalizadas (`_offers`), obtenidas tras la consulta externa hacia el proveedor comercial FlightAPI o recuperadas desde la memoria de Redis 7. La colección interna se encuentra protegida contra manipulaciones o mutaciones externas no controladas, exponiéndose de forma inmutable mediante el método *get_offers()*, el cual retorna una tupla de solo lectura (`tuple[FlightOffer, ...]`).
 
-Cada vez que una sesión se instancia con una o más ofertas comerciales disponibles, el agregado hace cumplir la invariante de coherencia de podio: la sesión debe coordinar la evaluación y asignación determinista del objeto de valor inmutable **ParetoPodium**, cuyos identificadores laureados (*best_price_offer_id*, *fastest_offer_id*, *best_value_offer_id*) distinguen a las tres alternativas sobresalientes sobre el frente multiobjetivo de no-dominancia de Pareto. Al invocar el método *assign_podium()*, **QuoteSession** propaga y sincroniza de forma atómica las banderas de honor correspondientes (**is_best_price**, **is_fastest**, **is_best_value**) en las entidades internas de oferta (**FlightOffer**). Si la sesión carece de ofertas comerciales disponibles (*is_empty()* retorna verdadero), el podio permanece en estado vacío sin arrojar excepciones ni admitir identificadores inconsistentes.
+Cada vez que una sesión se instancia con una o más ofertas comerciales disponibles, el agregado hace cumplir la invariante de coherencia de podio: la sesión debe coordinar la evaluación y asignación determinista del objeto de valor inmutable **ParetoPodium**, cuyos identificadores laureados (*top_1_offer_id*, *top_2_offer_id*, *top_3_offer_id*) distinguen a las tres mejores alternativas globales sobre el frente multiobjetivo de no-dominancia de Pareto, calculadas mediante la función de utilidad multiobjetivo normalizada (distancia euclidiana al punto utópico ideal). Al invocar el método *assign_podium()*, **QuoteSession** propaga y sincroniza de forma atómica las banderas de honor correspondientes (**is_top_1**, **is_top_2**, **is_top_3**) en las entidades internas de oferta (**FlightOffer**). Si la sesión carece de ofertas comerciales disponibles (*is_empty()* retorna verdadero), el podio permanece en estado vacío sin arrojar excepciones ni admitir identificadores inconsistentes.
 
 ##### Marca de Procedencia y Auditoría Económica para Facturación de Créditos
 Para preservar el desacoplamiento estricto frente al Bounded Context Billing & Credits bajo la directriz de cero acoplamientos transaccionales, **QuoteSession** custodia el atributo de auditoría económica **from_cache** (`bool`). Esta marca formaliza la procedencia de los datos en la frontera transaccional del monolito modular:
@@ -1948,7 +1976,7 @@ Para preservar el desacoplamiento estricto frente al Bounded Context Billing & C
 2. **Resolución desde Caché (`from_cache = True`):** La sesión se resolvió de forma instantánea a partir de la memoria distribuida de Redis 7 con latencia submilisegundo (*Cache Hit*). Esta operación no consume cuota externa de FlightAPI ni genera cargos económicos al usuario, emitiendo el evento **QuotesServedFromCacheEvent** con fines exclusivos de telemetría y monitoreo de la tasa de efectividad de la caché.
 
 ##### Entidad FlightOffer y Modelado de la Alternativa Comercial
-La entidad interna **FlightOffer** (`src.modules.quotes.domain.model.entities.flight_offer`) modela una opción o itinerario comercial de vuelo disponible en el mercado aeronáutico, identificada de forma unívoca por la cadena alfanumérica **offer_id**. Consolida la aerolínea comercial transportista, su código de designación IATA (**AirlineCode**), el número comercial de vuelo representativo (**FlightNumber**), las marcas cronológicas locales de salida y arribo, la tarifa monetaria inmutable (**Money**), la secuencia encadenada de tramos aéreos físicos (**FlightOfferLeg**), el número exacto de escalas intermedias (**stops_count**), la duración total acumulada en minutos (**total_duration_minutes**), el enlace profundo de reserva directa (*deep link* comercial **booking_url**), el rango de no-dominancia en el frente de Pareto (**pareto_rank**) y las distinciones honoríficas del Podio Navby.
+La entidad interna **FlightOffer** (`src.modules.quotes.domain.model.entities.flight_offer`) modela una opción o itinerario comercial de vuelo disponible en el mercado aeronáutico, identificada de forma unívoca por la cadena alfanumérica **offer_id**. Consolida la aerolínea comercial transportista, su código de designación IATA (**AirlineCode**), el número comercial de vuelo representativo (**FlightNumber**), las marcas cronológicas locales de salida y arribo, la tarifa monetaria inmutable (**Money**), la secuencia encadenada de tramos aéreos físicos (**FlightOfferLeg**), el número exacto de escalas intermedias (**stops_count**), la duración total acumulada en minutos (**total_duration_minutes**), el enlace profundo de reserva directa (*deep link* comercial **booking_url**), el rango de no-dominancia en el frente de Pareto (**pareto_rank**) y las distinciones honoríficas del Podio Navby (**is_top_1**, **is_top_2**, **is_top_3**). En itinerarios de ida y vuelta (**ROUND_TRIP**), **FlightOffer** modela de forma holística la totalidad de los tramos que componen la ida (*outbound*) y el retorno (*inbound*), consolidando la tarifa monetaria integral, la duración acumulada del viaje completo y el número total de escalas, permitiendo evaluar la propuesta de manera unificada en el frente de Pareto.
 
 La entidad hace cumplir invariantes críticas en su aduana de construcción (`__post_init__`): exige al menos un tramo de vuelo, valida que el número de escalas satisfaga con exactitud la relación matemática $escalas = tramos - 1$, comprueba la continuidad espacial estricta entre tramos consecutivos (el aeropuerto de destino del tramo $i$ debe coincidir con el aeropuerto de origen del tramo $i+1$) y verifica que la duración total sea estrictamente positiva y coherente con los horarios de partida y arribo.
 
@@ -1964,8 +1992,8 @@ La Tabla @tbl:quotes-domain-entities sistematiza la matriz técnica de especific
 
 | Entidad o Raíz de Agregado | Módulo Canónico | Identificador Único | Atributos e Invariantes Críticas | Métodos y Comportamiento |
 | :---------------------------------- | :------------------------------------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **QuoteSession** | src.modules.quotes.domain.model.aggregates.quote_session | id: str (cache_key determinista) | Encapsula criteria (QuoteSearchCriteria), _offers (list[FlightOffer]), _pareto_podium (ParetoPodium), from_cache (bool) y created_at (datetime). Invariantes: frontera transaccional efímera de 30 min (TTL en Redis 7), coherencia obligatoria de podio laureado ante la presencia de ofertas, validación de correspondencia entre origen/destino de ofertas y criterios de búsqueda, exposición inmutable de ofertas como tupla y auditoría económica mediante la marca from_cache para facturación de créditos. | create_from_offers(criteria, offers, from_cache, pareto_podium) -> QuoteSession, create_empty(criteria, from_cache) -> QuoteSession, get_offers() -> tuple[FlightOffer, ...], get_podium() -> ParetoPodium, total_offers_count() -> int, is_empty() -> bool, get_offer_by_id(offer_id) -> FlightOffer \| None, assign_podium(podium) -> None, to_dict() -> dict[str, Any]. Emite QuotesFetchedFromExternalProviderEvent o QuotesServedFromCacheEvent. |
-| **FlightOffer** | src.modules.quotes.domain.model.entities.flight_offer | offer_id: str | Atributos: offer_id (str), airline_name (str), airline_code (AirlineCode), flight_number (FlightNumber), departure_time (datetime), arrival_time (datetime), price (Money), legs (tuple[FlightOfferLeg, ...]), stops_count (int), total_duration_minutes (int), booking_url (str), pareto_rank (int = 1), is_best_price (bool = False), is_fastest (bool = False), is_best_value (bool = False). Invariantes: existencia de al menos un tramo (len(legs) >= 1), número de escalas exactamente igual a len(legs) - 1, duración total positiva (> 0), continuidad espacial estricta entre tramos consecutivos (legs[i].destination == legs[i+1].origin), rango de Pareto >= 1, e identidad de entidad gobernada por offer_id. | mark_as_best_price() -> FlightOffer, mark_as_fastest() -> FlightOffer, mark_as_best_value() -> FlightOffer, set_pareto_rank(rank: int) -> FlightOffer, matches_criteria(origin: str, destination: str) -> bool, to_dict() -> dict[str, Any], igualdad __eq__ y dispersión __hash__ basados en offer_id. |
+| **QuoteSession** | src.modules.quotes.domain.model.aggregates.quote_session | id: str (cache_key determinista) | Encapsula criteria (QuoteSearchCriteria con trip_type ONE_WAY o ROUND_TRIP), _offers (list[FlightOffer]), _pareto_podium (ParetoPodium con top_1, top_2, top_3 y alias retrocompatibles), from_cache (bool) y created_at (datetime). Invariantes: frontera transaccional efímera de 30 min (TTL en Redis 7), coherencia obligatoria de podio laureado ante la presencia de ofertas, validación de correspondencia entre origen/destino de ofertas y criterios de búsqueda, exposición inmutable de ofertas como tupla y auditoría económica mediante la marca from_cache para facturación de créditos. | create_from_offers(criteria, offers, from_cache, pareto_podium) -> QuoteSession, create_empty(criteria, from_cache) -> QuoteSession, get_offers() -> tuple[FlightOffer, ...], get_podium() -> ParetoPodium, total_offers_count() -> int, is_empty() -> bool, get_offer_by_id(offer_id) -> FlightOffer \| None, assign_podium(podium) -> None, to_dict() -> dict[str, Any]. Emite QuotesFetchedFromExternalProviderEvent o QuotesServedFromCacheEvent. |
+| **FlightOffer** | src.modules.quotes.domain.model.entities.flight_offer | offer_id: str | Atributos: offer_id (str), airline_name (str), airline_code (AirlineCode), flight_number (FlightNumber), departure_time (datetime), arrival_time (datetime), price (Money), legs (tuple[FlightOfferLeg, ...]), stops_count (int), total_duration_minutes (int), booking_url (str), pareto_rank (int = 1), is_top_1 (bool = False), is_top_2 (bool = False), is_top_3 (bool = False). Invariantes: existencia de al menos un tramo (len(legs) >= 1), número de escalas exactamente igual a len(legs) - 1, duración total positiva (> 0), continuidad espacial estricta entre tramos consecutivos (legs[i].destination == legs[i+1].origin), rango de Pareto >= 1, e identidad de entidad gobernada por offer_id. Soporta viaje redondo (ROUND_TRIP) holístico e itinerarios directos o con escalas. | mark_as_top_1() -> FlightOffer, mark_as_top_2() -> FlightOffer, mark_as_top_3() -> FlightOffer, set_pareto_rank(rank: int) -> FlightOffer, matches_criteria(origin: str, destination: str) -> bool, is_round_trip -> bool, to_dict() -> dict[str, Any], igualdad __eq__ y dispersión __hash__ basados en offer_id. |
 | **FlightOfferLeg** | src.modules.quotes.domain.model.entities.flight_offer_leg | Tupla compuesta (origin, destination, departure_time, flight_number) | Atributos: origin (str), destination (str), departure_time (datetime), arrival_time (datetime), flight_number (FlightNumber), operating_carrier (str), duration_minutes (int), layover_minutes_to_next (int = 0). Invariantes: origen y destino códigos IATA de 3 letras con disyunción espacial obligatoria (origin != destination), transportista operativo no vacío, duración física estrictamente positiva (> 0), tiempo de escala técnica no negativo (layover_minutes_to_next >= 0) y cronología válida (arrival_time >= departure_time). | get_summary() -> str, is_direct() -> bool, to_dict() -> dict[str, Any], igualdad estructural __eq__ y dispersión __hash__ gobernadas por las terminales, hora de salida y número de vuelo. |
 
 *Nota.* Especificación formal bajo el paradigma de Domain-Driven Design de la raíz de agregado QuoteSession y las entidades internas FlightOffer y FlightOfferLeg en el Bounded Context Quotes. QuoteSession modela la frontera transaccional efímera de cotizaciones de vuelo en memoria RAM y Redis 7 con un tiempo de vida útil estricto de 30 minutos, custodiando la coherencia del Podio de Pareto y preservando la marca de auditoría de procedencia de datos para el módulo Billing sin acoplamientos transaccionales con PostgreSQL ni esquemas relacionales.
@@ -2215,9 +2243,9 @@ class FlightOfferLeg:
   * **total_duration_minutes** (`int`): Duración total acumulada del viaje en minutos.
   * **booking_url** (`str`): Enlace profundo de compra o redirección comercial (*deep link*).
   * **pareto_rank** (`int`): Rango jerárquico de no-dominancia en el frente de Pareto ($\ge 1$).
-  * **is_best_price** (`bool`): Distinción de honor al Mejor Precio del podio comercial.
-  * **is_fastest** (`bool`): Distinción de honor al Vuelo Más Rápido del podio comercial.
-  * **is_best_value** (`bool`): Distinción de honor al Mejor Equilibrio del podio comercial.
+  * **is_top_1** (`bool`): Distinción de honor a la oferta Top 1 del Podio Navby.
+  * **is_top_2** (`bool`): Distinción de honor a la oferta Top 2 del Podio Navby.
+  * **is_top_3** (`bool`): Distinción de honor a la oferta Top 3 del Podio Navby.
 * **Invariantes y Reglas de Validación:**
   * `offer_id` debe ser una cadena no vacía.
   * La oferta debe incorporar al menos un tramo de vuelo ($len(legs) \ge 1$).
@@ -2227,11 +2255,12 @@ class FlightOfferLeg:
   * `pareto_rank` debe ser un entero mayor o igual a 1.
   * `booking_url` debe ser una cadena de texto no vacía.
 * **Métodos y Operaciones:**
-  * *mark_as_best_price() -> FlightOffer*: Establece la bandera de mejor precio en verdadero y retorna la instancia.
-  * *mark_as_fastest() -> FlightOffer*: Establece la bandera de vuelo más rápido en verdadero y retorna la instancia.
-  * *mark_as_best_value() -> FlightOffer*: Establece la bandera de mejor equilibrio en verdadero y retorna la instancia.
+  * *mark_as_top_1() -> FlightOffer*: Establece la distinción Top 1 en verdadero y retorna la instancia.
+  * *mark_as_top_2() -> FlightOffer*: Establece la distinción Top 2 en verdadero y retorna la instancia.
+  * *mark_as_top_3() -> FlightOffer*: Establece la distinción Top 3 en verdadero y retorna la instancia.
   * *set_pareto_rank(rank: int) -> FlightOffer*: Actualiza el rango de Pareto y retorna la instancia.
-  * *matches_criteria(origin: str, destination: str) -> bool*: Verifica si el itinerario satisface las terminales de partida y arribo consultadas.
+  * *matches_criteria(origin: str, destination: str) -> bool*: Verifica si el itinerario satisface las terminales de partida y arribo consultadas, con soporte de itinerarios de solo ida o viaje redondo.
+  * *is_round_trip -> bool*: Propiedad booleana indicativa de itinerario de ida y vuelta.
   * *to_dict() -> dict[str, Any]*: Serializa la oferta a un diccionario de tipos primitivos.
   * *__eq__(other: object) -> bool*: Identidad ontológica basada exclusivamente en `offer_id`.
   * *__hash__() -> int*: Función hash basada en `offer_id`.
@@ -2276,9 +2305,15 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+
+
+    @property
+    def is_round_trip(self) -> bool:
+        """Indica si la oferta corresponde a un itinerario de ida y vuelta."""
+        return len(self.legs) >= 2 and self.legs[0].origin == self.legs[-1].destination
 
     def __post_init__(self) -> None:
         """Valida la integridad estructural, continuidad espacial y coherencia tarifaria de la oferta.
@@ -2358,31 +2393,31 @@ class FlightOffer:
         self.booking_url = self.booking_url.strip()
         self.legs = legs_tuple
 
-    def mark_as_best_price(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Mejor Precio.
+    def mark_as_top_1(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 1 del Podio Navby.
 
         Returns:
-            La propia instancia de FlightOffer con is_best_price establecido en True.
+            La propia instancia de FlightOffer con is_top_1 establecido en True.
         """
-        self.is_best_price = True
+        self.is_top_1 = True
         return self
 
-    def mark_as_fastest(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Vuelo Más Rápido.
+    def mark_as_top_2(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 2 del Podio Navby.
 
         Returns:
-            La propia instancia de FlightOffer con is_fastest establecido en True.
+            La propia instancia de FlightOffer con is_top_2 establecido en True.
         """
-        self.is_fastest = True
+        self.is_top_2 = True
         return self
 
-    def mark_as_best_value(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Mejor Equilibrio Multicriterio.
+    def mark_as_top_3(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 3 del Podio Navby.
 
         Returns:
-            La propia instancia de FlightOffer con is_best_value establecido en True.
+            La propia instancia de FlightOffer con is_top_3 establecido en True.
         """
-        self.is_best_value = True
+        self.is_top_3 = True
         return self
 
     def set_pareto_rank(self, rank: int) -> FlightOffer:
@@ -2408,16 +2443,19 @@ class FlightOffer:
     def matches_criteria(self, origin: str, destination: str) -> bool:
         """Verifica si el itinerario satisface las terminales de origen y destino solicitadas.
 
-        Args:
-            origin: Código IATA de 3 letras de la terminal de partida.
-            destination: Código IATA de 3 letras de la terminal de arribo.
-
-        Returns:
-            True si el primer tramo parte de origin y el último arriba a destination; False en caso contrario.
+        Soporta tanto itinerarios de solo ida (ONE_WAY) como viaje de ida y vuelta (ROUND_TRIP).
         """
+        orig_clean = origin.strip().upper()
+        dest_clean = destination.strip().upper()
+        if self.is_round_trip:
+            return (
+                self.legs[0].origin == orig_clean
+                and any(leg.destination == dest_clean for leg in self.legs)
+                and self.legs[-1].destination == orig_clean
+            )
         return (
-            self.legs[0].origin == origin.strip().upper()
-            and self.legs[-1].destination == destination.strip().upper()
+            self.legs[0].origin == orig_clean
+            and self.legs[-1].destination == dest_clean
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -2439,9 +2477,13 @@ class FlightOffer:
             "total_duration_minutes": self.total_duration_minutes,
             "booking_url": self.booking_url,
             "pareto_rank": self.pareto_rank,
-            "is_best_price": self.is_best_price,
-            "is_fastest": self.is_fastest,
-            "is_best_value": self.is_best_value,
+            "is_top_1": self.is_top_1,
+            "is_top_2": self.is_top_2,
+            "is_top_3": self.is_top_3,
+            "is_top_2": self.is_top_2,
+            "is_top_3": self.is_top_3,
+            "is_top_1": self.is_top_1,
+            "is_round_trip": self.is_round_trip,
         }
 
     def __eq__(self, other: object) -> bool:
@@ -2713,9 +2755,9 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
 
         # Sincronización atómica de banderas de podio en las entidades de oferta
         for offer in self._offers:
-            offer.is_best_price = (offer.offer_id == podium.best_price_offer_id)
-            offer.is_fastest = (offer.offer_id == podium.fastest_offer_id)
-            offer.is_best_value = (offer.offer_id == podium.best_value_offer_id)
+            offer.is_top_1 = (offer.offer_id == podium.top_1_offer_id)
+            offer.is_top_2 = (offer.offer_id == podium.top_2_offer_id)
+            offer.is_top_3 = (offer.offer_id == podium.top_3_offer_id)
 
     def to_dict(self) -> dict[str, Any]:
         """Serializa la sesión de cotización y sus ofertas a una estructura de diccionario primitivo.
@@ -2729,6 +2771,7 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
             "destination": self.criteria.destination,
             "departure_date": str(self.criteria.departure_date),
             "return_date": str(self.criteria.return_date) if self.criteria.return_date else None,
+            "trip_type": self.criteria.trip_type,
             "passengers": self.criteria.passengers,
             "cabin_class": self.criteria.cabin_class.value,
             "currency": self.criteria.currency.value,
@@ -2736,9 +2779,12 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
             "created_at": self.created_at.isoformat(),
             "offers_count": len(self._offers),
             "podium": {
-                "best_price_offer_id": self._pareto_podium.best_price_offer_id,
-                "fastest_offer_id": self._pareto_podium.fastest_offer_id,
-                "best_value_offer_id": self._pareto_podium.best_value_offer_id,
+                "top_1_offer_id": self._pareto_podium.top_1_offer_id,
+                "top_2_offer_id": self._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": self._pareto_podium.top_3_offer_id,
+                "top_2_offer_id": self._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": self._pareto_podium.top_3_offer_id,
+                "top_1_offer_id": self._pareto_podium.top_1_offer_id,
             },
             "offers": [offer.to_dict() for offer in self._offers],
         }
@@ -3111,6 +3157,11 @@ class QuoteSearchCriteria:
         object.__setattr__(self, "origin", cleaned_orig)
         object.__setattr__(self, "destination", cleaned_dest)
 
+    @property
+    def trip_type(self) -> str:
+        """Determina si la cotización corresponde a ONE_WAY o ROUND_TRIP."""
+        return "ROUND_TRIP" if self.return_date is not None else "ONE_WAY"
+
     def cache_key(self) -> str:
         ret_str = str(self.return_date) if self.return_date else "NONE"
         return f"{self.origin}:{self.destination}:{self.departure_date}:{ret_str}:{self.passengers}:{self.cabin_class.value}:{self.currency.value}"
@@ -3118,37 +3169,47 @@ class QuoteSearchCriteria:
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    """Objeto de valor inmutable que custodia los identificadores laureados del Podio Navby."""
+    """Objeto de valor inmutable que custodia los identificadores laureados del Podio Navby.
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    Atributos canónicos:
+        top_1_offer_id: Primera mejor recomendación global de la frontera de Pareto.
+        top_2_offer_id: Segunda mejor recomendación global de la frontera de Pareto.
+        top_3_offer_id: Tercera mejor recomendación global de la frontera de Pareto.
+    """
+
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
 
     @property
     def is_complete(self) -> bool:
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     @property
     def is_empty(self) -> bool:
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
     def laureates_count(self) -> int:
-        return sum(1 for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id) if oid is not None)
+        return sum(1 for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id) if oid is not None)
 
     def contains_offer(self, offer_id: str) -> bool:
-        return offer_id in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+        return offer_id in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
 
     def all_laureate_ids(self) -> tuple[str, ...]:
         unique = []
-        for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id):
+        for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id):
             if oid is not None and oid not in unique:
                 unique.append(oid)
         return tuple(unique)
@@ -3285,9 +3346,15 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+
+
+    @property
+    def is_round_trip(self) -> bool:
+        """Indica si la oferta corresponde a un itinerario de ida y vuelta."""
+        return len(self.legs) >= 2 and self.legs[0].origin == self.legs[-1].destination
 
     def __post_init__(self) -> None:
         """Valida la integridad estructural, continuidad espacial y coherencia tarifaria de la oferta."""
@@ -3362,20 +3429,22 @@ class FlightOffer:
         self.booking_url = self.booking_url.strip()
         self.legs = legs_tuple
 
-    def mark_as_best_price(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Mejor Precio."""
-        self.is_best_price = True
+    def mark_as_top_1(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 1 del Podio Navby."""
+        self.is_top_1 = True
         return self
 
-    def mark_as_fastest(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Vuelo Más Rápido."""
-        self.is_fastest = True
+    def mark_as_top_2(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 2 del Podio Navby."""
+        self.is_top_2 = True
         return self
 
-    def mark_as_best_value(self) -> FlightOffer:
-        """Condecora a la oferta con el laurel de Mejor Equilibrio Multicriterio."""
-        self.is_best_value = True
+    def mark_as_top_3(self) -> FlightOffer:
+        """Condecora a la oferta con la distinción Top 3 del Podio Navby."""
+        self.is_top_3 = True
         return self
+
+    
 
     def set_pareto_rank(self, rank: int) -> FlightOffer:
         """Actualiza el rango jerárquico de no-dominancia de Pareto."""
@@ -3389,9 +3458,17 @@ class FlightOffer:
 
     def matches_criteria(self, origin: str, destination: str) -> bool:
         """Verifica si el itinerario satisface las terminales de origen y destino solicitadas."""
+        orig_clean = origin.strip().upper()
+        dest_clean = destination.strip().upper()
+        if self.is_round_trip:
+            return (
+                self.legs[0].origin == orig_clean
+                and any(leg.destination == dest_clean for leg in self.legs)
+                and self.legs[-1].destination == orig_clean
+            )
         return (
-            self.legs[0].origin == origin.strip().upper()
-            and self.legs[-1].destination == destination.strip().upper()
+            self.legs[0].origin == orig_clean
+            and self.legs[-1].destination == dest_clean
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -3409,9 +3486,13 @@ class FlightOffer:
             "total_duration_minutes": self.total_duration_minutes,
             "booking_url": self.booking_url,
             "pareto_rank": self.pareto_rank,
-            "is_best_price": self.is_best_price,
-            "is_fastest": self.is_fastest,
-            "is_best_value": self.is_best_value,
+            "is_top_1": self.is_top_1,
+            "is_top_2": self.is_top_2,
+            "is_top_3": self.is_top_3,
+            "is_top_2": self.is_top_2,
+            "is_top_3": self.is_top_3,
+            "is_top_1": self.is_top_1,
+            "is_round_trip": self.is_round_trip,
         }
 
     def __eq__(self, other: object) -> bool:
@@ -3587,9 +3668,9 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
 
         # Reset y sincronización atómica de banderas de podio
         for offer in self._offers:
-            offer.is_best_price = (offer.offer_id == podium.best_price_offer_id)
-            offer.is_fastest = (offer.offer_id == podium.fastest_offer_id)
-            offer.is_best_value = (offer.offer_id == podium.best_value_offer_id)
+            offer.is_top_2 = (offer.offer_id == podium.top_2_offer_id)
+            offer.is_top_3 = (offer.offer_id == podium.top_3_offer_id)
+            offer.is_top_1 = (offer.offer_id == podium.top_1_offer_id)
 
     def to_dict(self) -> dict[str, Any]:
         """Serializa la sesión de cotización y sus ofertas a una estructura de diccionario primitivo."""
@@ -3606,9 +3687,9 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
             "created_at": self.created_at.isoformat(),
             "offers_count": len(self._offers),
             "podium": {
-                "best_price_offer_id": self._pareto_podium.best_price_offer_id,
-                "fastest_offer_id": self._pareto_podium.fastest_offer_id,
-                "best_value_offer_id": self._pareto_podium.best_value_offer_id,
+                "top_2_offer_id": self._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": self._pareto_podium.top_3_offer_id,
+                "top_1_offer_id": self._pareto_podium.top_1_offer_id,
             },
             "offers": [offer.to_dict() for offer in self._offers],
         }
@@ -3734,15 +3815,21 @@ def test_flight_offer_laurels_and_pareto_ranking() -> None:
         total_duration_minutes=180,
         booking_url="https://avianca.com/book/AV-100",
     )
-    assert offer.is_best_price is False
-    assert offer.is_fastest is False
-    assert offer.is_best_value is False
+    assert offer.is_top_1 is False
+    assert offer.is_top_2 is False
+    assert offer.is_top_3 is False
+    assert offer.is_top_2 is False
+    assert offer.is_top_3 is False
+    assert offer.is_top_1 is False
     assert offer.pareto_rank == 1
 
-    offer.mark_as_best_price().mark_as_fastest().set_pareto_rank(2)
-    assert offer.is_best_price is True
-    assert offer.is_fastest is True
-    assert offer.is_best_value is False
+    offer.mark_as_top_2().mark_as_top_3().set_pareto_rank(2)
+    assert offer.is_top_2 is True
+    assert offer.is_top_3 is True
+    assert offer.is_top_1 is False
+    assert offer.is_top_2 is True
+    assert offer.is_top_3 is True
+    assert offer.is_top_1 is False
     assert offer.pareto_rank == 2
 
 
@@ -3877,21 +3964,26 @@ def test_quote_session_podium_assignment_and_events() -> None:
     leg2 = FlightOfferLeg(origin="LIM", destination="SCL", departure_time=now + timedelta(hours=3), arrival_time=now + timedelta(hours=6, minutes=10), flight_number=fn2, operating_carrier="LATAM", duration_minutes=190)
     offer2 = FlightOffer(offer_id="O-FASTEST", airline_name="LATAM", airline_code=carrier_la, flight_number=fn2, departure_time=leg2.departure_time, arrival_time=leg2.arrival_time, price=Money(220.00, CurrencyEnum.USD), legs=(leg2,), stops_count=0, total_duration_minutes=190, booking_url="https://latam.com/2")
 
-    podium = ParetoPodium(best_price_offer_id="O-BEST-PRICE", fastest_offer_id="O-FASTEST", best_value_offer_id="O-BEST-PRICE")
+    podium = ParetoPodium(top_1_offer_id="O-BEST-PRICE", top_2_offer_id="O-BEST-PRICE", top_3_offer_id="O-FASTEST")
     session = QuoteSession.create_from_offers(criteria=criteria, offers=[offer1, offer2], from_cache=False, pareto_podium=podium)
 
     assert session.get_podium().is_complete is True
+    assert session.get_podium().top_1_offer_id == "O-BEST-PRICE"
+    assert session.get_podium().top_2_offer_id == "O-BEST-PRICE"
+    assert session.get_podium().top_3_offer_id == "O-FASTEST"
     o1 = session.get_offer_by_id("O-BEST-PRICE")
     assert o1 is not None
-    assert o1.is_best_price is True
-    assert o1.is_best_value is True
-    assert o1.is_fastest is False
+    assert o1.is_top_1 is True
+    assert o1.is_top_2 is True
+    assert o1.is_top_1 is True
+    assert o1.is_top_3 is False
 
     o2 = session.get_offer_by_id("O-FASTEST")
     assert o2 is not None
-    assert o2.is_fastest is True
-    assert o2.is_best_price is False
-    assert o2.is_best_value is False
+    assert o2.is_top_3 is True
+    assert o2.is_top_1 is False
+    assert o2.is_top_2 is False
+    assert o2.is_top_1 is False
 
 
 def test_defensive_exceptions_on_entities_and_session() -> None:
@@ -3943,6 +4035,53 @@ def test_defensive_exceptions_on_entities_and_session() -> None:
         assert err.code == "INVALID_QUOTE_SESSION"
 
 
+def test_flight_offer_round_trip_support() -> None:
+    """Certifica el modelado holístico de ofertas comerciales de ida y vuelta (ROUND_TRIP)."""
+    now = datetime(2026, 11, 1, 8, 0, tzinfo=timezone.utc)
+    return_now = datetime(2026, 11, 8, 14, 0, tzinfo=timezone.utc)
+    carrier = AirlineCode("LA")
+    fn_out = FlightNumber(carrier=carrier, number="2040")
+    fn_in = FlightNumber(carrier=carrier, number="2041")
+
+    leg_out = FlightOfferLeg(
+        origin="LIM",
+        destination="CUZ",
+        departure_time=now,
+        arrival_time=now + timedelta(minutes=85),
+        flight_number=fn_out,
+        operating_carrier="LATAM",
+        duration_minutes=85,
+    )
+    leg_in = FlightOfferLeg(
+        origin="CUZ",
+        destination="LIM",
+        departure_time=return_now,
+        arrival_time=return_now + timedelta(minutes=85),
+        flight_number=fn_in,
+        operating_carrier="LATAM",
+        duration_minutes=85,
+    )
+
+    offer_rt = FlightOffer(
+        offer_id="O-RT-LIM-CUZ",
+        airline_name="LATAM",
+        airline_code=carrier,
+        flight_number=fn_out,
+        departure_time=now,
+        arrival_time=return_now + timedelta(minutes=85),
+        price=Money(210.00, CurrencyEnum.USD),
+        legs=(leg_out, leg_in),
+        stops_count=1,
+        total_duration_minutes=170,
+        booking_url="https://latam.com/book/O-RT-LIM-CUZ",
+    )
+
+    assert offer_rt.is_round_trip is True
+    assert offer_rt.matches_criteria("LIM", "CUZ") is True
+    assert offer_rt.matches_criteria("LIM", "AQP") is False
+    assert offer_rt.to_dict()["is_round_trip"] is True
+
+
 if __name__ == "__main__":
     test_flight_offer_leg_validations()
     test_flight_offer_creation_and_multileg_continuity()
@@ -3950,6 +4089,7 @@ if __name__ == "__main__":
     test_quote_session_factories_empty_and_populated()
     test_quote_session_immutable_offers_and_lookup()
     test_quote_session_podium_assignment_and_events()
+    test_flight_offer_round_trip_support()
     test_defensive_exceptions_on_entities_and_session()
     print("Todas las pruebas unitarias de Entidades y QuoteSession pasaron exitosamente (100%).")
 ```
@@ -4020,14 +4160,23 @@ $$d_i = \sqrt{ \bar{p}_i^2 + \bar{t}_i^2 + \bar{s}_i^2 }$$
 
 La oferta en la Frontera de Rango 1 que minimice $d_i$ constituye la alternativa con la menor desviación cuadrática global respecto a las condiciones ideales, resolviendo con elegancia matemática el problema del compromiso multicriterio.
 
-##### Reglas Deterministas de Asignación de los 3 Laureles del Podio Navby
-El servicio culmina erigiendo el objeto de valor **ParetoPodium**, adjudicando de manera estricta y determinista los tres laureles de honor comercial:
+##### Reglas Deterministas de Asignación de las 3 Mejores Recomendaciones del Podio Navby
+Para erradicar sesgos extremos unidimensionales que comprometan la experiencia del usuario (como priorizar pasajes excesivamente lentos o excesivamente costosos), el Podio Navby erige las **Tres Mejores Recomendaciones Globales** (Top 1, Top 2 y Top 3 de la Frontera de Pareto), calculadas deterministamente a partir de la función de utilidad multiobjetivo normalizada (distancia euclidiana $d_i$ al punto utópico ideal $(0, 0, 0)$ en precio total, duración acumulada y número de escalas):
 
-1. **Laurel de Mejor Precio (`best_price_offer_id`):** Corresponde a la oferta que minimiza el costo monetario absoluto ($p_i = p_{\min}$). En caso de presentarse múltiples ofertas con precio idéntico, la regla de desempate selecciona la de menor duración total acumulada. Si el empate persiste, se prefiere la de menor cantidad de escalas, concluyendo con el ordenamiento alfanumérico determinista del identificador `offer_id`.
-2. **Laurel de Vuelo Más Rápido (`fastest_offer_id`):** Corresponde a la oferta que minimiza el tiempo de viaje total en minutos ($t_i = t_{\min}$). En caso de empate en duración, se selecciona la de menor importe monetario. Si persiste la paridad, se desempata por menor número de escalas y finalmente por `offer_id`.
-3. **Laurel de Mejor Equilibrio (`best_value_offer_id`):** Corresponde a la oferta perteneciente exclusivamente a la Frontera de Rango 1 (`pareto_rank == 1`) que exhibe la menor distancia euclidiana normalizada $d_i$ al punto utópico ideal $(0, 0, 0)$. Cualquier oferta dominada (Rango $\ge 2$) queda categóricamente excluida de este laurel. Ante distancias idénticas, se prioriza el menor precio, seguido de la menor duración y el identificador alfanumérico.
+1. **Top 1 (`top_1_offer_id`):** Primera mejor alternativa global en el frente de no-dominancia (menor distancia euclidiana normalizada $d_i$ al punto utópico ideal).
+2. **Top 2 (`top_2_offer_id`):** Segunda mejor alternativa global en el frente de no-dominancia (segunda menor distancia euclidiana $d_i$).
+3. **Top 3 (`top_3_offer_id`):** Tercera mejor alternativa global en el frente de no-dominancia (tercera menor distancia euclidiana $d_i$).
 
-Cuando la sesión contiene una sola oferta comercial disponible ($N = 1$), dicha oferta se adjudica automáticamente los tres laureles sin generar excepciones. Cuando la sesión carece de ofertas ($N = 0$), el podio se inicializa con identificadores nulos (`None`), conservando total consistencia referencial.
+Criterio de Ordenamiento Global y Desempate Determinista:
+Las ofertas comerciales se clasifican jerárquicamente evaluando:
+1) Menor rango jerárquico de Pareto (`pareto_rank`).
+2) Menor distancia euclidiana normalizada al punto ideal utópico ($d_i$).
+3) Menor importe monetario absoluto (`price.amount`).
+4) Menor duración total acumulada en minutos (`total_duration_minutes`).
+5) Menor cantidad de escalas intermedias (`stops_count`).
+6) Orden alfanumérico lexicográfico del identificador unívoco `offer_id`.
+
+Cuando la sesión contiene una sola oferta comercial disponible ($N = 1$), dicha alternativa se adjudica automáticamente las tres posiciones del podio. Cuando la sesión dispone de exactamente dos ofertas ($N = 2$), la primera posición corresponde a la de menor distancia al punto ideal y las posiciones subsecuentes cubren la alternativa restante. Si la sesión carece de ofertas ($N = 0$), el podio se inicializa con identificadores nulos (`None`), conservando total consistencia referencial.
 
 ##### Matriz de Servicios de Dominio Puros bajo Normas APA 7
 La Tabla @tbl:quotes-domain-services resume la matriz técnica de especificación del servicio de dominio puro en el Bounded Context Quotes:
@@ -4036,7 +4185,7 @@ La Tabla @tbl:quotes-domain-services resume la matriz técnica de especificació
 
 | Servicio de Dominio | Módulo Canónico | Complejidad Temporal | Métodos Principales | Responsabilidad Matemática / Algorítmica |
 | :---------------------------------- | :--------------------------------------------------------------------- | :--------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ParetoOptimizationDomainService** | src.modules.quotes.domain.services.pareto_optimization_domain_service | $O(M \cdot N^2)$ | evaluate_dominance, compute_pareto_fronts, build_navby_podium, optimize_and_rank | Ejecuta la optimización multiobjetivo de Pareto sobre ofertas comerciales en tres dimensiones concurrentes (precio total, duración acumulada, escalas intermedias); evalúa dominancia vectorial estricta; clasifica en frentes jerárquicos de no-dominancia (Fast Non-dominated Sorting); aplica normalización Min-Max en $[0, 1]$; calcula la distancia euclidiana al punto utópico ideal $(0, 0, 0)$; y erige de forma determinista la tríada laureada de ParetoPodium. |
+| **ParetoOptimizationDomainService** | src.modules.quotes.domain.services.pareto_optimization_domain_service | $O(M \cdot N^2)$ | evaluate_dominance, compute_pareto_fronts, build_navby_podium, optimize_and_rank | Ejecuta la optimización multiobjetivo de Pareto sobre ofertas comerciales en tres dimensiones concurrentes (precio total, duración acumulada, escalas intermedias); evalúa dominancia vectorial estricta; clasifica en frentes jerárquicos de no-dominancia (Fast Non-dominated Sorting); aplica normalización Min-Max en $[0, 1]$; calcula la distancia euclidiana al punto utópico ideal $(0, 0, 0)$; y erige de forma determinista las 3 mejores recomendaciones globales (Top 1, Top 2, Top 3) de ParetoPodium. |
 
 *Nota.* Especificación técnica y responsabilidades operacionales del servicio de dominio puro en el Bounded Context Quotes. El componente se implementa como una clase sin estado mutable (stateless) compuesta exclusivamente por métodos de clase (@classmethod), garantizando predictibilidad matemática, determinismo referencial, seguridad ante concurrencia masiva en el runtime asíncrono de FastAPI y total independencia respecto a capas de persistencia relacional o bibliotecas de infraestructura perimétrica.
 
@@ -4238,51 +4387,41 @@ class ParetoOptimizationDomainService:
 
     @classmethod
     def build_navby_podium(cls, ranked_offers: Sequence[FlightOffer]) -> ParetoPodium:
-        """Determina los 3 laureles del Podio Navby aplicando optimización multiobjetivo.
+        """Determina las 3 mejores recomendaciones globales del Podio Navby (Top 1, Top 2, Top 3)
+        mediante la función de utilidad multiobjetivo normalizada (distancia euclidiana al punto utópico ideal).
 
-        Reglas matemáticas de asignación:
-        1. Mejor Precio: Oferta con menor importe absoluto (min price.amount).
-           En empate, menor duración total, luego menor escalas.
-        2. Vuelo Más Rápido: Oferta con menor tiempo acumulado (min total_duration_minutes).
-           En empate, menor precio, luego menor escalas.
-        3. Mejor Equilibrio: Oferta de la Frontera de Rango 1 (pareto_rank == 1) con
-           la menor distancia euclidiana normalizada al punto ideal utópico (0, 0, 0):
-
+        Criterios deterministas de clasificación global y desempate:
+        1. Menor rango de Pareto (pareto_rank).
+        2. Menor distancia euclidiana normalizada al punto ideal utópico (0, 0, 0):
            p̄_i = (p_i - p_min) / (p_max - p_min + ε)
            t̄_i = (t_i - t_min) / (t_max - t_min + ε)
            s̄_i = (s_i - s_min) / (s_max - s_min + ε)
            d_i = sqrt( p̄_i^2 + t̄_i^2 + s̄_i^2 )
+        3. Menor precio absoluto (price.amount).
+        4. Menor duración total acumulada (total_duration_minutes).
+        5. Menor cantidad de escalas intermedias (stops_count).
+        6. Orden alfanumérico determinista del identificador (offer_id).
 
         Args:
             ranked_offers: Secuencia de ofertas comerciales con frentes de Pareto ya calculados.
 
         Returns:
-            Instancia inmutable de ParetoPodium con los identificadores adjudicados.
+            Instancia inmutable de ParetoPodium con las 3 mejores ofertas globales asignadas.
         """
         if not ranked_offers or len(ranked_offers) == 0:
             return ParetoPodium(
-                best_price_offer_id=None,
-                fastest_offer_id=None,
-                best_value_offer_id=None,
+                top_1_offer_id=None,
+                top_2_offer_id=None,
+                top_3_offer_id=None,
             )
 
         if len(ranked_offers) == 1:
             single_id = ranked_offers[0].offer_id
             return ParetoPodium(
-                best_price_offer_id=single_id,
-                fastest_offer_id=single_id,
-                best_value_offer_id=single_id,
+                top_1_offer_id=single_id,
+                top_2_offer_id=single_id,
+                top_3_offer_id=single_id,
             )
-
-        best_price_offer = min(
-            ranked_offers,
-            key=lambda o: (o.price.amount, o.total_duration_minutes, o.stops_count, o.offer_id),
-        )
-
-        fastest_offer = min(
-            ranked_offers,
-            key=lambda o: (o.total_duration_minutes, o.price.amount, o.stops_count, o.offer_id),
-        )
 
         min_p = min(o.price.amount for o in ranked_offers)
         max_p = max(o.price.amount for o in ranked_offers)
@@ -4297,19 +4436,16 @@ class ParetoOptimizationDomainService:
         delta_t = (max_t - min_t) + cls.EPSILON
         delta_s = (max_s - min_s) + cls.EPSILON
 
-        rank_1_offers = [o for o in ranked_offers if o.pareto_rank == 1]
-        if not rank_1_offers:
-            rank_1_offers = list(ranked_offers)
-
         def compute_euclidean_distance(offer: FlightOffer) -> float:
             norm_p = (offer.price.amount - min_p) / delta_p
             norm_t = (offer.total_duration_minutes - min_t) / delta_t
             norm_s = (offer.stops_count - min_s) / delta_s
             return math.sqrt(norm_p * norm_p + norm_t * norm_t + norm_s * norm_s)
 
-        best_value_offer = min(
-            rank_1_offers,
+        sorted_candidates = sorted(
+            ranked_offers,
             key=lambda o: (
+                o.pareto_rank,
                 compute_euclidean_distance(o),
                 o.price.amount,
                 o.total_duration_minutes,
@@ -4318,10 +4454,14 @@ class ParetoOptimizationDomainService:
             ),
         )
 
+        top_1 = sorted_candidates[0].offer_id if len(sorted_candidates) > 0 else None
+        top_2 = sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1
+        top_3 = sorted_candidates[2].offer_id if len(sorted_candidates) > 2 else (sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1)
+
         return ParetoPodium(
-            best_price_offer_id=best_price_offer.offer_id,
-            fastest_offer_id=fastest_offer.offer_id,
-            best_value_offer_id=best_value_offer.offer_id,
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
         )
 
     @classmethod
@@ -4332,9 +4472,9 @@ class ParetoOptimizationDomainService:
 
         Ejecuta de manera coordinada:
         1. Clasificación en frentes de Pareto mediante compute_pareto_fronts().
-        2. Erección del Podio Navby laureado mediante build_navby_podium().
-        3. Sincronización atómica de las banderas booleanas de honor (is_best_price,
-           is_fastest, is_best_value) en cada una de las ofertas retornadas.
+        2. Erección del Podio Navby de 3 mejores recomendaciones mediante build_navby_podium().
+        3. Sincronización atómica de las banderas booleanas de honor (is_top_1, is_top_2,
+           is_top_3 y alias retrocompatibles) en cada una de las ofertas retornadas.
 
         Args:
             offers: Colección de ofertas comerciales sin clasificar.
@@ -4351,9 +4491,9 @@ class ParetoOptimizationDomainService:
         podium = cls.build_navby_podium(ranked_offers)
 
         for offer in ranked_offers:
-            offer.is_best_price = (offer.offer_id == podium.best_price_offer_id)
-            offer.is_fastest = (offer.offer_id == podium.fastest_offer_id)
-            offer.is_best_value = (offer.offer_id == podium.best_value_offer_id)
+            offer.is_top_1 = (offer.offer_id == podium.top_1_offer_id)
+            offer.is_top_2 = (offer.offer_id == podium.top_2_offer_id)
+            offer.is_top_3 = (offer.offer_id == podium.top_3_offer_id)
 
         return (ranked_offers, podium)
 ```
@@ -4485,21 +4625,24 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
-    def mark_as_best_price(self) -> FlightOffer:
-        self.is_best_price = True
+
+    def mark_as_top_1(self) -> FlightOffer:
+        self.is_top_1 = True
         return self
 
-    def mark_as_fastest(self) -> FlightOffer:
-        self.is_fastest = True
+    def mark_as_top_2(self) -> FlightOffer:
+        self.is_top_2 = True
         return self
 
-    def mark_as_best_value(self) -> FlightOffer:
-        self.is_best_value = True
+    def mark_as_top_3(self) -> FlightOffer:
+        self.is_top_3 = True
         return self
+
+    
 
     def set_pareto_rank(self, rank: int) -> FlightOffer:
         if rank < 1:
@@ -4518,43 +4661,47 @@ class FlightOffer:
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
 
     @property
     def is_complete(self) -> bool:
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     @property
     def is_empty(self) -> bool:
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
     def laureates_count(self) -> int:
         return sum(
             1
-            for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
             if oid is not None
         )
 
     def contains_offer(self, offer_id: str) -> bool:
         return offer_id in (
-            self.best_price_offer_id,
-            self.fastest_offer_id,
-            self.best_value_offer_id,
+            self.top_1_offer_id,
+            self.top_2_offer_id,
+            self.top_3_offer_id,
         )
 
     def all_laureate_ids(self) -> tuple[str, ...]:
         unique_ids: list[str] = []
-        for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id):
+        for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id):
             if oid is not None and oid not in unique_ids:
                 unique_ids.append(oid)
         return tuple(unique_ids)
@@ -4719,51 +4866,23 @@ class ParetoOptimizationDomainService:
 
     @classmethod
     def build_navby_podium(cls, ranked_offers: Sequence[FlightOffer]) -> ParetoPodium:
-        """Determina los 3 laureles del Podio Navby aplicando optimización multiobjetivo.
-
-        Reglas matemáticas de asignación:
-        1. Mejor Precio: Oferta con menor importe absoluto (min price.amount).
-           En empate, menor duración total, luego menor escalas.
-        2. Vuelo Más Rápido: Oferta con menor tiempo acumulado (min total_duration_minutes).
-           En empate, menor precio, luego menor escalas.
-        3. Mejor Equilibrio: Oferta de la Frontera de Rango 1 (pareto_rank == 1) con
-           la menor distancia euclidiana normalizada al punto ideal utópico (0, 0, 0):
-
-           p̄_i = (p_i - p_min) / (p_max - p_min + ε)
-           t̄_i = (t_i - t_min) / (t_max - t_min + ε)
-           s̄_i = (s_i - s_min) / (s_max - s_min + ε)
-           d_i = sqrt( p̄_i^2 + t̄_i^2 + s̄_i^2 )
-
-        Args:
-            ranked_offers: Secuencia de ofertas comerciales con frentes de Pareto ya calculados.
-
-        Returns:
-            Instancia inmutable de ParetoPodium con los identificadores adjudicados.
+        """Determina las 3 mejores recomendaciones globales del Podio Navby (Top 1, Top 2, Top 3)
+        mediante la función de utilidad multiobjetivo normalizada (distancia euclidiana al punto utópico ideal).
         """
         if not ranked_offers or len(ranked_offers) == 0:
             return ParetoPodium(
-                best_price_offer_id=None,
-                fastest_offer_id=None,
-                best_value_offer_id=None,
+                top_1_offer_id=None,
+                top_2_offer_id=None,
+                top_3_offer_id=None,
             )
 
         if len(ranked_offers) == 1:
             single_id = ranked_offers[0].offer_id
             return ParetoPodium(
-                best_price_offer_id=single_id,
-                fastest_offer_id=single_id,
-                best_value_offer_id=single_id,
+                top_1_offer_id=single_id,
+                top_2_offer_id=single_id,
+                top_3_offer_id=single_id,
             )
-
-        best_price_offer = min(
-            ranked_offers,
-            key=lambda o: (o.price.amount, o.total_duration_minutes, o.stops_count, o.offer_id),
-        )
-
-        fastest_offer = min(
-            ranked_offers,
-            key=lambda o: (o.total_duration_minutes, o.price.amount, o.stops_count, o.offer_id),
-        )
 
         min_p = min(o.price.amount for o in ranked_offers)
         max_p = max(o.price.amount for o in ranked_offers)
@@ -4778,19 +4897,16 @@ class ParetoOptimizationDomainService:
         delta_t = (max_t - min_t) + cls.EPSILON
         delta_s = (max_s - min_s) + cls.EPSILON
 
-        rank_1_offers = [o for o in ranked_offers if o.pareto_rank == 1]
-        if not rank_1_offers:
-            rank_1_offers = list(ranked_offers)
-
         def compute_euclidean_distance(offer: FlightOffer) -> float:
             norm_p = (offer.price.amount - min_p) / delta_p
             norm_t = (offer.total_duration_minutes - min_t) / delta_t
             norm_s = (offer.stops_count - min_s) / delta_s
             return math.sqrt(norm_p * norm_p + norm_t * norm_t + norm_s * norm_s)
 
-        best_value_offer = min(
-            rank_1_offers,
+        sorted_candidates = sorted(
+            ranked_offers,
             key=lambda o: (
+                o.pareto_rank,
                 compute_euclidean_distance(o),
                 o.price.amount,
                 o.total_duration_minutes,
@@ -4799,32 +4915,20 @@ class ParetoOptimizationDomainService:
             ),
         )
 
+        top_1 = sorted_candidates[0].offer_id if len(sorted_candidates) > 0 else None
+        top_2 = sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1
+        top_3 = sorted_candidates[2].offer_id if len(sorted_candidates) > 2 else (sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1)
+
         return ParetoPodium(
-            best_price_offer_id=best_price_offer.offer_id,
-            fastest_offer_id=fastest_offer.offer_id,
-            best_value_offer_id=best_value_offer.offer_id,
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
         )
 
     @classmethod
     def optimize_and_rank(
         cls, offers: Sequence[FlightOffer]
     ) -> tuple[tuple[FlightOffer, ...], ParetoPodium]:
-        """Orquesta integralmente la optimización multiobjetivo, clasificación y erección del podio.
-
-        Ejecuta de manera coordinada:
-        1. Clasificación en frentes de Pareto mediante compute_pareto_fronts().
-        2. Erección del Podio Navby laureado mediante build_navby_podium().
-        3. Sincronización atómica de las banderas booleanas de honor (is_best_price,
-           is_fastest, is_best_value) en cada una de las ofertas retornadas.
-
-        Args:
-            offers: Colección de ofertas comerciales sin clasificar.
-
-        Returns:
-            Tupla conteniendo:
-            - Tupla de ofertas ordenadas por rango y atributos.
-            - Objeto de valor ParetoPodium correspondiente.
-        """
         if not offers or len(offers) == 0:
             return ((), ParetoPodium())
 
@@ -4832,9 +4936,9 @@ class ParetoOptimizationDomainService:
         podium = cls.build_navby_podium(ranked_offers)
 
         for offer in ranked_offers:
-            offer.is_best_price = (offer.offer_id == podium.best_price_offer_id)
-            offer.is_fastest = (offer.offer_id == podium.fastest_offer_id)
-            offer.is_best_value = (offer.offer_id == podium.best_value_offer_id)
+            offer.is_top_1 = (offer.offer_id == podium.top_1_offer_id)
+            offer.is_top_2 = (offer.offer_id == podium.top_2_offer_id)
+            offer.is_top_3 = (offer.offer_id == podium.top_3_offer_id)
 
         return (ranked_offers, podium)
 
@@ -4938,7 +5042,7 @@ def test_compute_pareto_fronts_multi_tier() -> None:
 
 
 def test_build_navby_podium_mathematical_precision() -> None:
-    """Certifica la normalización Min-Max y asignación matemática de laureles del Podio Navby."""
+    """Certifica la normalización Min-Max y asignación matemática de las 3 mejores ofertas del Podio Navby."""
     o_cheap = _create_fixture_offer("O-CHEAP", price_val=100.0, duration_min=300, stops=0)
     o_fast = _create_fixture_offer("O-FAST", price_val=300.0, duration_min=100, stops=0)
     o_balanced = _create_fixture_offer("O-BALANCED", price_val=150.0, duration_min=150, stops=0)
@@ -4947,27 +5051,30 @@ def test_build_navby_podium_mathematical_precision() -> None:
     ranked, podium = ParetoOptimizationDomainService.optimize_and_rank([o_cheap, o_fast, o_balanced, o_dom])
 
     assert podium.is_complete is True
-    assert podium.best_price_offer_id == "O-CHEAP"
-    assert podium.fastest_offer_id == "O-FAST"
-    assert podium.best_value_offer_id == "O-BALANCED"
+    assert podium.top_1_offer_id == "O-BALANCED"
+    assert podium.top_2_offer_id == "O-CHEAP"
+    assert podium.top_3_offer_id == "O-FAST"
+    assert podium.top_1_offer_id == "O-BALANCED"
+    assert podium.top_2_offer_id == "O-CHEAP"
+    assert podium.top_3_offer_id == "O-FAST"
 
     # Verificar banderas booleanas en las entidades retornadas
     offer_by_id = {o.offer_id: o for o in ranked}
-    assert offer_by_id["O-CHEAP"].is_best_price is True
-    assert offer_by_id["O-CHEAP"].is_fastest is False
-    assert offer_by_id["O-CHEAP"].is_best_value is False
+    assert offer_by_id["O-BALANCED"].is_top_1 is True
+    assert offer_by_id["O-BALANCED"].is_top_2 is False
+    assert offer_by_id["O-BALANCED"].is_top_3 is False
 
-    assert offer_by_id["O-FAST"].is_fastest is True
-    assert offer_by_id["O-FAST"].is_best_price is False
-    assert offer_by_id["O-FAST"].is_best_value is False
+    assert offer_by_id["O-CHEAP"].is_top_2 is True
+    assert offer_by_id["O-CHEAP"].is_top_1 is False
+    assert offer_by_id["O-CHEAP"].is_top_3 is False
 
-    assert offer_by_id["O-BALANCED"].is_best_value is True
-    assert offer_by_id["O-BALANCED"].is_best_price is False
-    assert offer_by_id["O-BALANCED"].is_fastest is False
+    assert offer_by_id["O-FAST"].is_top_3 is True
+    assert offer_by_id["O-FAST"].is_top_1 is False
+    assert offer_by_id["O-FAST"].is_top_2 is False
 
-    assert offer_by_id["O-DOM"].is_best_price is False
-    assert offer_by_id["O-DOM"].is_fastest is False
-    assert offer_by_id["O-DOM"].is_best_value is False
+    assert offer_by_id["O-DOM"].is_top_1 is False
+    assert offer_by_id["O-DOM"].is_top_2 is False
+    assert offer_by_id["O-DOM"].is_top_3 is False
 
 
 def test_single_offer_takes_all_laurels() -> None:
@@ -4978,14 +5085,18 @@ def test_single_offer_takes_all_laurels() -> None:
 
     assert len(ranked) == 1
     assert ranked[0].pareto_rank == 1
-    assert ranked[0].is_best_price is True
-    assert ranked[0].is_fastest is True
-    assert ranked[0].is_best_value is True
+    assert ranked[0].is_top_1 is True
+    assert ranked[0].is_top_2 is True
+    assert ranked[0].is_top_3 is True
+    assert ranked[0].is_top_1 is True
 
     assert podium.is_complete is True
-    assert podium.best_price_offer_id == "O-SOLITARY"
-    assert podium.fastest_offer_id == "O-SOLITARY"
-    assert podium.best_value_offer_id == "O-SOLITARY"
+    assert podium.top_1_offer_id == "O-SOLITARY"
+    assert podium.top_2_offer_id == "O-SOLITARY"
+    assert podium.top_3_offer_id == "O-SOLITARY"
+    assert podium.top_2_offer_id == "O-SOLITARY"
+    assert podium.top_3_offer_id == "O-SOLITARY"
+    assert podium.top_1_offer_id == "O-SOLITARY"
     assert podium.laureates_count() == 3
     assert podium.all_laureate_ids() == ("O-SOLITARY",)
 
@@ -4997,9 +5108,12 @@ def test_empty_offers_returns_empty_podium() -> None:
     assert ranked == ()
     assert podium.is_empty is True
     assert podium.is_complete is False
-    assert podium.best_price_offer_id is None
-    assert podium.fastest_offer_id is None
-    assert podium.best_value_offer_id is None
+    assert podium.top_1_offer_id is None
+    assert podium.top_2_offer_id is None
+    assert podium.top_3_offer_id is None
+    assert podium.top_2_offer_id is None
+    assert podium.top_3_offer_id is None
+    assert podium.top_1_offer_id is None
     assert podium.laureates_count() == 0
     assert podium.all_laureate_ids() == ()
 
@@ -5011,9 +5125,9 @@ def test_tie_breaking_determinism() -> None:
     o_tie2 = _create_fixture_offer("O-TIE-FAST", price_val=150.0, duration_min=120, stops=0)
 
     ranked, podium = ParetoOptimizationDomainService.optimize_and_rank([o_tie1, o_tie2])
-    # Mejor precio desempata por menor duración -> O-TIE-FAST
-    assert podium.best_price_offer_id == "O-TIE-FAST"
-    assert podium.fastest_offer_id == "O-TIE-FAST"
+    # Menor distancia al punto utópico determina Top 1 -> O-TIE-FAST
+    assert podium.top_1_offer_id == "O-TIE-FAST"
+    assert podium.top_2_offer_id == "O-TIE-SLOW"
 
 
 def test_zero_variance_epsilon_stability() -> None:
@@ -6732,10 +6846,14 @@ class Money:
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
     is_complete: bool = False
+
+
+
+
 
 
 @dataclass(frozen=True)
@@ -6747,6 +6865,10 @@ class QuoteSearchCriteria:
     passengers: int = 1
     cabin_class: CabinClassEnum = CabinClassEnum.ECONOMY
     currency: CurrencyEnum = CurrencyEnum.USD
+
+    @property
+    def trip_type(self) -> str:
+        return "ROUND_TRIP" if self.return_date is not None else "ONE_WAY"
 
     def cache_key(self) -> str:
         ret_str = self.return_date.isoformat() if self.return_date else "ONEWAY"
@@ -6781,9 +6903,10 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+    is_round_trip: bool = False
 
     def matches_criteria(self, origin: str, destination: str) -> bool:
         if not self.legs:
@@ -6990,12 +7113,12 @@ async def run_quotes_repository_test_suite() -> None:
         stops_count=0,
         total_duration_minutes=80,
         booking_url="https://latam.com/booking/OFFER-001",
-        is_best_price=True,
+        is_top_2=True,
     )
     podium = ParetoPodium(
-        best_price_offer_id="OFFER-001",
-        fastest_offer_id="OFFER-001",
-        best_value_offer_id="OFFER-001",
+        top_2_offer_id="OFFER-001",
+        top_3_offer_id="OFFER-001",
+        top_1_offer_id="OFFER-001",
         is_complete=True,
     )
     session = QuoteSession.create_from_offers(
@@ -7015,7 +7138,7 @@ async def run_quotes_repository_test_suite() -> None:
     assert retrieved.total_offers_count() == 1, "La sesión debe contener exactamente 1 oferta"
     assert retrieved.get_offers()[0].offer_id == "OFFER-001", "El identificador de la oferta debe coincidir"
     assert retrieved.get_offers()[0].price.amount == 85.50, "El precio de la oferta debe ser 85.50"
-    assert retrieved.get_podium().best_price_offer_id == "OFFER-001", "El podio debe preservar el mejor precio"
+    assert retrieved.get_podium().top_2_offer_id == "OFFER-001", "El podio debe preservar el mejor precio"
     assert await repo.get_session("CLAVE_INEXISTENTE") is None, "Una clave inexistente debe retornar None"
     print("[2/5] Almacenamiento y recuperación asíncrona de QuoteSession con integridad ontológica... APROBADO")
 
@@ -7119,7 +7242,7 @@ A continuación se fundamentan detalladamente los ocho escenarios operacionales 
    Audita la coherencia estructural y espacial de las entidades internas **FlightOfferLeg** y **FlightOffer**. En **FlightOfferLeg**, se verifica la creación de segmentos unitarios e indivisibles de vuelo comercial, comprobando la validación de terminales IATA válidas, horarios de despegue y aterrizaje, asignación de **FlightNumber**, aerolínea operadora, duración positiva ($> 0 \text{ min}$) y tiempos de escala o transbordo no negativos ($\ge 0 \text{ min}$), interceptando tramos reflexivos o duraciones inválidas con **InvalidFlightOfferLegException** (`INVALID_FLIGHT_OFFER_LEG`). Al ensamblar dichos tramos dentro de la entidad **FlightOffer**, se auditan dos invariantes críticas de la aviación comercial:
    - *Invariante de Escalas:* El cardinal total de escalas de conexión debe corresponder exactamente a la cantidad de tramos físicos menos uno ($escalas = tramos - 1$). Cualquier discordancia (como asignar cero escalas a una oferta compuesta por dos tramos) desencadena de inmediato **InvalidFlightOfferException** (`INVALID_FLIGHT_OFFER`).
    - *Invariante de Continuidad Espacial Estricta:* Para toda secuencia de tramos contiguos, el aeropuerto de llegada del tramo $i$ debe coincidir exactamente con el aeropuerto de partida del tramo $i+1$ ($legs[i].destination == legs[i+1].origin$). Cualquier salto espacial o discontinuidad geográfica es detectado y rechazado.
-   Asimismo, se comprueba la validación de la duración total acumulada positiva, la exigencia de un enlace de reserva comercial no vacío (*booking_url*), el funcionamiento de los métodos de distinción honorífica (*mark_as_best_price()*, *mark_as_fastest()*, *mark_as_best_value()*) y la correspondencia geográfica con los criterios de búsqueda mediante *matches_criteria()*.
+   Asimismo, se comprueba la validación de la duración total acumulada positiva, la exigencia de un enlace de reserva comercial no vacío (*booking_url*), el funcionamiento de los métodos de distinción honorífica (*mark_as_top_1()*, *mark_as_top_2()*, *mark_as_top_3()*) y la correspondencia geográfica con los criterios de búsqueda mediante *matches_criteria()*.
 
 4. **Escenario 4: Evaluación de Dominancia Vectorial de Pareto:**
    Examina la formulación matemática de no-dominancia de Vilfredo Pareto implementada en el método *evaluate_dominance()* del servicio de dominio puro **ParetoOptimizationDomainService**. Se somete a prueba el cumplimiento de la relación estricta de dominancia vectorial multiobjetivo en un espacio tridimensional ($\min \text{precio}$, $\min \text{duración}$, $\min \text{escalas}$):
@@ -7544,6 +7667,10 @@ class QuoteSearchCriteria:
     def is_round_trip(self) -> bool:
         return self.return_date is not None
 
+    @property
+    def trip_type(self) -> str:
+        return "ROUND_TRIP" if self.return_date is not None else "ONE_WAY"
+
     def cache_key(self) -> str:
         ret_str = self.return_date.isoformat() if self.return_date else "ONEWAY"
         return (
@@ -7556,30 +7683,34 @@ class QuoteSearchCriteria:
 class ParetoPodium:
     """Objeto de valor inmutable que encapsula la tríada laureada de ofertas de Pareto."""
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
 
     def is_complete(self) -> bool:
-        return bool(self.best_price_offer_id and self.fastest_offer_id and self.best_value_offer_id)
+        return bool(self.top_1_offer_id and self.top_2_offer_id and self.top_3_offer_id)
 
     def is_empty(self) -> bool:
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
     def laureates_count(self) -> int:
         unique = {
             oid
-            for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
             if oid is not None
         }
         return len(unique)
 
     def contains_offer(self, offer_id: str) -> bool:
-        return offer_id in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+        return offer_id in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
 
 
 @dataclass(frozen=True)
@@ -7697,9 +7828,9 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.offer_id, str) or not self.offer_id.strip():
@@ -7772,16 +7903,16 @@ class FlightOffer:
         self.booking_url = self.booking_url.strip()
         self.legs = legs_tuple
 
-    def mark_as_best_price(self) -> FlightOffer:
-        self.is_best_price = True
+    def mark_as_top_2(self) -> FlightOffer:
+        self.is_top_2 = True
         return self
 
-    def mark_as_fastest(self) -> FlightOffer:
-        self.is_fastest = True
+    def mark_as_top_3(self) -> FlightOffer:
+        self.is_top_3 = True
         return self
 
-    def mark_as_best_value(self) -> FlightOffer:
-        self.is_best_value = True
+    def mark_as_top_1(self) -> FlightOffer:
+        self.is_top_1 = True
         return self
 
     def set_pareto_rank(self, rank: int) -> None:
@@ -8019,9 +8150,9 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
             )
         self._pareto_podium = podium
         for offer in self._offers:
-            offer.is_best_price = (offer.offer_id == podium.best_price_offer_id)
-            offer.is_fastest = (offer.offer_id == podium.fastest_offer_id)
-            offer.is_best_value = (offer.offer_id == podium.best_value_offer_id)
+            offer.is_top_2 = (offer.offer_id == podium.top_2_offer_id)
+            offer.is_top_3 = (offer.offer_id == podium.top_3_offer_id)
+            offer.is_top_1 = (offer.offer_id == podium.top_1_offer_id)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -8037,9 +8168,9 @@ class QuoteSession(AbstractDomainAggregateRoot[str]):
             "created_at": self.created_at.isoformat(),
             "offers_count": len(self._offers),
             "podium": {
-                "best_price_offer_id": self._pareto_podium.best_price_offer_id,
-                "fastest_offer_id": self._pareto_podium.fastest_offer_id,
-                "best_value_offer_id": self._pareto_podium.best_value_offer_id,
+                "top_2_offer_id": self._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": self._pareto_podium.top_3_offer_id,
+                "top_1_offer_id": self._pareto_podium.top_1_offer_id,
             },
         }
 
@@ -8145,28 +8276,18 @@ class ParetoOptimizationDomainService:
     def build_navby_podium(cls, ranked_offers: Sequence[FlightOffer]) -> ParetoPodium:
         if not ranked_offers or len(ranked_offers) == 0:
             return ParetoPodium(
-                best_price_offer_id=None,
-                fastest_offer_id=None,
-                best_value_offer_id=None,
+                top_1_offer_id=None,
+                top_2_offer_id=None,
+                top_3_offer_id=None,
             )
 
         if len(ranked_offers) == 1:
             single_id = ranked_offers[0].offer_id
             return ParetoPodium(
-                best_price_offer_id=single_id,
-                fastest_offer_id=single_id,
-                best_value_offer_id=single_id,
+                top_1_offer_id=single_id,
+                top_2_offer_id=single_id,
+                top_3_offer_id=single_id,
             )
-
-        best_price_offer = min(
-            ranked_offers,
-            key=lambda o: (o.price.amount, o.total_duration_minutes, o.stops_count, o.offer_id),
-        )
-
-        fastest_offer = min(
-            ranked_offers,
-            key=lambda o: (o.total_duration_minutes, o.price.amount, o.stops_count, o.offer_id),
-        )
 
         min_p = min(o.price.amount for o in ranked_offers)
         max_p = max(o.price.amount for o in ranked_offers)
@@ -8181,19 +8302,16 @@ class ParetoOptimizationDomainService:
         delta_t = (max_t - min_t) + cls.EPSILON
         delta_s = (max_s - min_s) + cls.EPSILON
 
-        rank_1_offers = [o for o in ranked_offers if o.pareto_rank == 1]
-        if not rank_1_offers:
-            rank_1_offers = list(ranked_offers)
-
         def compute_euclidean_distance(offer: FlightOffer) -> float:
             norm_p = (offer.price.amount - min_p) / delta_p
             norm_t = (offer.total_duration_minutes - min_t) / delta_t
             norm_s = (offer.stops_count - min_s) / delta_s
             return math.sqrt(norm_p * norm_p + norm_t * norm_t + norm_s * norm_s)
 
-        best_value_offer = min(
-            rank_1_offers,
+        sorted_candidates = sorted(
+            ranked_offers,
             key=lambda o: (
+                o.pareto_rank,
                 compute_euclidean_distance(o),
                 o.price.amount,
                 o.total_duration_minutes,
@@ -8202,10 +8320,14 @@ class ParetoOptimizationDomainService:
             ),
         )
 
+        top_1 = sorted_candidates[0].offer_id if len(sorted_candidates) > 0 else None
+        top_2 = sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1
+        top_3 = sorted_candidates[2].offer_id if len(sorted_candidates) > 2 else (sorted_candidates[1].offer_id if len(sorted_candidates) > 1 else top_1)
+
         return ParetoPodium(
-            best_price_offer_id=best_price_offer.offer_id,
-            fastest_offer_id=fastest_offer.offer_id,
-            best_value_offer_id=best_value_offer.offer_id,
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
         )
 
     @classmethod
@@ -8624,12 +8746,12 @@ def test_scenario_3_flight_offer_and_legs_composition() -> None:
         assert e.code == "INVALID_FLIGHT_OFFER"
 
     # 7. Asignación de laureles y métodos de honor
-    offer.mark_as_best_price()
-    offer.mark_as_fastest()
-    offer.mark_as_best_value()
-    assert offer.is_best_price is True
-    assert offer.is_fastest is True
-    assert offer.is_best_value is True
+    offer.mark_as_top_2()
+    offer.mark_as_top_3()
+    offer.mark_as_top_1()
+    assert offer.is_top_2 is True
+    assert offer.is_top_3 is True
+    assert offer.is_top_1 is True
 
     print("[Escenario 3/8] Encadenamiento Secuencial de Tramos y Oferta Comercial... APROBADO")
 
@@ -8729,15 +8851,14 @@ def test_scenario_6_navby_podium_normalized_euclidean() -> None:
 
     ranked, podium = service.optimize_and_rank([o1, o2, o3, o4, o5])
 
-    # 1. Mejor Precio: O3 ($110.00)
-    assert podium.best_price_offer_id == "O3", "O3 debe ser el Mejor Precio absoluto"
+    # 1. Top 1 (Mejor Recomendación Global / Menor distancia euclidiana al punto ideal): O1
+    assert podium.top_1_offer_id == "O1", "O1 debe ser la Top 1"
 
-    # 2. Vuelo Más Rápido: O2 (180 min)
-    assert podium.fastest_offer_id == "O2", "O2 debe ser el Vuelo Más Rápido absoluto"
+    # 2. Top 2 (Segunda Mejor Recomendación Global): O2
+    assert podium.top_2_offer_id == "O2", "O2 debe ser la Top 2"
 
-    # 3. Mejor Equilibrio: debe pertenecer a la Frontera de Pareto de Rango 1
-    # Entre O1, O2 y O3, O1 minimiza la distancia euclidiana normalizada al punto ideal (0,0,0)
-    assert podium.best_value_offer_id == "O1", "O1 debe ser el Mejor Equilibrio de Pareto"
+    # 3. Top 3 (Tercera Mejor Recomendación Global): O3
+    assert podium.top_3_offer_id == "O3", "O3 debe ser la Top 3"
 
     # 4. Consultas de estado del Podio
     assert podium.is_complete() is True, "El podio debe estar completo con las 3 distinciones"
@@ -8749,15 +8870,19 @@ def test_scenario_6_navby_podium_normalized_euclidean() -> None:
 
     # 5. Caso borde: oferta solitaria recibe los 3 laureles
     single_ranked, single_podium = service.optimize_and_rank([o1])
-    assert single_podium.best_price_offer_id == "O1"
-    assert single_podium.fastest_offer_id == "O1"
-    assert single_podium.best_value_offer_id == "O1"
+    assert single_podium.top_1_offer_id == "O1"
+    assert single_podium.top_2_offer_id == "O1"
+    assert single_podium.top_3_offer_id == "O1"
+    assert single_podium.top_2_offer_id == "O1"
+    assert single_podium.top_3_offer_id == "O1"
+    assert single_podium.top_1_offer_id == "O1"
     assert single_podium.laureates_count() == 1
 
     # 6. Caso borde: lista vacía retorna podio vacío
     empty_ranked, empty_podium = service.optimize_and_rank([])
     assert empty_podium.is_empty() is True
-    assert empty_podium.best_price_offer_id is None
+    assert empty_podium.top_1_offer_id is None
+    assert empty_podium.top_2_offer_id is None
 
     print("[Escenario 6/8] Construcción del Podio Navby con Distancia Euclidiana Normalizada... APROBADO")
 
@@ -8814,22 +8939,22 @@ def test_scenario_7_quote_session_factory_events_exceptions() -> None:
     assert session_empty.get_podium().is_empty() is True
 
     # 4. Asignación de podio y sincronización de banderas en entidades internas
-    podium = ParetoPodium(best_price_offer_id="OFF_2", fastest_offer_id="OFF_1", best_value_offer_id="OFF_2")
+    podium = ParetoPodium(top_2_offer_id="OFF_2", top_3_offer_id="OFF_1", top_1_offer_id="OFF_2")
     session_live.assign_podium(podium)
     assert session_live.get_podium() == podium
 
     offers_dict = {o.offer_id: o for o in session_live.get_offers()}
-    assert offers_dict["OFF_2"].is_best_price is True
-    assert offers_dict["OFF_1"].is_best_price is False
-    assert offers_dict["OFF_1"].is_fastest is True
-    assert offers_dict["OFF_2"].is_best_value is True
+    assert offers_dict["OFF_2"].is_top_2 is True
+    assert offers_dict["OFF_1"].is_top_2 is False
+    assert offers_dict["OFF_1"].is_top_3 is True
+    assert offers_dict["OFF_2"].is_top_1 is True
 
     # 5. Serialización a estructura primitiva de diccionario (to_dict)
     s_dict = session_live.to_dict()
     assert s_dict["session_id"] == session_live.id
     assert s_dict["origin"] == "LIM" and s_dict["destination"] == "MIA"
     assert s_dict["offers_count"] == 2
-    assert s_dict["podium"]["best_price_offer_id"] == "OFF_2"
+    assert s_dict["podium"]["top_2_offer_id"] == "OFF_2"
 
     # 6. Rechazo de ofertas inconsistentes con los criterios de búsqueda
     bad_offer = _create_sample_offer("OFF_BAD", "LIM", "CUZ", 100.0, 60, 0)
@@ -9128,8 +9253,8 @@ La Tabla @tbl:quotes-pydantic-schemas sintetiza la matriz contractual completa d
 | **QuoteSearchRequestSchema** | quote_search_request.py | Request Resource | Códigos IATA de 3 letras mayúsculas con patrón `^[A-Z]{3}$`; fecha de salida igual o posterior a hoy; fecha de retorno igual o posterior a la salida si existe; aforo en el intervalo $[1, 9]$ (estándar IATA de reservas comerciales); clase de cabina permitida (`ECONOMY`, `PREMIUM_ECONOMY`, `BUSINESS`, `FIRST`); código de divisa ISO 4217 de 3 letras mayúsculas (`^[A-Z]{3}$`); validador post-construcción que exige $\text{origin} \neq \text{destination}$; sanitización `str_strip_whitespace=True` y prohibición estricta de atributos foráneos (`extra="forbid"`). | **Obligatorios:** `origin`, `destination`, `departure_date`.<br>**Opcionales con valor por defecto:** `return_date` (None), `passengers` (1), `cabin_class` ("ECONOMY"), `currency` ("USD"). | Mapeado por **QuotesQueryAssembler** hacia la consulta de aplicación inmutable **SearchFlightQuotesQuery**. |
 | **MoneyResponseSchema** | money_response.py | Response Resource | Importe monetario positivo ($\text{amount} \ge 0.0$) con precisión de hasta dos cifras decimales; código de divisa internacional ISO 4217 con patrón `^[A-Z]{3}$`; inmutabilidad con `frozen=True`, `from_attributes=True` y prohibición de atributos foráneos (`extra="forbid"`). | **Obligatorios:** `amount`, `currency`.<br>**Opcionales:** Ninguno. | Ensamblado a partir del objeto de valor de dominio **Money** por **QuoteResourceAssembler**. |
 | **FlightOfferLegResponseSchema** | flight_offer_leg_response.py | Response Resource | Terminales de partida y llegada con patrón IATA `^[A-Z]{3}$`; marcas temporales de salida y llegada en formato ISO 8601; duración en minutos estrictamente positiva ($> 0$); tiempo de espera en conexión hacia el siguiente tramo no negativo ($\ge 0$ min); inmutabilidad garantizada mediante `frozen=True` y `extra="forbid"`. | **Obligatorios:** `origin`, `destination`, `departure_time`, `arrival_time`, `flight_number`, `operating_carrier`, `duration_minutes`.<br>**Opcionales con valor por defecto:** `layover_minutes_to_next` (0). | Ensamblado por **QuoteResourceAssembler** a partir de la entidad de dominio **FlightOfferLeg**. |
-| **FlightOfferResponseSchema** | flight_offer_response.py | Response Resource | Identificador único de oferta no vacío; código IATA de aerolínea con patrón `^[A-Z0-9]{2}$`; tarifa económica mediante **MoneyResponseSchema**; lista ordenada de tramos constitutivos (**FlightOfferLegResponseSchema**); duración acumulada entera positiva ($\text{total\_duration\_minutes} > 0$); escalas intermedias no negativas ($\text{stops\_count} \ge 0$); frente de Pareto asignado ($\text{pareto\_rank} \ge 1$); URL de reserva directa (*deep link*); banderas booleanas indicadoras de laureles de podio; inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** `offer_id`, `airline_name`, `airline_code`, `flight_number`, `departure_time`, `arrival_time`, `price`, `stops_count`, `total_duration_minutes`, `booking_url`.<br>**Opcionales con valor por defecto:** `legs` ([]), `pareto_rank` (1), `is_best_price` (False), `is_fastest` (False), `is_best_value` (False). | Ensamblado por **QuoteResourceAssembler** a partir de la entidad de dominio **FlightOffer**. |
-| **ParetoPodiumResponseSchema** | pareto_podium_response.py | Response Resource | Identificadores de ofertas laureadas opcionales (`str | None`) para *Mejor Precio*, *Vuelo Más Rápido* y *Mejor Equilibrio* (Punto Utópico); conteo de laureados acotado al rango $[0, 3]$; bandera booleana de completitud (`is_complete`); inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** Ninguno.<br>**Opcionales con valor por defecto:** `best_price_offer_id` (None), `fastest_offer_id` (None), `best_value_offer_id` (None), `is_complete` (False), `laureates_count` (0). | Ensamblado por **QuoteResourceAssembler** a partir del objeto de valor de dominio **ParetoPodium**. |
+| **FlightOfferResponseSchema** | flight_offer_response.py | Response Resource | Identificador único de oferta no vacío; código IATA de aerolínea con patrón `^[A-Z0-9]{2}$`; tarifa económica mediante **MoneyResponseSchema**; lista ordenada de tramos constitutivos (**FlightOfferLegResponseSchema**); duración acumulada entera positiva ($	ext{total_duration_minutes} > 0$); escalas intermedias no negativas ($	ext{stops_count} ge 0$); frente de Pareto asignado ($	ext{pareto_rank} ge 1$); URL de reserva directa (*deep link*); banderas booleanas indicadoras de laureles de podio (Top 1, Top 2, Top 3) e itinerario ida y vuelta (`is_round_trip`); inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** `offer_id`, `airline_name`, `airline_code`, `flight_number`, `departure_time`, `arrival_time`, `price`, `stops_count`, `total_duration_minutes`, `booking_url`.<br>**Opcionales con valor por defecto:** `legs` ([]), `pareto_rank` (1), `is_top_1` (False), `is_top_2` (False), `is_top_3` (False), `is_round_trip` (False). | Ensamblado por **QuoteResourceAssembler** a partir de la entidad de dominio **FlightOffer**. |
+| **ParetoPodiumResponseSchema** | pareto_podium_response.py | Response Resource | Identificadores de ofertas laureadas opcionales (`str | None`) para el Podio Navby (*Top 1*, *Top 2* y *Top 3*); conteo de laureados acotado al rango $[0, 3]$; bandera booleana de completitud (`is_complete`); inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** Ninguno.<br>**Opcionales con valor por defecto:** `top_1_offer_id` (None), `top_2_offer_id` (None), `top_3_offer_id` (None), `is_complete` (False), `laureates_count` (0). | Ensamblado por **QuoteResourceAssembler** a partir del objeto de valor de dominio **ParetoPodium**. |
 | **QuoteSearchResponseSchema** | quote_search_response.py | Response Resource | Identificador UUID unívoco de sesión; catálogo ordenado de ofertas (**FlightOfferResponseSchema**); podio laureado de Pareto (**ParetoPodiumResponseSchema**); conteo total de ofertas descubiertas ($\text{total\_offers} \ge 0$); marca temporal de consolidación en formato ISO 8601; indicador de procedencia de caché L2 en Redis 7 (`from_cache`); inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** `session_id`, `podium`, `total_offers`, `search_timestamp`.<br>**Opcionales con valor por defecto:** `offers` ([]), `from_cache` (False). | Ensamblado por **QuoteResourceAssembler** a partir del agregado de dominio **QuoteSession**. |
 | **QuotaUsageResponseSchema** | quota_usage_response.py | Response Resource | Fecha o ciclo de referencia consultado; solicitudes ejecutadas en el ciclo ($\text{requests\_made} \ge 0$); límite máximo operacional diario o mensual ($\text{daily\_limit} > 0$); solicitudes remanentes ($\text{remaining\_requests} \ge 0$); porcentaje de cuota consumido en el intervalo cerrado $[0.0, 100.0]$; bandera de agotamiento de cuota (`is_exhausted`); inmutabilidad con `frozen=True` y `extra="forbid"`. | **Obligatorios:** `date`, `requests_made`, `daily_limit`, `remaining_requests`, `consumption_percentage`.<br>**Opcionales con valor por defecto:** `is_exhausted` (False). | Ensamblado por **QuoteResourceAssembler** a partir del objeto de valor de dominio **QuotaUsage**. |
 | **ProblemDetailResponseSchema** | problem_detail_response.py | Response Resource (RFC 7807) | Conformidad estricta con el estándar RFC 7807 / RFC 9457 (`Content-Type: application/problem+json`); código numérico de estado HTTP válido ($100 \le \text{status} \le 599$); URI de tipo y ocurrencia de problema; resumen sintético y detalle legible; lista opcional estructurada de parámetros rechazados (`invalid_params`); inmutabilidad y saneamiento perimetral con `extra="forbid"` y `str_strip_whitespace=True`. | **Obligatorios:** `title`, `status`, `detail`, `instance`.<br>**Opcionales con valor por defecto:** `type` ("about:blank"), `invalid_params` (None). | Instanciado por **QuotesController** y manejadores globales de excepciones de FastAPI ante errores perimetrales, fallos de validación o violaciones de dominio. |
@@ -9398,9 +9523,9 @@ class FlightOfferLegResponseSchema(BaseModel):
   * **total_duration_minutes** (`int`): Duración total acumulada de viaje en minutos ($> 0$).
   * **booking_url** (`str`): URL directa de reserva (*deep link*) para compra externa.
   * **pareto_rank** (`int`): Frente de dominancia de Pareto asignado ($\ge 1$, 1 = frente no dominado).
-  * **is_best_price** (`bool`): Indicador booleano del laurel de Mejor Precio en el Podio Navby.
-  * **is_fastest** (`bool`): Indicador booleano del laurel de Vuelo Más Rápido en el Podio Navby.
-  * **is_best_value** (`bool`): Indicador booleano del laurel de Mejor Relación Calidad-Precio (Punto Utópico).
+  * **is_top_1** (`bool`): Indicador booleano del laurel Top 1 en el Podio Navby.
+  * **is_top_2** (`bool`): Indicador booleano del laurel Top 2 en el Podio Navby.
+  * **is_top_3** (`bool`): Indicador booleano del laurel Top 3 en el Podio Navby.
 
 ```python
 """Esquema DTO perimetral para la proyección completa de una oferta de vuelo comercial.
@@ -9491,75 +9616,20 @@ class FlightOfferResponseSchema(BaseModel):
         description="Frente de Pareto asignado tras la optimización multiobjetivo (1 = frente no dominado).",
         examples=[1],
     )
-    is_best_price: bool = Field(
+    is_top_1: bool = Field(
         default=False,
-        description="Bandera indicadora del laurel de Mejor Precio en el Podio Navby.",
+        description="Bandera indicadora del laurel Top 1 en el Podio Navby (Punto Utópico).",
         examples=[True],
     )
-    is_fastest: bool = Field(
+    is_top_2: bool = Field(
         default=False,
-        description="Bandera indicadora del laurel de Vuelo Más Rápido en el Podio Navby.",
+        description="Bandera indicadora del laurel Top 2 en el Podio Navby.",
         examples=[False],
     )
-    is_best_value: bool = Field(
+    is_top_3: bool = Field(
         default=False,
-        description="Bandera indicadora del laurel de Mejor Relación Calidad-Precio (Punto Utópico).",
+        description="Bandera indicadora del laurel Top 3 en el Podio Navby.",
         examples=[False],
-    )
-```
-
-##### 5. ParetoPodiumResponseSchema
-
-* **Módulo Canónico:** `src.modules.quotes.interfaces.rest.resources.responses.pareto_podium_response`
-* **Propósito:** Modela la representación estructurada del Podio Navby con la terna laureada de alternativas seleccionadas tras la optimización multiobjetivo de Pareto.
-* **Dirección:** Salida (Response DTO).
-* **Configuración del Modelo:** `model_config = ConfigDict(frozen=True, from_attributes=True, extra="forbid")`.
-* **Atributos:**
-  * **best_price_offer_id** (`str | None`): Identificador único de la oferta laureada con el menor precio absoluto.
-  * **fastest_offer_id** (`str | None`): Identificador único de la oferta laureada con el menor tiempo total de viaje.
-  * **best_value_offer_id** (`str | None`): Identificador único de la oferta con el mejor equilibrio multiobjetivo (mínima distancia euclidiana normalizada al punto utópico ideal).
-  * **is_complete** (`bool`): Bandera indicadora de asignación exitosa de los tres laureles (por defecto `False`).
-  * **laureates_count** (`int`): Cantidad total de laureles distintos asignados en el podio ($0 \le \text{laureates\_count} \le 3$, por defecto 0).
-
-```python
-"""Esquema DTO perimetral para el Podio Navby laureado con las alternativas óptimas de Pareto.
-
-Ubicación: src/modules/quotes/interfaces/rest/resources/responses/pareto_podium_response.py
-"""
-
-from __future__ import annotations
-
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class ParetoPodiumResponseSchema(BaseModel):
-    """Estructura perimetral con los identificadores de las ofertas laureadas en el Podio Navby."""
-
-    model_config = ConfigDict(
-        frozen=True,
-        from_attributes=True,
-        extra="forbid",
-    )
-
-    best_price_offer_id: str | None = Field(
-        default=None,
-        description="Identificador único de la oferta galardonada con el menor precio absoluto.",
-        examples=["off_price_01"],
-    )
-    fastest_offer_id: str | None = Field(
-        default=None,
-        description="Identificador único de la oferta galardonada con el menor tiempo acumulado de viaje.",
-        examples=["off_fast_02"],
-    )
-    best_value_offer_id: str | None = Field(
-        default=None,
-        description="Identificador único de la oferta con el mejor equilibrio multiobjetivo (Punto Utópico).",
-        examples=["off_value_03"],
-    )
-    is_complete: bool = Field(
-        default=False,
-        description="Indica si los tres laureles de podio han sido asignados exitosamente.",
-        examples=[True],
     )
     laureates_count: int = Field(
         default=0,
@@ -10061,24 +10131,24 @@ except ModuleNotFoundError:
             description="Frente de Pareto asignado tras la optimización multiobjetivo (1 = frente no dominado).",
             examples=[1],
         )
-        is_best_price: bool = Field(
+        is_top_1: bool = Field(
             default=False,
-            description="Bandera indicadora del laurel de Mejor Precio en el Podio Navby.",
+            description="Bandera indicadora del laurel Top 1 en el Podio Navby.",
             examples=[True],
         )
-        is_fastest: bool = Field(
+        is_top_2: bool = Field(
             default=False,
-            description="Bandera indicadora del laurel de Vuelo Más Rápido en el Podio Navby.",
+            description="Bandera indicadora del laurel Top 2 en el Podio Navby.",
             examples=[False],
         )
-        is_best_value: bool = Field(
+        is_top_3: bool = Field(
             default=False,
-            description="Bandera indicadora del laurel de Mejor Relación Calidad-Precio (Punto Utópico).",
+            description="Bandera indicadora del laurel Top 3 en el Podio Navby.",
             examples=[False],
         )
 
     class ParetoPodiumResponseSchema(BaseModel):
-        """Esquema DTO perimetral para el Podio Navby laureado con las alternativas óptimas de Pareto."""
+        """Estructura perimetral con los identificadores de las ofertas laureadas en el Podio Navby."""
 
         model_config = ConfigDict(
             frozen=True,
@@ -10086,24 +10156,24 @@ except ModuleNotFoundError:
             extra="forbid",
         )
 
-        best_price_offer_id: str | None = Field(
+        top_1_offer_id: str | None = Field(
             default=None,
-            description="Identificador único de la oferta galardonada con el menor precio absoluto.",
+            description="Identificador único de la oferta galardonada con el Top 1 global (Punto Utópico).",
+            examples=["off_value_03"],
+        )
+        top_2_offer_id: str | None = Field(
+            default=None,
+            description="Identificador único de la oferta galardonada con el Top 2 global.",
             examples=["off_price_01"],
         )
-        fastest_offer_id: str | None = Field(
+        top_3_offer_id: str | None = Field(
             default=None,
-            description="Identificador único de la oferta galardonada con el menor tiempo acumulado de viaje.",
+            description="Identificador único de la oferta galardonada con el Top 3 global.",
             examples=["off_fast_02"],
-        )
-        best_value_offer_id: str | None = Field(
-            default=None,
-            description="Identificador único de la oferta con el mejor equilibrio multiobjetivo (Punto Utópico).",
-            examples=["off_value_03"],
         )
         is_complete: bool = Field(
             default=False,
-            description="Indica si los tres laureles de podio han sido asignados exitosamente.",
+            description="Bandera indicadora de completitud del podio (True si los 3 laureles están asignados).",
             examples=[True],
         )
         laureates_count: int = Field(
@@ -10387,14 +10457,14 @@ def test_response_schemas_serialization_and_immutability() -> None:
         total_duration_minutes=870,
         booking_url="https://booking.navby.com/checkout/off_av_001",
         pareto_rank=1,
-        is_best_price=True,
-        is_fastest=False,
-        is_best_value=True,
+        is_top_2=True,
+        is_top_3=False,
+        is_top_1=True,
     )
     podium = ParetoPodiumResponseSchema(
-        best_price_offer_id="off_av_001",
-        fastest_offer_id="off_la_002",
-        best_value_offer_id="off_av_001",
+        top_1_offer_id="off_av_001",
+        top_2_offer_id="off_av_001",
+        top_3_offer_id="off_la_002",
         is_complete=True,
         laureates_count=2,
     )
@@ -10411,7 +10481,10 @@ def test_response_schemas_serialization_and_immutability() -> None:
     assert data["session_id"] == "550e8400-e29b-41d4-a716-446655440000"
     assert data["offers"][0]["stops_count"] == 1
     assert data["offers"][0]["price"]["amount"] == 920.45
-    assert data["podium"]["best_price_offer_id"] == "off_av_001"
+    assert data["podium"]["top_1_offer_id"] == "off_av_001"
+    assert data["podium"]["top_2_offer_id"] == "off_av_001"
+    assert data["podium"]["top_3_offer_id"] == "off_la_002"
+    assert data["podium"]["top_2_offer_id"] == "off_av_001"
     assert data["podium"]["laureates_count"] == 2
 
     # Inmutabilidad (frozen=True)
@@ -10641,9 +10714,10 @@ class QuoteResourceAssembler:
             total_duration_minutes=offer.total_duration_minutes,
             booking_url=offer.booking_url,
             pareto_rank=offer.pareto_rank,
-            is_best_price=offer.is_best_price,
-            is_fastest=offer.is_fastest,
-            is_best_value=offer.is_best_value,
+            is_top_1=offer.is_top_1,
+            is_top_2=offer.is_top_2,
+            is_top_3=offer.is_top_3,
+            is_round_trip=getattr(offer, "is_round_trip", False),
         )
 
     @staticmethod
@@ -10656,17 +10730,16 @@ class QuoteResourceAssembler:
         Returns:
             Instancia inmutable de ParetoPodiumResponseSchema con conteo y estado de completitud.
         """
-        laureates = [
-            podium.best_price_offer_id,
-            podium.fastest_offer_id,
-            podium.best_value_offer_id,
-        ]
+        top_1 = getattr(podium, "top_1_offer_id", getattr(podium, "top_1_offer_id", None))
+        top_2 = getattr(podium, "top_2_offer_id", getattr(podium, "top_2_offer_id", None))
+        top_3 = getattr(podium, "top_3_offer_id", getattr(podium, "top_3_offer_id", None))
+        laureates = [top_1, top_2, top_3]
         distinct_laureates = {off_id for off_id in laureates if off_id is not None}
 
         return ParetoPodiumResponseSchema(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
             is_complete=podium.is_complete,
             laureates_count=len(distinct_laureates),
         )
@@ -10951,30 +11024,30 @@ except ModuleNotFoundError:
         total_duration_minutes: int
         booking_url: str
         pareto_rank: int = 1
-        is_best_price: bool = False
-        is_fastest: bool = False
-        is_best_value: bool = False
+        is_top_1: bool = False
+        is_top_2: bool = False
+        is_top_3: bool = False
 
     @dataclass(frozen=True)
     class ParetoPodium:
-        best_price_offer_id: str | None = None
-        fastest_offer_id: str | None = None
-        best_value_offer_id: str | None = None
+        top_1_offer_id: str | None = None
+        top_2_offer_id: str | None = None
+        top_3_offer_id: str | None = None
 
         @property
         def is_complete(self) -> bool:
             return (
-                self.best_price_offer_id is not None
-                and self.fastest_offer_id is not None
-                and self.best_value_offer_id is not None
+                self.top_1_offer_id is not None
+                and self.top_2_offer_id is not None
+                and self.top_3_offer_id is not None
             )
 
         @property
         def is_empty(self) -> bool:
             return (
-                self.best_price_offer_id is None
-                and self.fastest_offer_id is None
-                and self.best_value_offer_id is None
+                self.top_2_offer_id is None
+                and self.top_3_offer_id is None
+                and self.top_1_offer_id is None
             )
 
     @dataclass(frozen=True)
@@ -11051,15 +11124,16 @@ except ModuleNotFoundError:
         total_duration_minutes: int = Field(..., gt=0)
         booking_url: str
         pareto_rank: int = Field(default=1, ge=1)
-        is_best_price: bool = False
-        is_fastest: bool = False
-        is_best_value: bool = False
+        is_top_1: bool = False
+        is_top_2: bool = False
+        is_top_3: bool = False
+        is_round_trip: bool = False
 
     class ParetoPodiumResponseSchema(BaseModel):
         model_config = ConfigDict(frozen=True, from_attributes=True, extra="forbid")
-        best_price_offer_id: str | None = None
-        fastest_offer_id: str | None = None
-        best_value_offer_id: str | None = None
+        top_1_offer_id: str | None = None
+        top_2_offer_id: str | None = None
+        top_3_offer_id: str | None = None
         is_complete: bool = False
         laureates_count: int = Field(default=0, ge=0, le=3)
 
@@ -11132,23 +11206,23 @@ except ModuleNotFoundError:
                 total_duration_minutes=offer.total_duration_minutes,
                 booking_url=offer.booking_url,
                 pareto_rank=offer.pareto_rank,
-                is_best_price=offer.is_best_price,
-                is_fastest=offer.is_fastest,
-                is_best_value=offer.is_best_value,
+                is_top_1=offer.is_top_1,
+                is_top_2=offer.is_top_2,
+                is_top_3=offer.is_top_3,
+                is_round_trip=getattr(offer, "is_round_trip", False),
             )
 
         @staticmethod
         def to_podium_response(podium: ParetoPodium) -> ParetoPodiumResponseSchema:
-            laureates = [
-                podium.best_price_offer_id,
-                podium.fastest_offer_id,
-                podium.best_value_offer_id,
-            ]
+            top_1 = getattr(podium, "top_1_offer_id", getattr(podium, "top_1_offer_id", None))
+            top_2 = getattr(podium, "top_2_offer_id", getattr(podium, "top_2_offer_id", None))
+            top_3 = getattr(podium, "top_3_offer_id", getattr(podium, "top_3_offer_id", None))
+            laureates = [top_1, top_2, top_3]
             distinct_laureates = {off_id for off_id in laureates if off_id is not None}
             return ParetoPodiumResponseSchema(
-                best_price_offer_id=podium.best_price_offer_id,
-                fastest_offer_id=podium.fastest_offer_id,
-                best_value_offer_id=podium.best_value_offer_id,
+                top_1_offer_id=top_1,
+                top_2_offer_id=top_2,
+                top_3_offer_id=top_3,
                 is_complete=podium.is_complete,
                 laureates_count=len(distinct_laureates),
             )
@@ -11297,9 +11371,9 @@ def test_quote_resource_assembler_offer_full_mapping() -> None:
         total_duration_minutes=540,
         booking_url="https://booking.navby.com/checkout/off_test_99",
         pareto_rank=1,
-        is_best_price=True,
-        is_fastest=False,
-        is_best_value=True,
+        is_top_2=True,
+        is_top_3=False,
+        is_top_1=True,
     )
 
     dto_offer = QuoteResourceAssembler.to_offer_response(offer)
@@ -11315,31 +11389,34 @@ def test_quote_resource_assembler_offer_full_mapping() -> None:
     assert dto_offer.total_duration_minutes == 540
     assert dto_offer.booking_url == "https://booking.navby.com/checkout/off_test_99"
     assert dto_offer.pareto_rank == 1
-    assert dto_offer.is_best_price is True
-    assert dto_offer.is_fastest is False
-    assert dto_offer.is_best_value is True
+    assert dto_offer.is_top_2 is True
+    assert dto_offer.is_top_3 is False
+    assert dto_offer.is_top_1 is True
 
 
 def test_quote_resource_assembler_podium_metrics() -> None:
     """Valida la proyección del podio de Pareto, verificando completitud y conteo unívoco."""
     podium_full = ParetoPodium(
-        best_price_offer_id="off_p1",
-        fastest_offer_id="off_f2",
-        best_value_offer_id="off_v3",
+        top_2_offer_id="off_p1",
+        top_3_offer_id="off_f2",
+        top_1_offer_id="off_v3",
     )
     dto_full = QuoteResourceAssembler.to_podium_response(podium_full)
     assert isinstance(dto_full, ParetoPodiumResponseSchema)
-    assert dto_full.best_price_offer_id == "off_p1"
-    assert dto_full.fastest_offer_id == "off_f2"
-    assert dto_full.best_value_offer_id == "off_v3"
+    assert dto_full.top_1_offer_id == "off_v3"
+    assert dto_full.top_2_offer_id == "off_p1"
+    assert dto_full.top_3_offer_id == "off_f2"
+    assert dto_full.top_2_offer_id == "off_p1"
+    assert dto_full.top_3_offer_id == "off_f2"
+    assert dto_full.top_1_offer_id == "off_v3"
     assert dto_full.is_complete is True
     assert dto_full.laureates_count == 3
 
     # Podio con oferta compartida (mismo vuelo es más barato y más rápido)
     podium_shared = ParetoPodium(
-        best_price_offer_id="off_p1",
-        fastest_offer_id="off_p1",
-        best_value_offer_id="off_v3",
+        top_2_offer_id="off_p1",
+        top_3_offer_id="off_p1",
+        top_1_offer_id="off_v3",
     )
     dto_shared = QuoteResourceAssembler.to_podium_response(podium_shared)
     assert dto_shared.is_complete is True
@@ -11347,9 +11424,9 @@ def test_quote_resource_assembler_podium_metrics() -> None:
 
     # Podio incompleto
     podium_partial = ParetoPodium(
-        best_price_offer_id="off_p1",
-        fastest_offer_id=None,
-        best_value_offer_id=None,
+        top_2_offer_id="off_p1",
+        top_3_offer_id=None,
+        top_1_offer_id=None,
     )
     dto_partial = QuoteResourceAssembler.to_podium_response(podium_partial)
     assert dto_partial.is_complete is False
@@ -11396,14 +11473,14 @@ def test_quote_resource_assembler_search_response_from_session() -> None:
         total_duration_minutes=360,
         booking_url="https://booking.navby.com/checkout/off_session_01",
         pareto_rank=1,
-        is_best_price=True,
-        is_fastest=True,
-        is_best_value=True,
+        is_top_2=True,
+        is_top_3=True,
+        is_top_1=True,
     )
     podium = ParetoPodium(
-        best_price_offer_id="off_session_01",
-        fastest_offer_id="off_session_01",
-        best_value_offer_id="off_session_01",
+        top_2_offer_id="off_session_01",
+        top_3_offer_id="off_session_01",
+        top_1_offer_id="off_session_01",
     )
     session = QuoteSession(
         id="qs_550e8400_test",
@@ -11687,35 +11764,39 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodium:
     """Objeto de valor inmutable que encapsula la terna laureada de Pareto."""
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
 
     @property
     def is_complete(self) -> bool:
         """Indica si el podio cuenta con los tres laureles asignados."""
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     @property
     def is_empty(self) -> bool:
         """Indica si ningún laurel ha sido asignado."""
         return (
-            self.best_price_offer_id is None
-            and self.fastest_offer_id is None
-            and self.best_value_offer_id is None
+            self.top_1_offer_id is None
+            and self.top_2_offer_id is None
+            and self.top_3_offer_id is None
         )
 
 
@@ -11972,9 +12053,10 @@ class FlightOfferResponseSchema(BaseModel):
     total_duration_minutes: int = Field(..., gt=0, description="Duración total en minutos.")
     booking_url: str = Field(..., description="Enlace profundo directo de reserva.")
     pareto_rank: int = Field(default=1, ge=1, description="Rango de frontera de Pareto.")
-    is_best_price: bool = Field(default=False, description="Laurel de Mejor Precio.")
-    is_fastest: bool = Field(default=False, description="Laurel de Vuelo Más Rápido.")
-    is_best_value: bool = Field(default=False, description="Laurel de Mejor Equilibrio.")
+    is_top_1: bool = Field(default=False, description="Laurel Top 1.")
+    is_top_2: bool = Field(default=False, description="Laurel Top 2.")
+    is_top_3: bool = Field(default=False, description="Laurel Top 3.")
+    is_round_trip: bool = Field(default=False, description="Itinerario ida y vuelta.")
 
 
 class ParetoPodiumResponseSchema(BaseModel):
@@ -11982,9 +12064,9 @@ class ParetoPodiumResponseSchema(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    best_price_offer_id: str | None = Field(default=None, description="ID Mejor Precio.")
-    fastest_offer_id: str | None = Field(default=None, description="ID Vuelo Más Rápido.")
-    best_value_offer_id: str | None = Field(default=None, description="ID Mejor Equilibrio.")
+    top_1_offer_id: str | None = Field(default=None, description="ID Top 1.")
+    top_2_offer_id: str | None = Field(default=None, description="ID Top 2.")
+    top_3_offer_id: str | None = Field(default=None, description="ID Top 3.")
     is_complete: bool = Field(default=False, description="Indica si los 3 laureles existen.")
     laureates_count: int = Field(default=0, ge=0, le=3, description="Ofertas laureadas únicas.")
 
@@ -12140,25 +12222,25 @@ class QuoteResourceAssembler:
             total_duration_minutes=offer.total_duration_minutes,
             booking_url=offer.booking_url,
             pareto_rank=offer.pareto_rank,
-            is_best_price=offer.is_best_price,
-            is_fastest=offer.is_fastest,
-            is_best_value=offer.is_best_value,
+            is_top_1=offer.is_top_1,
+            is_top_2=offer.is_top_2,
+            is_top_3=offer.is_top_3,
+            is_round_trip=getattr(offer, "is_round_trip", False),
         )
 
     @staticmethod
     def to_podium_response(podium: ParetoPodium) -> ParetoPodiumResponseSchema:
         """Proyecta el objeto de valor ParetoPodium hacia su esquema DTO perimetral."""
-        laureates = [
-            podium.best_price_offer_id,
-            podium.fastest_offer_id,
-            podium.best_value_offer_id,
-        ]
+        top_1 = getattr(podium, "top_1_offer_id", getattr(podium, "top_1_offer_id", None))
+        top_2 = getattr(podium, "top_2_offer_id", getattr(podium, "top_2_offer_id", None))
+        top_3 = getattr(podium, "top_3_offer_id", getattr(podium, "top_3_offer_id", None))
+        laureates = [top_1, top_2, top_3]
         distinct_laureates = {off_id for off_id in laureates if off_id is not None}
 
         return ParetoPodiumResponseSchema(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
             is_complete=podium.is_complete,
             laureates_count=len(distinct_laureates),
         )
@@ -12561,9 +12643,9 @@ class MockQuotesService:
             total_duration_minutes=80,
             booking_url="https://latamairlines.com/booking/off_lim_cuz_001",
             pareto_rank=1,
-            is_best_price=True,
-            is_fastest=True,
-            is_best_value=True,
+            is_top_2=True,
+            is_top_3=True,
+            is_top_1=True,
         )
 
         leg2 = FlightOfferLeg(
@@ -12589,15 +12671,15 @@ class MockQuotesService:
             total_duration_minutes=85,
             booking_url="https://skyairline.com/booking/off_lim_cuz_002",
             pareto_rank=2,
-            is_best_price=False,
-            is_fastest=False,
-            is_best_value=False,
+            is_top_2=False,
+            is_top_3=False,
+            is_top_1=False,
         )
 
         self.sample_podium = ParetoPodium(
-            best_price_offer_id=self.offer_best_price.offer_id,
-            fastest_offer_id=self.offer_best_price.offer_id,
-            best_value_offer_id=self.offer_best_price.offer_id,
+            top_2_offer_id=self.offer_best_price.offer_id,
+            top_3_offer_id=self.offer_best_price.offer_id,
+            top_1_offer_id=self.offer_best_price.offer_id,
         )
 
         criteria = QuoteSearchCriteria(
@@ -12750,8 +12832,8 @@ async def test_quotes_controller_integration() -> None:
         assert data1["offers"][0]["offer_id"] == "off_lim_cuz_001"
         assert data1["offers"][0]["price"]["amount"] == 64.50
         assert data1["offers"][0]["price"]["currency"] == "USD"
-        assert data1["offers"][0]["is_best_price"] is True
-        assert data1["podium"]["best_price_offer_id"] == "off_lim_cuz_001"
+        assert data1["offers"][0]["is_top_2"] is True
+        assert data1["podium"]["top_2_offer_id"] == "off_lim_cuz_001"
         assert data1["podium"]["is_complete"] is True
         assert data1["from_cache"] is False
 
@@ -12825,7 +12907,7 @@ async def test_quotes_controller_integration() -> None:
         data3 = resp3.json()
         assert data3["session_id"] == "sess_lim_cuz_001"
         assert data3["total_offers"] == 2
-        assert data3["podium"]["best_price_offer_id"] == "off_lim_cuz_001"
+        assert data3["podium"]["top_2_offer_id"] == "off_lim_cuz_001"
 
         # ----------------------------------------------------------------------
         # Escenario 4: GET /{session_id} -> 404 RFC 7807 ante sesión inexistente
@@ -12845,9 +12927,9 @@ async def test_quotes_controller_integration() -> None:
         resp5 = await client.get("/api/v1/quotes/sess_lim_cuz_001/podium")
         assert resp5.status_code == 200, f"Error en resp5: {resp5.text}"
         data5 = resp5.json()
-        assert data5["best_price_offer_id"] == "off_lim_cuz_001"
-        assert data5["fastest_offer_id"] == "off_lim_cuz_001"
-        assert data5["best_value_offer_id"] == "off_lim_cuz_001"
+        assert data5["top_2_offer_id"] == "off_lim_cuz_001"
+        assert data5["top_3_offer_id"] == "off_lim_cuz_001"
+        assert data5["top_1_offer_id"] == "off_lim_cuz_001"
         assert data5["is_complete"] is True
         assert data5["laureates_count"] == 1
 
@@ -13284,9 +13366,9 @@ async def test_quotes_middleware_resilience() -> None:
             }
         ],
         "podium": {
-            "best_price_offer_id": "off_001",
-            "fastest_offer_id": "off_001",
-            "best_value_offer_id": "off_001",
+            "top_2_offer_id": "off_001",
+            "top_3_offer_id": "off_001",
+            "top_1_offer_id": "off_001",
         },
         "from_cache": False,
     }
@@ -13312,7 +13394,7 @@ async def test_quotes_middleware_resilience() -> None:
     assert hit_result["session_id"] == "sess_quotes_lim_cuz_001"
     assert hit_result["from_cache"] is True, "El resultado desde caché debe marcar from_cache=True"
     assert len(hit_result["offers"]) == 1
-    assert hit_result["podium"]["best_price_offer_id"] == "off_001"
+    assert hit_result["podium"]["top_2_offer_id"] == "off_001"
     assert t_elapsed_ms < 10.0, f"La recuperación en caché debe ser casi instantánea (< 10 ms en test suite), medido: {t_elapsed_ms:.2f} ms"
     print(f"  [OK] Escenario 1: Ciclo Cache-Aside verificado exitosamente (TTL={ttl_val} s, Latencia={t_elapsed_ms:.3f} ms).")
 
@@ -13470,7 +13552,7 @@ Para consolidar el aislamiento ontológico del Bounded Context, la fachada OHS d
 
 * **FlightOfferLegDTO:** Modela de forma puramente descriptiva un tramo individual de vuelo, encapsulando código IATA de origen, código IATA de destino, marca temporal de salida y llegada en formato ISO 8601, código de vuelo, aerolínea operadora, duración en minutos y tiempo de conexión hacia el tramo posterior.
 * **FlightOfferDTO:** Encapsula una alternativa comercial integral de viaje, agrupando identificador de oferta, aerolínea comercial, código de aerolínea, número de vuelo, horario de salida y llegada, precio monetario, divisa, secuencia ordenada de tramos (**FlightOfferLegDTO**), conteo de escalas, duración global, enlace de reserva, rango de optimalidad de Pareto y banderas booleanas de clasificación laureada.
-* **ParetoPodiumDTO:** Proyecta la síntesis del podio de Pareto, individualizando el identificador de la oferta de mejor precio, la de menor duración y la de óptimo valor relativo, certificando la completitud del podio y el total de ofertas premiadas.
+* **ParetoPodiumDTO:** Proyecta la síntesis del Podio Navby, individualizando las tres mejores recomendaciones globales (Top 1, Top 2 y Top 3) calculadas deterministamente mediante la función de utilidad multiobjetivo, junto con alias de compatibilidad heredada, certificando la completitud del podio y el total de ofertas premiadas.
 * **QuoteSessionDTO:** Encapsula el estado completo de una sesión de cotización, integrando el identificador único de sesión, criterios de búsqueda de origen y destino, fechas de viaje, cantidad de pasajeros, clase de cabina, divisa solicitada, tupla inmutable de ofertas (**FlightOfferDTO**), podio clasificado (**ParetoPodiumDTO**), total de ofertas descubiertas, origen de caché L2 y marca temporal de creación.
 * **QuotaStatusDTO:** Expone la telemetría operativa de la cuota diaria del proveedor FlightAPI, informando la fecha de cómputo, solicitudes consumidas, límite máximo diario, solicitudes remanentes, bandera de agotamiento y porcentaje de consumo acumulado.
 
@@ -13481,7 +13563,7 @@ Todos los DTOs se implementan como clases de datos congeladas mediante `@datacla
 Además de la comunicación síncrona en memoria provista por **QuotesContextFacade**, el Bounded Context Quotes publica eventos de integración perimetrales para notificar sucesos relevantes del ciclo de vida de cotizaciones hacia el resto del sistema de forma asíncrona. Estos eventos residen canónicamente en `src.modules.quotes.interfaces.events`:
 
 * **QuoteSearchedIntegrationEvent:** Emitido cuando un usuario o subsistema completa la búsqueda de cotizaciones de vuelo, registrando el identificador de sesión, origen, destino, volumen de ofertas descubiertas y procedencia de almacenamiento en caché L2.
-* **ParetoPodiumComputedIntegrationEvent:** Emitido tras la clasificación y asignación del podio multiobjetivo de Pareto, documentando el identificador de sesión y los identificadores de ofertas premiadas en mejor precio, menor duración y mejor valor global.
+* **ParetoPodiumComputedIntegrationEvent:** Emitido tras la clasificación y asignación del podio multiobjetivo de Pareto, documentando el identificador de sesión y los identificadores de ofertas galardonadas en el Top 1, Top 2 y Top 3 (junto con alias de compatibilidad heredada).
 * **FlightApiQuotaWarningIntegrationEvent:** Emitido cuando el volumen acumulado de solicitudes a FlightAPI supera el umbral crítico preventivo del límite diario, alertando a los subsistemas de observabilidad y facturación para mitigar la saturación de cuota y preservar la continuidad operativa.
 
 A diferencia de los eventos de dominio internos (**DomainEvent**), que encapsulan entidades y conceptos ontológicos privados del módulo, los eventos de integración forman parte explícita del *Published Language*. Se modelan con tipos escalares nativos, identificadores universales únicos (**UUID**) generados mediante versión 4, marcas temporales en tiempo universal coordinado (**UTC**) con zona horaria explícita (`datetime.now(timezone.utc)`), y disponen del método canónico `to_dict()` para su serialización transparente a JSON. Esta estructura los hace aptos para ser almacenados de forma atómica en la tabla relacional `outbox_events` (patrón Transactional Outbox) y posteriormente publicados hacia agentes de mensajería asíncronos sin acoplar a los suscriptores con las estructuras internas del dominio.
@@ -13579,20 +13661,43 @@ class FlightOfferDTO:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int
-    is_best_price: bool
-    is_fastest: bool
-    is_best_value: bool
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+    is_round_trip: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumDTO:
     """DTO inmutable de frontera que proyecta el podio laureado de Pareto."""
 
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
-    is_complete: bool
-    laureates_count: int
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+    is_complete: bool = False
+    laureates_count: int = 0
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+        *,
+        is_complete: bool | None = None,
+        laureates_count: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        t1 = top_1_offer_id
+        t2 = top_2_offer_id
+        t3 = top_3_offer_id
+        distinct = {x for x in (t1, t2, t3) if x is not None}
+        comp = is_complete if is_complete is not None else (t1 is not None and t2 is not None and t3 is not None)
+        l_cnt = laureates_count if laureates_count is not None else len(distinct)
+        object.__setattr__(self, "top_1_offer_id", t1)
+        object.__setattr__(self, "top_2_offer_id", t2)
+        object.__setattr__(self, "top_3_offer_id", t3)
+        object.__setattr__(self, "is_complete", comp)
+        object.__setattr__(self, "laureates_count", l_cnt)
 
 
 @dataclass(frozen=True)
@@ -13698,11 +13803,45 @@ class ParetoPodiumComputedIntegrationEvent:
     """Evento de integración emitido cuando se computa y clasifica el podio de Pareto."""
 
     session_id: str
-    best_price_id: str | None
-    fastest_id: str | None
-    best_value_id: str | None
+    top_1_id: str | None = None
+    top_2_id: str | None = None
+    top_3_id: str | None = None
+    best_price_id: str | None = None
+    fastest_id: str | None = None
+    best_value_id: str | None = None
     event_id: UUID = field(default_factory=uuid4)
     occurred_on: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def __init__(
+        self,
+        session_id: str,
+        best_price_id: str | None = None,
+        fastest_id: str | None = None,
+        best_value_id: str | None = None,
+        *,
+        top_1_id: str | None = None,
+        top_2_id: str | None = None,
+        top_3_id: str | None = None,
+        event_id: UUID | None = None,
+        occurred_on: datetime | None = None,
+    ) -> None:
+        t1 = top_1_id if top_1_id is not None else best_value_id
+        t2 = top_2_id if top_2_id is not None else best_price_id
+        t3 = top_3_id if top_3_id is not None else fastest_id
+
+        bp = best_price_id if best_price_id is not None else t2
+        fa = fastest_id if fastest_id is not None else t3
+        bv = best_value_id if best_value_id is not None else t1
+
+        object.__setattr__(self, "session_id", session_id)
+        object.__setattr__(self, "top_1_id", t1)
+        object.__setattr__(self, "top_2_id", t2)
+        object.__setattr__(self, "top_3_id", t3)
+        object.__setattr__(self, "best_price_id", bp)
+        object.__setattr__(self, "fastest_id", fa)
+        object.__setattr__(self, "best_value_id", bv)
+        object.__setattr__(self, "event_id", event_id if event_id is not None else uuid4())
+        object.__setattr__(self, "occurred_on", occurred_on if occurred_on is not None else datetime.now(timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
         """Serializa el evento de integración a un diccionario compatible con JSON."""
@@ -13712,6 +13851,9 @@ class ParetoPodiumComputedIntegrationEvent:
             "occurred_on": self.occurred_on.isoformat(),
             "payload": {
                 "session_id": self.session_id,
+                "top_1_id": self.top_1_id,
+                "top_2_id": self.top_2_id,
+                "top_3_id": self.top_3_id,
                 "best_price_id": self.best_price_id,
                 "fastest_id": self.fastest_id,
                 "best_value_id": self.best_value_id,
@@ -13791,9 +13933,9 @@ class InMemoryQuotesContextFacadeImpl:
                 total_duration_minutes=80,
                 booking_url="https://www.latamairlines.com/booking/off-lim-cuz-001",
                 pareto_rank=1,
-                is_best_price=True,
-                is_fastest=True,
-                is_best_value=True,
+                is_top_2=True,
+                is_top_3=True,
+                is_top_1=True,
             )
             leg_sky = FlightOfferLegDTO(
                 origin="LIM",
@@ -13819,14 +13961,14 @@ class InMemoryQuotesContextFacadeImpl:
                 total_duration_minutes=85,
                 booking_url="https://www.skyairline.com/booking/off-lim-cuz-002",
                 pareto_rank=2,
-                is_best_price=False,
-                is_fastest=False,
-                is_best_value=False,
+                is_top_2=False,
+                is_top_3=False,
+                is_top_1=False,
             )
             podium_canonical = ParetoPodiumDTO(
-                best_price_offer_id="off-lim-cuz-001",
-                fastest_offer_id="off-lim-cuz-001",
-                best_value_offer_id="off-lim-cuz-001",
+                top_2_offer_id="off-lim-cuz-001",
+                top_3_offer_id="off-lim-cuz-001",
+                top_1_offer_id="off-lim-cuz-001",
                 is_complete=True,
                 laureates_count=1,
             )
@@ -13919,9 +14061,9 @@ class InMemoryQuotesContextFacadeImpl:
             total_duration_minutes=135,
             booking_url=f"https://www.navby.com/booking/{offer_id_1}",
             pareto_rank=1,
-            is_best_price=True,
-            is_fastest=True,
-            is_best_value=True,
+            is_top_2=True,
+            is_top_3=True,
+            is_top_1=True,
         )
 
         leg_2 = FlightOfferLegDTO(
@@ -13948,15 +14090,15 @@ class InMemoryQuotesContextFacadeImpl:
             total_duration_minutes=180,
             booking_url=f"https://www.navby.com/booking/{offer_id_2}",
             pareto_rank=2,
-            is_best_price=False,
-            is_fastest=False,
-            is_best_value=False,
+            is_top_2=False,
+            is_top_3=False,
+            is_top_1=False,
         )
 
         podium = ParetoPodiumDTO(
-            best_price_offer_id=offer_id_1,
-            fastest_offer_id=offer_id_1,
-            best_value_offer_id=offer_id_1,
+            top_2_offer_id=offer_id_1,
+            top_3_offer_id=offer_id_1,
+            top_1_offer_id=offer_id_1,
             is_complete=True,
             laureates_count=1,
         )
@@ -14040,14 +14182,14 @@ async def test_quotes_ohs_facade_and_integration() -> None:
         total_duration_minutes=80,
         booking_url="https://booking.com/off-001",
         pareto_rank=1,
-        is_best_price=True,
-        is_fastest=True,
-        is_best_value=True,
+        is_top_2=True,
+        is_top_3=True,
+        is_top_1=True,
     )
     podium = ParetoPodiumDTO(
-        best_price_offer_id="off-001",
-        fastest_offer_id="off-001",
-        best_value_offer_id="off-001",
+        top_2_offer_id="off-001",
+        top_3_offer_id="off-001",
+        top_1_offer_id="off-001",
         is_complete=True,
         laureates_count=1,
     )
@@ -14123,7 +14265,7 @@ async def test_quotes_ohs_facade_and_integration() -> None:
     assert existing_session.criteria_origin == "LIM"
     assert existing_session.criteria_destination == "CUZ"
     assert existing_session.total_offers == 2
-    assert existing_session.podium.best_price_offer_id == "off-lim-cuz-001"
+    assert existing_session.podium.top_2_offer_id == "off-lim-cuz-001"
     assert existing_session.from_cache is True
 
     missing_session = await facade.get_quote_session("sess-inexistente-999")
@@ -14144,7 +14286,7 @@ async def test_quotes_ohs_facade_and_integration() -> None:
     assert sync_search.criteria_passengers == 2
     assert len(sync_search.offers) == 2
     assert sync_search.podium.is_complete is True
-    assert sync_search.podium.best_price_offer_id is not None
+    assert sync_search.podium.top_2_offer_id is not None
 
     invalid_search = await facade.search_quotes_sync(
         origin="LIM",
@@ -14238,8 +14380,8 @@ Los ocho escenarios operacionales implementados en este banco de pruebas abarcan
    Audita el ciclo de despacho sobre el endpoint primario `POST /api/v1/quotes/search` ante solicitudes legítimas y completas. El controlador FastAPI recibe el DTO de transporte, despacha la consulta al caso de uso correspondiente, orquesta la consulta de vuelos, computa el podio multiobjetivo de Pareto y transforma las entidades resultantes mediante el ensamblador desacoplado **QuoteResourceAssembler**. Se certifica que la respuesta retorne un código de estado HTTP 200 OK y una estructura JSON conforme al esquema **QuoteSearchResponseSchema**, verificando:
    - La generación unívoca de un identificador de sesión volátil (**session_id**) con prefijo `sess-`.
    - La inclusión de las ofertas de vuelo comerciales (**FlightOfferResponseSchema**) con importes monetarios fuertemente tipados (**MoneyResponseSchema**) y sus tramos encadenados (**FlightOfferLegResponseSchema**).
-   - El enriquecimiento multiobjetivo del podio de Pareto (**ParetoPodiumResponseSchema**), coronando los laureles de mejor precio (*best_price_offer_id*), vuelo más veloz (*fastest_offer_id*) y mejor balance calidad-precio (*best_value_offer_id*).
-   - La asignación consistente de las banderas booleanas de honor (*is_best_price*, *is_fastest*, *is_best_value*) en las ofertas individuales correspondientes y la presencia de enlaces de reserva (*booking_url*).
+   - El enriquecimiento multiobjetivo del podio de Pareto (**ParetoPodiumResponseSchema**), coronando las tres mejores recomendaciones globales de Navby (*top_1_offer_id*, *top_2_offer_id*, *top_3_offer_id*).
+   - La asignación consistente de las banderas booleanas de honor (*is_top_1*, *is_top_2*, *is_top_3*) en las ofertas individuales correspondientes y la presencia de enlaces de reserva (*booking_url*).
    - La inclusión de la cabecera HTTP `X-Cache: MISS` y el indicador perimetral `from_cache=False`.
 
 3. **Escenario 3: Recuperación de Sesión en Caché (GET /api/v1/quotes/{session_id}) y Consulta Específica de Podio (/podium):**
@@ -14429,18 +14571,18 @@ class FlightOffer:
     stops_count: int
     legs: tuple[FlightOfferLeg, ...]
     booking_url: str | None = None
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodium:
     """Podio de Pareto laureado con las soluciones óptimas multiobjetivo."""
 
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
     computed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -14554,9 +14696,9 @@ class FlightOfferResponseSchema(BaseModel):
     stops_count: int = Field(..., ge=0)
     legs: tuple[FlightOfferLegResponseSchema, ...]
     booking_url: str | None = None
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 class ParetoPodiumResponseSchema(BaseModel):
@@ -14564,9 +14706,9 @@ class ParetoPodiumResponseSchema(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
     computed_at: str
 
 
@@ -14634,9 +14776,9 @@ class QuoteResourceAssembler:
 
     @classmethod
     def to_offer_response(cls, offer: FlightOffer, podium: ParetoPodium) -> FlightOfferResponseSchema:
-        is_bp = offer.offer_id == podium.best_price_offer_id
-        is_fa = offer.offer_id == podium.fastest_offer_id
-        is_bv = offer.offer_id == podium.best_value_offer_id
+        is_bp = offer.offer_id == podium.top_2_offer_id
+        is_fa = offer.offer_id == podium.top_3_offer_id
+        is_bv = offer.offer_id == podium.top_1_offer_id
 
         legs_dto = tuple(cls.to_leg_response(lg) for lg in offer.legs)
         return FlightOfferResponseSchema(
@@ -14648,17 +14790,17 @@ class QuoteResourceAssembler:
             stops_count=offer.stops_count,
             legs=legs_dto,
             booking_url=offer.booking_url,
-            is_best_price=is_bp,
-            is_fastest=is_fa,
-            is_best_value=is_bv,
+            is_top_2=is_bp,
+            is_top_3=is_fa,
+            is_top_1=is_bv,
         )
 
     @staticmethod
     def to_podium_response(podium: ParetoPodium) -> ParetoPodiumResponseSchema:
         return ParetoPodiumResponseSchema(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_2_offer_id=podium.top_2_offer_id,
+            top_3_offer_id=podium.top_3_offer_id,
+            top_1_offer_id=podium.top_1_offer_id,
             computed_at=podium.computed_at,
         )
 
@@ -14904,18 +15046,40 @@ class FlightOfferDTO:
     total_duration_minutes: int
     booking_url: str | None = None
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumDTO:
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
     is_complete: bool = True
     laureates_count: int = 1
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+        *,
+        is_complete: bool | None = None,
+        laureates_count: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        t1 = top_1_offer_id
+        t2 = top_2_offer_id
+        t3 = top_3_offer_id
+        distinct = {x for x in (t1, t2, t3) if x is not None}
+        comp = is_complete if is_complete is not None else (t1 is not None and t2 is not None and t3 is not None)
+        l_cnt = laureates_count if laureates_count is not None else len(distinct)
+        object.__setattr__(self, "top_1_offer_id", t1)
+        object.__setattr__(self, "top_2_offer_id", t2)
+        object.__setattr__(self, "top_3_offer_id", t3)
+        object.__setattr__(self, "is_complete", comp)
+        object.__setattr__(self, "laureates_count", l_cnt)
 
 
 @dataclass(frozen=True)
@@ -15013,14 +15177,14 @@ class InMemoryQuotesContextFacadeImpl:
             legs=(leg,),
             stops_count=0,
             total_duration_minutes=135,
-            is_best_price=True,
-            is_fastest=True,
-            is_best_value=True,
+            is_top_2=True,
+            is_top_3=True,
+            is_top_1=True,
         )
         podium = ParetoPodiumDTO(
-            best_price_offer_id=offer_id,
-            fastest_offer_id=offer_id,
-            best_value_offer_id=offer_id,
+            top_2_offer_id=offer_id,
+            top_3_offer_id=offer_id,
+            top_1_offer_id=offer_id,
         )
         session = QuoteSessionDTO(
             session_id=session_id,
@@ -15083,11 +15247,45 @@ class ParetoPodiumComputedIntegrationEvent:
     """Evento emitido al calcularse el podio multiobjetivo de Pareto."""
 
     session_id: str
-    best_price_id: str | None
-    fastest_id: str | None
-    best_value_id: str | None
+    top_1_id: str | None = None
+    top_2_id: str | None = None
+    top_3_id: str | None = None
+    best_price_id: str | None = None
+    fastest_id: str | None = None
+    best_value_id: str | None = None
     event_id: str = field(default_factory=lambda: str(uuid4()))
     occurred_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def __init__(
+        self,
+        session_id: str,
+        best_price_id: str | None = None,
+        fastest_id: str | None = None,
+        best_value_id: str | None = None,
+        *,
+        top_1_id: str | None = None,
+        top_2_id: str | None = None,
+        top_3_id: str | None = None,
+        event_id: str | None = None,
+        occurred_at: str | None = None,
+    ) -> None:
+        t1 = top_1_id if top_1_id is not None else best_value_id
+        t2 = top_2_id if top_2_id is not None else best_price_id
+        t3 = top_3_id if top_3_id is not None else fastest_id
+
+        bp = best_price_id if best_price_id is not None else t2
+        fa = fastest_id if fastest_id is not None else t3
+        bv = best_value_id if best_value_id is not None else t1
+
+        object.__setattr__(self, "session_id", session_id)
+        object.__setattr__(self, "top_1_id", t1)
+        object.__setattr__(self, "top_2_id", t2)
+        object.__setattr__(self, "top_3_id", t3)
+        object.__setattr__(self, "best_price_id", bp)
+        object.__setattr__(self, "fastest_id", fa)
+        object.__setattr__(self, "best_value_id", bv)
+        object.__setattr__(self, "event_id", event_id if event_id is not None else str(uuid4()))
+        object.__setattr__(self, "occurred_at", occurred_at if occurred_at is not None else datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -15096,6 +15294,9 @@ class ParetoPodiumComputedIntegrationEvent:
             "occurred_at": self.occurred_at,
             "payload": {
                 "session_id": self.session_id,
+                "top_1_id": self.top_1_id,
+                "top_2_id": self.top_2_id,
+                "top_3_id": self.top_3_id,
                 "best_price_id": self.best_price_id,
                 "fastest_id": self.fastest_id,
                 "best_value_id": self.best_value_id,
@@ -15156,9 +15357,9 @@ def generate_sample_offers(criteria: QuoteSearchCriteria) -> tuple[tuple[FlightO
         stops_count=0,
         legs=(leg1,),
         booking_url="https://www.latamairlines.com/booking/LA2010",
-        is_best_price=True,
-        is_fastest=True,
-        is_best_value=True,
+        is_top_2=True,
+        is_top_3=True,
+        is_top_1=True,
     )
 
     leg2 = FlightOfferLeg(
@@ -15179,15 +15380,15 @@ def generate_sample_offers(criteria: QuoteSearchCriteria) -> tuple[tuple[FlightO
         stops_count=0,
         legs=(leg2,),
         booking_url="https://www.skyairline.com/booking/H25020",
-        is_best_price=False,
-        is_fastest=False,
-        is_best_value=False,
+        is_top_2=False,
+        is_top_3=False,
+        is_top_1=False,
     )
 
     podium = ParetoPodium(
-        best_price_offer_id=offer1.offer_id,
-        fastest_offer_id=offer1.offer_id,
-        best_value_offer_id=offer1.offer_id,
+        top_2_offer_id=offer1.offer_id,
+        top_3_offer_id=offer1.offer_id,
+        top_1_offer_id=offer1.offer_id,
     )
     return (offer1, offer2), podium
 
@@ -15485,15 +15686,15 @@ async def test_scenario_2_quotes_search_endpoint_success(client: httpx.AsyncClie
 
     # Verificación del Podio de Pareto
     podium = data["podium"]
-    assert podium["best_price_offer_id"] is not None
-    assert podium["fastest_offer_id"] is not None
-    assert podium["best_value_offer_id"] is not None
+    assert podium["top_2_offer_id"] is not None
+    assert podium["top_3_offer_id"] is not None
+    assert podium["top_1_offer_id"] is not None
 
     # Verificación de laureles en ofertas
-    best_price_id = podium["best_price_offer_id"]
+    best_price_id = podium["top_2_offer_id"]
     matching_offers = [o for o in data["offers"] if o["offer_id"] == best_price_id]
     assert len(matching_offers) == 1
-    assert matching_offers[0]["is_best_price"] is True
+    assert matching_offers[0]["is_top_2"] is True
 
     return data["session_id"]
 
@@ -15515,10 +15716,10 @@ async def test_scenario_3_quote_session_and_podium_retrieval(
     resp_podium = await client.get(f"/api/v1/quotes/{session_id}/podium")
     assert resp_podium.status_code == 200
     podium_data = resp_podium.json()
-    assert "best_price_offer_id" in podium_data
-    assert "fastest_offer_id" in podium_data
-    assert "best_value_offer_id" in podium_data
-    assert podium_data["best_price_offer_id"] == data_sess["podium"]["best_price_offer_id"]
+    assert "top_2_offer_id" in podium_data
+    assert "top_3_offer_id" in podium_data
+    assert "top_1_offer_id" in podium_data
+    assert podium_data["top_2_offer_id"] == data_sess["podium"]["top_2_offer_id"]
 
     # C) 404 ante sesión inexistente
     resp_404 = await client.get("/api/v1/quotes/sess-uuid-inexistente-999")
@@ -15662,7 +15863,7 @@ async def test_scenario_8_ohs_facade_and_integration_events() -> None:
     assert session_res.criteria_origin == "LIM"
     assert session_res.criteria_destination == "CUZ"
     assert session_res.criteria_passengers == 2
-    assert session_res.podium.best_price_offer_id is not None
+    assert session_res.podium.top_2_offer_id is not None
 
     session_retrieved = await facade.get_quote_session(session_res.session_id)
     assert session_retrieved is not None
@@ -15845,7 +16046,7 @@ La Tabla @tbl:quotes-application-components compendia la taxonomía formal de lo
 | **QuotesServedFromCacheEventHandler** | src.modules.quotes.application.handlers.events.quotes_served_from_cache_event_handler | Event Handler (Integration) | Reacciona ante la emisión del evento de dominio **QuotesServedFromCacheEvent**: serializa la información estadística de la consulta atendida desde memoria L2, registra la telemetría de tasa de aciertos de caché (*cache hit ratio*) y publica el evento estructurado en el Outbox para análisis operacional y auditoría sin impacto económico en créditos. | Colabora con **OutboxEventPublisherPort**. Reacciona ante **QuotesServedFromCacheEvent**. |
 | **FlightApiQuotaExceededEventHandler** | src.modules.quotes.application.handlers.events.flight_api_quota_exceeded_event_handler | Event Handler (Integration) | Reacciona ante la emisión del evento de dominio **FlightApiQuotaExceededEvent**: genera el evento de integración **FlightApiQuotaWarningIntegrationEvent** con nivel de severidad crítico, lo encola en `outbox_events` vía **OutboxEventPublisherPort** y dispara alertas de observabilidad hacia los canales de monitoreo del equipo de operaciones. | Colabora con **OutboxEventPublisherPort**. Reacciona ante **FlightApiQuotaExceededEvent**. |
 | **QuoteSessionProjection** | src.modules.quotes.application.queries.projections.quote_session_projection | Read Projection (DTO) | Modela la vista de lectura inmutable y completa de una sesión de cotización tarifaria, conteniendo el identificador unívoco de sesión, criterios de búsqueda normalizados, colección ordenada de ofertas comerciales proyectadas (**FlightOfferProjection**), podio laureado de Pareto (**ParetoPodiumProjection**), marca de procedencia de datos (*from_cache*), tiempo de expiración y total de ofertas disponibles. | Inmutable con `@dataclass(frozen=True)`. Compone **FlightOfferProjection** y **ParetoPodiumProjection**. Retornado por **SearchFlightQuotesQueryHandler** y **GetQuoteSessionQueryHandler**. |
-| **FlightOfferProjection** | src.modules.quotes.application.queries.projections.flight_offer_projection | Read Projection (DTO) | Modela la vista de lectura inmutable de una alternativa comercial de vuelo, encapsulando el identificador de oferta, razón social de la aerolínea, código IATA, número de vuelo representativo, horarios locales de salida y arribo, importe monetario y divisa, secuencia encadenada de tramos proyectados (**FlightOfferLegProjection**), número de escalas, duración acumulada en minutos, enlace de reserva directa (*deep link*), rango de Pareto y banderas de podio (*is_best_price*, *is_fastest*, *is_best_value*). | Inmutable con `@dataclass(frozen=True)`. Compone tupla de **FlightOfferLegProjection**. Elemento constitutivo de **QuoteSessionProjection**. |
+| **FlightOfferProjection** | src.modules.quotes.application.queries.projections.flight_offer_projection | Read Projection (DTO) | Modela la vista de lectura inmutable de una alternativa comercial de vuelo, encapsulando el identificador de oferta, razón social de la aerolínea, código IATA, número de vuelo representativo, horarios locales de salida y arribo, importe monetario y divisa, secuencia encadenada de tramos proyectados (**FlightOfferLegProjection**), número de escalas, duración acumulada en minutos, enlace de reserva directa (*deep link*), rango de Pareto y banderas de podio (*is_top_1*, *is_top_2*, *is_top_3*). | Inmutable con `@dataclass(frozen=True)`. Compone tupla de **FlightOfferLegProjection**. Elemento constitutivo de **QuoteSessionProjection**. |
 | **ParetoPodiumProjection** | src.modules.quotes.application.queries.projections.pareto_podium_projection | Read Projection (DTO) | Modela la vista de lectura inmutable de la terna laureada de Pareto, encapsulando los identificadores y resúmenes de oferta correspondientes a las distinciones de *Mejor Precio*, *Vuelo Más Rápido* y *Mejor Equilibrio* (mínima distancia euclidiana en el espacio multiobjetivo unitario), así como indicadores de completitud del podio. | Inmutable con `@dataclass(frozen=True)`. Componente de **QuoteSessionProjection** y retornado por **GetParetoPodiumQueryHandler**. |
 | **QuotaStatusProjection** | src.modules.quotes.application.queries.projections.quota_status_projection | Read Projection (DTO) | Modela la vista de lectura inmutable del balance de cuota de integración externa, encapsulando la fecha de ciclo comercial, solicitudes ejecutadas en el período, límite máximo autorizado (500 solicitudes mensuales gratuitas), saldo remanente, porcentaje de consumo acumulado y bandera indicadora de agotamiento. | Inmutable con `@dataclass(frozen=True)`. Producido por **GetQuotaStatusQueryHandler** y **ResetDailyQuotaCommandHandler**. |
 | **FlightApiProviderPort** | src.modules.quotes.application.acl.ports.flight_api_provider_port | Outbound ACL Port (Protocol) | Define el contrato abstracto estructural puro (`typing.Protocol`) decorado con `@runtime_checkable` para la comunicación con proveedores externos de vuelos (FlightAPI u otros sistemas de distribución global), aislando las peticiones HTTP externas, la autenticación por cabeceras y la traducción de cargas útiles heterogéneas respecto a la lógica de aplicación. | Protocolo estructural decorado con `@runtime_checkable`. Colabora con **SearchFlightQuotesQueryHandler**. Implementado por adaptadores secundarios en la Capa de Infraestructura. |
@@ -15900,7 +16101,7 @@ Una vez consolidada la colección de ofertas comerciales en memoria RAM, el orqu
 
 - Clasifica las alternativas en frentes jerárquicos de no dominancia ($O(M \cdot N^2)$), asignando a cada oferta su rango de Pareto (**pareto_rank**), donde el Rango 1 reúne las soluciones no dominadas o Pareto-óptimas.
 - Sobre la frontera de Rango 1, evalúa la distancia euclidiana normalizada al punto utópico ideal $(0, 0, 0)$ para adjudicar los tres laureles de honor de la plataforma: *Mejor Precio* (mínimo importe monetario absoluto), *Vuelo Más Rápido* (mínima duración total acumulada) y *Mejor Equilibrio* (mínima distancia euclidiana en el espacio normalizado).
-- Construye la estructura inmutable de agregación **ParetoPodium** y ensambla el modelo de lectura **QuoteSessionProjection** conteniendo las ofertas enriquecidas con sus banderas de laureles (*is_best_price*, *is_fastest*, *is_best_value*).
+- Construye la estructura inmutable de agregación **ParetoPodium** y ensambla el modelo de lectura **QuoteSessionProjection** conteniendo las ofertas enriquecidas con sus banderas de laureles (*is_top_1*, *is_top_2*, *is_top_3*).
 - **Persistencia L2 con Dispersión Temporal (*Jitter*):** La sesión calculada se almacena en Redis 7 mediante **QuotesCachePort** con un tiempo de vida útil base de 30 minutos (1,800 segundos) al que se añade una dispersión temporal aleatoria (*jitter*) de $\pm 5\%$ (intervalo comprendido entre 1,710 y 1,890 segundos). Esta dispersión desincroniza la expiración simultánea de registros calculados durante picos de tráfico, neutralizando el fenómeno de avalancha sobre el proveedor externo (*thundering herd problem*).
 - **Publicación en Transactional Outbox:** Se persiste atómicamente el evento de dominio **QuotesFetchedFromExternalProviderEvent** en la tabla física `outbox_events` mediante **OutboxEventPublisherPort**. Este suceso habilita la notificación asíncrona hacia el Bounded Context Billing para deducir un crédito de búsqueda en la cuenta del usuario y actualizar las métricas de consumo de negocio.
 - Finalmente, se entrega la proyección al solicitante mediante `Result.success(session_projection)`.
@@ -16125,22 +16326,26 @@ class FlightOffer:
 class ParetoPodium:
     """Objeto de valor inmutable con la terna laureada de Pareto."""
 
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
 
     @property
     def is_complete(self) -> bool:
         return (
-            self.best_price_offer_id is not None
-            and self.fastest_offer_id is not None
-            and self.best_value_offer_id is not None
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
         )
 
     def laureates_count(self) -> int:
         return sum(
             1
-            for oid in (self.best_price_offer_id, self.fastest_offer_id, self.best_value_offer_id)
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
             if oid is not None
         )
 
@@ -16223,7 +16428,7 @@ class ParetoOptimizationDomainService:
 
         if len(ranked_offers) == 1:
             sid = ranked_offers[0].offer_id
-            return ParetoPodium(best_price_offer_id=sid, fastest_offer_id=sid, best_value_offer_id=sid)
+            return ParetoPodium(top_2_offer_id=sid, top_3_offer_id=sid, top_1_offer_id=sid)
 
         best_price = min(
             ranked_offers,
@@ -16262,9 +16467,9 @@ class ParetoOptimizationDomainService:
         )
 
         return ParetoPodium(
-            best_price_offer_id=best_price.offer_id,
-            fastest_offer_id=fastest.offer_id,
-            best_value_offer_id=best_value.offer_id,
+            top_1_offer_id=best_value.offer_id,
+            top_2_offer_id=best_price.offer_id,
+            top_3_offer_id=fastest.offer_id,
         )
 
 
@@ -16303,20 +16508,43 @@ class FlightOfferProjection:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int
-    is_best_price: bool
-    is_fastest: bool
-    is_best_value: bool
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+    is_round_trip: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumProjection:
     """Proyección inmutable de la terna de laureles del Podio Navby."""
 
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
-    is_complete: bool
-    laureates_count: int
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+    is_complete: bool = False
+    laureates_count: int = 0
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+        *,
+        is_complete: bool | None = None,
+        laureates_count: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        t1 = top_1_offer_id
+        t2 = top_2_offer_id
+        t3 = top_3_offer_id
+        distinct = {x for x in (t1, t2, t3) if x is not None}
+        comp = is_complete if is_complete is not None else (t1 is not None and t2 is not None and t3 is not None)
+        l_cnt = laureates_count if laureates_count is not None else len(distinct)
+        object.__setattr__(self, "top_1_offer_id", t1)
+        object.__setattr__(self, "top_2_offer_id", t2)
+        object.__setattr__(self, "top_3_offer_id", t3)
+        object.__setattr__(self, "is_complete", comp)
+        object.__setattr__(self, "laureates_count", l_cnt)
 
 
 @dataclass(frozen=True)
@@ -16577,9 +16805,9 @@ class SearchFlightQuotesQueryHandler:
 
         # Proyección inmutable de la terna del podio
         podium_proj = ParetoPodiumProjection(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_1_offer_id=podium.top_1_offer_id,
+            top_2_offer_id=podium.top_2_offer_id,
+            top_3_offer_id=podium.top_3_offer_id,
             is_complete=podium.is_complete,
             laureates_count=podium.laureates_count(),
         )
@@ -16617,9 +16845,10 @@ class SearchFlightQuotesQueryHandler:
                     total_duration_minutes=o.total_duration_minutes,
                     booking_url=o.booking_url,
                     pareto_rank=o.pareto_rank,
-                    is_best_price=(o.offer_id == podium.best_price_offer_id),
-                    is_fastest=(o.offer_id == podium.fastest_offer_id),
-                    is_best_value=(o.offer_id == podium.best_value_offer_id),
+                    is_top_1=(o.offer_id == podium.top_1_offer_id),
+                    is_top_2=(o.offer_id == podium.top_2_offer_id),
+                    is_top_3=(o.offer_id == podium.top_3_offer_id),
+                    is_round_trip=getattr(o, "is_round_trip", False),
                 )
             )
 
@@ -16677,9 +16906,9 @@ class SearchFlightQuotesQueryHandler:
                 "destination": query.destination,
                 "total_offers": len(projected_offers),
                 "podium": {
-                    "best_price": podium.best_price_offer_id,
-                    "fastest": podium.fastest_offer_id,
-                    "best_value": podium.best_value_offer_id,
+                    "best_price": podium.top_2_offer_id,
+                    "fastest": podium.top_3_offer_id,
+                    "best_value": podium.top_1_offer_id,
                 },
                 "ttl_seconds": effective_ttl,
                 "timestamp": now_iso,
@@ -16912,15 +17141,15 @@ async def run_unit_tests() -> None:
     assert session1.criteria_origin == "LIM"
     assert session1.criteria_destination == "CUZ"
     assert session1.podium.is_complete is True, "El podio Navby debe tener sus tres laureles."
-    assert session1.podium.best_price_offer_id == "OFFER_CHEAP", f"Mejor precio incorrecto: {session1.podium.best_price_offer_id}"
-    assert session1.podium.fastest_offer_id == "OFFER_FAST", f"Vuelo más rápido incorrecto: {session1.podium.fastest_offer_id}"
-    assert session1.podium.best_value_offer_id == "OFFER_BALANCED", f"Mejor equilibrio incorrecto: {session1.podium.best_value_offer_id}"
+    assert session1.podium.top_2_offer_id == "OFFER_CHEAP", f"Mejor precio incorrecto: {session1.podium.top_2_offer_id}"
+    assert session1.podium.top_3_offer_id == "OFFER_FAST", f"Vuelo más rápido incorrecto: {session1.podium.top_3_offer_id}"
+    assert session1.podium.top_1_offer_id == "OFFER_BALANCED", f"Mejor equilibrio incorrecto: {session1.podium.top_1_offer_id}"
 
     # Validar banderas de podio en ofertas proyectadas
     offers_by_id = {o.offer_id: o for o in session1.offers}
-    assert offers_by_id["OFFER_CHEAP"].is_best_price is True
-    assert offers_by_id["OFFER_FAST"].is_fastest is True
-    assert offers_by_id["OFFER_BALANCED"].is_best_value is True
+    assert offers_by_id["OFFER_CHEAP"].is_top_2 is True
+    assert offers_by_id["OFFER_FAST"].is_top_3 is True
+    assert offers_by_id["OFFER_BALANCED"].is_top_1 is True
     assert offers_by_id["OFFER_DOMINATED"].pareto_rank >= 2, "La oferta dominada debe tener rango de Pareto >= 2."
 
     # Validar guardado en caché L2 y outbox event
@@ -16943,7 +17172,7 @@ async def run_unit_tests() -> None:
     assert session2.from_cache is True, "La sesión debe provenir de caché (from_cache=True)."
     assert session2.session_id == session1.session_id, "El session_id debe coincidir con la sesión cacheada."
     assert session2.total_offers == 4
-    assert session2.podium.best_price_offer_id == "OFFER_CHEAP"
+    assert session2.podium.top_2_offer_id == "OFFER_CHEAP"
     assert provider.call_count == 1, "FlightApi NO debió ser invocado nuevamente en cache hit."
     assert quota.usage == 1, "La cuota NO debió incrementarse en cache hit."
     assert len(outbox.events) == 2, "Debió registrarse el evento QuotesServedFromCacheEvent."
@@ -17015,7 +17244,7 @@ async def run_unit_tests() -> None:
 
     # 6.2 ParetoPodiumProjection
     try:
-        session1.podium.best_price_offer_id = "MUTATED"  # type: ignore
+        session1.podium.top_2_offer_id = "MUTATED"  # type: ignore
         assert False, "ParetoPodiumProjection debió impedir mutaciones."
     except (FrozenInstanceError, AttributeError):
         pass
@@ -17201,19 +17430,41 @@ class FlightOfferProjection:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumProjection:
     """Proyección inmutable de la terna laureada del Podio Navby."""
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
-    is_complete: bool
-    laureates_count: int
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+    is_complete: bool = False
+    laureates_count: int = 0
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+        *,
+        is_complete: bool | None = None,
+        laureates_count: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        t1 = top_1_offer_id
+        t2 = top_2_offer_id
+        t3 = top_3_offer_id
+        distinct = {x for x in (t1, t2, t3) if x is not None}
+        comp = is_complete if is_complete is not None else (t1 is not None and t2 is not None and t3 is not None)
+        l_cnt = laureates_count if laureates_count is not None else len(distinct)
+        object.__setattr__(self, "top_1_offer_id", t1)
+        object.__setattr__(self, "top_2_offer_id", t2)
+        object.__setattr__(self, "top_3_offer_id", t3)
+        object.__setattr__(self, "is_complete", comp)
+        object.__setattr__(self, "laureates_count", l_cnt)
 
 
 @dataclass(frozen=True)
@@ -17426,9 +17677,9 @@ async def run_session_and_quota_unit_tests() -> None:
 
     # Configuración de sesión de prueba
     podium = ParetoPodiumProjection(
-        best_price_offer_id="OFFER-001",
-        fastest_offer_id="OFFER-002",
-        best_value_offer_id="OFFER-001",
+        top_2_offer_id="OFFER-001",
+        top_3_offer_id="OFFER-002",
+        top_1_offer_id="OFFER-001",
         is_complete=True,
         laureates_count=2
     )
@@ -17455,9 +17706,9 @@ async def run_session_and_quota_unit_tests() -> None:
         total_duration_minutes=80,
         booking_url="https://booking.latam.com/flight/LA2020",
         pareto_rank=1,
-        is_best_price=True,
-        is_fastest=False,
-        is_best_value=True
+        is_top_2=True,
+        is_top_3=False,
+        is_top_1=True
     )
     sample_session = QuoteSessionProjection(
         session_id="session-lim-cuz-20261015",
@@ -17506,9 +17757,9 @@ async def run_session_and_quota_unit_tests() -> None:
     res_podium = await podium_handler.handle(GetParetoPodiumQuery(session_id="session-lim-cuz-20261015"))
     assert res_podium.is_success, "La consulta debió extraer exitosamente el Podio Navby."
     retrieved_podium = res_podium.value()
-    assert retrieved_podium.best_price_offer_id == "OFFER-001"
-    assert retrieved_podium.fastest_offer_id == "OFFER-002"
-    assert retrieved_podium.best_value_offer_id == "OFFER-001"
+    assert retrieved_podium.top_2_offer_id == "OFFER-001"
+    assert retrieved_podium.top_3_offer_id == "OFFER-002"
+    assert retrieved_podium.top_1_offer_id == "OFFER-001"
     assert retrieved_podium.is_complete is True
     assert retrieved_podium.laureates_count == 2
     print("  [OK] Escenario 3: GetParetoPodiumQueryHandler extrajo la terna laureada de Pareto con precisión.")
@@ -18277,17 +18528,36 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodium:
     """Objeto de valor con los tres laureles de optimización de Pareto."""
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
+
+    @property
+    def is_complete(self) -> bool:
+        return (
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
+        )
+
+    def laureates_count(self) -> int:
+        return sum(
+            1
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
+            if oid is not None
+        )
 
 
 @dataclass(frozen=True)
@@ -18475,17 +18745,20 @@ class FlightOfferDTO:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumDTO:
     """DTO de frontera para los identificadores laureados del Podio Navby."""
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
 
 
 @dataclass(frozen=True)
@@ -18626,9 +18899,9 @@ class QuotesContextFacadeImpl:
 
         raw_offers: tuple[FlightOffer, ...] = result.value()
         podium = ParetoPodium(
-            best_price_offer_id=raw_offers[0].offer_id if raw_offers else None,
-            fastest_offer_id=raw_offers[0].offer_id if raw_offers else None,
-            best_value_offer_id=raw_offers[0].offer_id if raw_offers else None,
+            top_2_offer_id=raw_offers[0].offer_id if raw_offers else None,
+            top_3_offer_id=raw_offers[0].offer_id if raw_offers else None,
+            top_1_offer_id=raw_offers[0].offer_id if raw_offers else None,
         )
 
         session = QuoteSession(
@@ -18706,17 +18979,17 @@ class QuotesContextFacadeImpl:
                     total_duration_minutes=o.total_duration_minutes,
                     booking_url=o.booking_url,
                     pareto_rank=o.pareto_rank,
-                    is_best_price=o.is_best_price,
-                    is_fastest=o.is_fastest,
-                    is_best_value=o.is_best_value,
+                    is_top_1=o.is_top_1,
+                    is_top_2=o.is_top_2,
+                    is_top_3=o.is_top_3,
                 )
             )
 
         podium = session.get_podium()
         podium_dto = ParetoPodiumDTO(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_2_offer_id=podium.top_2_offer_id,
+            top_3_offer_id=podium.top_3_offer_id,
+            top_1_offer_id=podium.top_1_offer_id,
         )
 
         return QuoteSessionDTO(
@@ -18883,7 +19156,7 @@ async def run_task6_unit_tests() -> None:
         stops_count=0,
         total_duration_minutes=80,
         booking_url="https://latam.com/off_facade_01",
-        is_best_price=True,
+        is_top_2=True,
     )
     flight_api.offers = (dummy_offer,)
 
@@ -19056,11 +19329,11 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
-    def mark_laureates(self, is_best_price: bool, is_fastest: bool, is_best_value: bool) -> FlightOffer:
+    def mark_laureates(self, is_top_1: bool = False, is_top_2: bool = False, is_top_3: bool = False) -> FlightOffer:
         """Retorna una nueva oferta inmutable con los laureles de podio asignados."""
         return FlightOffer(
             offer_id=self.offer_id,
@@ -19075,18 +19348,18 @@ class FlightOffer:
             total_duration_minutes=self.total_duration_minutes,
             booking_url=self.booking_url,
             pareto_rank=self.pareto_rank,
-            is_best_price=is_best_price,
-            is_fastest=is_fastest,
-            is_best_value=is_best_value,
+            is_top_1=is_top_1,
+            is_top_2=is_top_2,
+            is_top_3=is_top_3,
         )
 
 
 @dataclass(frozen=True)
 class ParetoPodium:
     """Objeto de valor con los tres laureles de optimización de Pareto."""
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -19161,18 +19434,18 @@ class ParetoOptimizationDomainService:
                 best_val_id = o.offer_id
 
         podium = ParetoPodium(
-            best_price_offer_id=best_p_id,
-            fastest_offer_id=fastest_id,
-            best_value_offer_id=best_val_id,
+            top_2_offer_id=best_p_id,
+            top_3_offer_id=fastest_id,
+            top_1_offer_id=best_val_id,
         )
 
         ranked: list[FlightOffer] = []
         for o in offers:
             ranked.append(
                 o.mark_laureates(
-                    is_best_price=(o.offer_id == best_p_id),
-                    is_fastest=(o.offer_id == fastest_id),
-                    is_best_value=(o.offer_id == best_val_id),
+                    is_top_1=(o.offer_id == best_val_id),
+                    is_top_2=(o.offer_id == best_p_id),
+                    is_top_3=(o.offer_id == fastest_id),
                 )
             )
 
@@ -19257,19 +19530,41 @@ class FlightOfferProjection:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int
-    is_best_price: bool
-    is_fastest: bool
-    is_best_value: bool
+    is_top_1: bool
+    is_top_2: bool
+    is_top_3: bool
 
 
 @dataclass(frozen=True)
 class ParetoPodiumProjection:
     """Proyección inmutable de la terna de laureles del Podio Navby."""
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
-    is_complete: bool
-    laureates_count: int
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+    is_complete: bool = False
+    laureates_count: int = 0
+
+    def __init__(
+        self,
+        top_1_offer_id: str | None = None,
+        top_2_offer_id: str | None = None,
+        top_3_offer_id: str | None = None,
+        *,
+        is_complete: bool | None = None,
+        laureates_count: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        t1 = top_1_offer_id
+        t2 = top_2_offer_id
+        t3 = top_3_offer_id
+        distinct = {x for x in (t1, t2, t3) if x is not None}
+        comp = is_complete if is_complete is not None else (t1 is not None and t2 is not None and t3 is not None)
+        l_cnt = laureates_count if laureates_count is not None else len(distinct)
+        object.__setattr__(self, "top_1_offer_id", t1)
+        object.__setattr__(self, "top_2_offer_id", t2)
+        object.__setattr__(self, "top_3_offer_id", t3)
+        object.__setattr__(self, "is_complete", comp)
+        object.__setattr__(self, "laureates_count", l_cnt)
 
 
 @dataclass(frozen=True)
@@ -19479,18 +19774,18 @@ class SearchFlightQuotesQueryHandler:
                     total_duration_minutes=o.total_duration_minutes,
                     booking_url=o.booking_url,
                     pareto_rank=o.pareto_rank,
-                    is_best_price=o.is_best_price,
-                    is_fastest=o.is_fastest,
-                    is_best_value=o.is_best_value,
+                    is_top_1=o.is_top_1,
+                    is_top_2=o.is_top_2,
+                    is_top_3=o.is_top_3,
                 )
             )
 
         podium = session.get_podium()
-        laureates = [p for p in (podium.best_price_offer_id, podium.fastest_offer_id, podium.best_value_offer_id) if p is not None]
+        laureates = [p for p in (podium.top_2_offer_id, podium.top_3_offer_id, podium.top_1_offer_id) if p is not None]
         podium_projection = ParetoPodiumProjection(
-            best_price_offer_id=podium.best_price_offer_id,
-            fastest_offer_id=podium.fastest_offer_id,
-            best_value_offer_id=podium.best_value_offer_id,
+            top_2_offer_id=podium.top_2_offer_id,
+            top_3_offer_id=podium.top_3_offer_id,
+            top_1_offer_id=podium.top_1_offer_id,
             is_complete=len(laureates) == 3,
             laureates_count=len(laureates),
         )
@@ -19550,12 +19845,12 @@ class GetParetoPodiumQueryHandler:
         if session is None:
             return Result.failure(ApplicationError(code="SESSION_NOT_FOUND", message="Sesión no encontrada."))
         podium = session.get_podium()
-        laureates = [p for p in (podium.best_price_offer_id, podium.fastest_offer_id, podium.best_value_offer_id) if p is not None]
+        laureates = [p for p in (podium.top_2_offer_id, podium.top_3_offer_id, podium.top_1_offer_id) if p is not None]
         return Result.success(
             ParetoPodiumProjection(
-                best_price_offer_id=podium.best_price_offer_id,
-                fastest_offer_id=podium.fastest_offer_id,
-                best_value_offer_id=podium.best_value_offer_id,
+                top_2_offer_id=podium.top_2_offer_id,
+                top_3_offer_id=podium.top_3_offer_id,
+                top_1_offer_id=podium.top_1_offer_id,
                 is_complete=len(laureates) == 3,
                 laureates_count=len(laureates),
             )
@@ -19642,17 +19937,20 @@ class FlightOfferDTO:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodiumDTO:
     """DTO de frontera para los laureles del Podio Navby."""
-    best_price_offer_id: str | None
-    fastest_offer_id: str | None
-    best_value_offer_id: str | None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
 
 
 @dataclass(frozen=True)
@@ -19795,16 +20093,16 @@ class QuotesContextFacadeImpl:
                     total_duration_minutes=o.total_duration_minutes,
                     booking_url=o.booking_url,
                     pareto_rank=o.pareto_rank,
-                    is_best_price=o.is_best_price,
-                    is_fastest=o.is_fastest,
-                    is_best_value=o.is_best_value,
+                    is_top_1=o.is_top_1,
+                    is_top_2=o.is_top_2,
+                    is_top_3=o.is_top_3,
                 )
             )
 
         podium_dto = ParetoPodiumDTO(
-            best_price_offer_id=proj.podium.best_price_offer_id,
-            fastest_offer_id=proj.podium.fastest_offer_id,
-            best_value_offer_id=proj.podium.best_value_offer_id,
+            top_2_offer_id=proj.podium.top_2_offer_id,
+            top_3_offer_id=proj.podium.top_3_offer_id,
+            top_1_offer_id=proj.podium.top_1_offer_id,
         )
 
         return QuoteSessionDTO(
@@ -19930,8 +20228,8 @@ async def test_scenario_1_search_quotes_cache_miss_pareto_flow() -> None:
     proj: QuoteSessionProjection = res.value()
     assert proj.from_cache is False
     assert proj.total_offers == 3
-    assert proj.podium.best_price_offer_id == "off_2"
-    assert proj.podium.fastest_offer_id == "off_1"
+    assert proj.podium.top_2_offer_id == "off_2"
+    assert proj.podium.top_3_offer_id == "off_1"
     assert proj.podium.is_complete is True
     assert quota.used == 6
     assert len(outbox.events) == 1
@@ -20004,8 +20302,8 @@ async def test_scenario_4_session_and_podium_query_retrieval() -> None:
     podium_handler = GetParetoPodiumQueryHandler(cache)
     podium_res = await podium_handler.handle(GetParetoPodiumQuery(session_id))
     assert podium_res.is_success()
-    assert podium_res.value().best_price_offer_id == "off_2"
-    assert podium_res.value().fastest_offer_id == "off_1"
+    assert podium_res.value().top_2_offer_id == "off_2"
+    assert podium_res.value().top_3_offer_id == "off_1"
     assert podium_res.value().is_complete is True
     print("  [OK] Escenario 4: Recuperación de sesión y podio laureado por ID en consultas de lectura.")
 
@@ -20071,7 +20369,7 @@ async def test_scenario_8_ohs_facade_intermodular_integration() -> None:
     dto = await facade.search_quotes_sync("LIM", "CUZ", date.today().isoformat(), passengers=1)
     assert dto is not None
     assert dto.total_offers == 3
-    assert dto.podium.best_price_offer_id == "off_2"
+    assert dto.podium.top_2_offer_id == "off_2"
 
     q_dto = await facade.get_quota_status()
     assert q_dto.requests_made == 21
@@ -20286,17 +20584,38 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+    is_round_trip: bool = False
 
 
 @dataclass(frozen=True)
 class ParetoPodium:
     """Objeto de valor con los tres laureles de optimización de Pareto."""
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
+
+    @property
+    def is_complete(self) -> bool:
+        return (
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
+        )
+
+    def laureates_count(self) -> int:
+        return sum(
+            1
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
+            if oid is not None
+        )
 
 
 @dataclass(frozen=True)
@@ -20419,9 +20738,13 @@ class QuoteSessionRedisSerializer:
                 "total_duration_minutes": o.total_duration_minutes,
                 "booking_url": o.booking_url,
                 "pareto_rank": o.pareto_rank,
-                "is_best_price": o.is_best_price,
-                "is_fastest": o.is_fastest,
-                "is_best_value": o.is_best_value,
+                "is_top_1": getattr(o, "is_top_1", getattr(o, "is_top_1", False)),
+                "is_top_2": getattr(o, "is_top_2", getattr(o, "is_top_2", False)),
+                "is_top_3": getattr(o, "is_top_3", getattr(o, "is_top_3", False)),
+                "is_top_2": o.is_top_2,
+                "is_top_3": o.is_top_3,
+                "is_top_1": o.is_top_1,
+                "is_round_trip": getattr(o, "is_round_trip", False),
             })
 
         podium = session.get_podium()
@@ -20438,9 +20761,12 @@ class QuoteSessionRedisSerializer:
             },
             "offers": offers_payload,
             "podium": {
-                "best_price_offer_id": podium.best_price_offer_id,
-                "fastest_offer_id": podium.fastest_offer_id,
-                "best_value_offer_id": podium.best_value_offer_id,
+                "top_1_offer_id": podium.top_1_offer_id,
+                "top_2_offer_id": podium.top_2_offer_id,
+                "top_3_offer_id": podium.top_3_offer_id,
+                "top_2_offer_id": podium.top_2_offer_id,
+                "top_3_offer_id": podium.top_3_offer_id,
+                "top_1_offer_id": podium.top_1_offer_id,
             },
             "from_cache": session.from_cache,
             "created_at": session.created_at.isoformat(),
@@ -20492,17 +20818,21 @@ class QuoteSessionRedisSerializer:
                     total_duration_minutes=o["total_duration_minutes"],
                     booking_url=o["booking_url"],
                     pareto_rank=o["pareto_rank"],
-                    is_best_price=o["is_best_price"],
-                    is_fastest=o["is_fastest"],
-                    is_best_value=o["is_best_value"],
+                    is_top_1=o.get("is_top_1", False),
+                    is_top_2=o.get("is_top_2", False),
+                    is_top_3=o.get("is_top_3", False),
+                    is_round_trip=o.get("is_round_trip", False),
                 )
             )
 
         p = data["podium"]
+        top_1 = p.get("top_1_offer_id") or p.get("top_1_offer_id")
+        top_2 = p.get("top_2_offer_id") or p.get("top_2_offer_id")
+        top_3 = p.get("top_3_offer_id") or p.get("top_3_offer_id")
         podium = ParetoPodium(
-            best_price_offer_id=p["best_price_offer_id"],
-            fastest_offer_id=p["fastest_offer_id"],
-            best_value_offer_id=p["best_value_offer_id"],
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
         )
 
         return QuoteSession(
@@ -20676,10 +21006,10 @@ async def run_infra_task2_unit_tests() -> None:
         stops_count=0,
         total_duration_minutes=80,
         booking_url="https://latam.com/test",
-        is_best_price=True,
+        is_top_2=True,
     )
     criteria = QuoteSearchCriteria("LIM", "CUZ", date.today(), None, 1, "ECONOMY", "USD")
-    podium = ParetoPodium(best_price_offer_id="off_test_01")
+    podium = ParetoPodium(top_2_offer_id="off_test_01")
     session = QuoteSession("quotes:LIM:CUZ:2026-09-23:1:USD", criteria, [offer], podium, from_cache=False)
 
     await adapter.save_session("quotes:LIM:CUZ:2026-09-23:1:USD", session)
@@ -20698,7 +21028,7 @@ async def run_infra_task2_unit_tests() -> None:
     assert hit.get_offers()[0].offer_id == "off_test_01"
     assert hit.get_offers()[0].price.amount == 79.00
     assert hit.get_offers()[0].legs[0].flight_number.number == "2040"
-    assert hit.get_podium().best_price_offer_id == "off_test_01"
+    assert hit.get_podium().top_2_offer_id == "off_test_01"
     print("  [OK] Prueba 4: Cache hit reconstituyó la sesión completa con fidelidad de tipos y podio.")
 
     # 5. Operaciones de cuota mediante QuoteCacheRepository
@@ -21077,9 +21407,9 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
 
 
 @dataclass(frozen=True)
@@ -22129,9 +22459,28 @@ class QuoteSearchCriteria:
 
 @dataclass(frozen=True)
 class ParetoPodium:
-    best_price_offer_id: str | None = None
-    fastest_offer_id: str | None = None
-    best_value_offer_id: str | None = None
+    top_1_offer_id: str | None = None
+    top_2_offer_id: str | None = None
+    top_3_offer_id: str | None = None
+
+
+
+
+
+    @property
+    def is_complete(self) -> bool:
+        return (
+            self.top_1_offer_id is not None
+            and self.top_2_offer_id is not None
+            and self.top_3_offer_id is not None
+        )
+
+    def laureates_count(self) -> int:
+        return sum(
+            1
+            for oid in (self.top_1_offer_id, self.top_2_offer_id, self.top_3_offer_id)
+            if oid is not None
+        )
 
 
 @dataclass(frozen=True)
@@ -22160,9 +22509,10 @@ class FlightOffer:
     total_duration_minutes: int
     booking_url: str
     pareto_rank: int = 1
-    is_best_price: bool = False
-    is_fastest: bool = False
-    is_best_value: bool = False
+    is_top_1: bool = False
+    is_top_2: bool = False
+    is_top_3: bool = False
+    is_round_trip: bool = False
 
 
 @dataclass
@@ -22200,9 +22550,12 @@ class QuoteSessionRedisSerializer:
             "from_cache": session.from_cache,
             "created_at": session.created_at.isoformat(),
             "podium": {
-                "best_price_offer_id": session._pareto_podium.best_price_offer_id,
-                "fastest_offer_id": session._pareto_podium.fastest_offer_id,
-                "best_value_offer_id": session._pareto_podium.best_value_offer_id,
+                "top_1_offer_id": session._pareto_podium.top_1_offer_id,
+                "top_2_offer_id": session._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": session._pareto_podium.top_3_offer_id,
+                "top_2_offer_id": session._pareto_podium.top_2_offer_id,
+                "top_3_offer_id": session._pareto_podium.top_3_offer_id,
+                "top_1_offer_id": session._pareto_podium.top_1_offer_id,
             },
             "offers": [
                 {
@@ -22218,9 +22571,13 @@ class QuoteSessionRedisSerializer:
                     "total_duration_minutes": off.total_duration_minutes,
                     "booking_url": off.booking_url,
                     "pareto_rank": off.pareto_rank,
-                    "is_best_price": off.is_best_price,
-                    "is_fastest": off.is_fastest,
-                    "is_best_value": off.is_best_value,
+                    "is_top_1": getattr(off, "is_top_1", getattr(off, "is_top_1", False)),
+                    "is_top_2": getattr(off, "is_top_2", getattr(off, "is_top_2", False)),
+                    "is_top_3": getattr(off, "is_top_3", getattr(off, "is_top_3", False)),
+                    "is_top_2": off.is_top_2,
+                    "is_top_3": off.is_top_3,
+                    "is_top_1": off.is_top_1,
+                    "is_round_trip": getattr(off, "is_round_trip", False),
                     "legs": [
                         {
                             "origin": leg.origin,
@@ -22249,10 +22606,13 @@ class QuoteSessionRedisSerializer:
             passengers=data.get("passengers", 1),
         )
         podium_data = data.get("podium", {})
+        top_1 = podium_data.get("top_1_offer_id")
+        top_2 = podium_data.get("top_2_offer_id")
+        top_3 = podium_data.get("top_3_offer_id")
         podium = ParetoPodium(
-            best_price_offer_id=podium_data.get("best_price_offer_id"),
-            fastest_offer_id=podium_data.get("fastest_offer_id"),
-            best_value_offer_id=podium_data.get("best_value_offer_id"),
+            top_1_offer_id=top_1,
+            top_2_offer_id=top_2,
+            top_3_offer_id=top_3,
         )
         offers: list[FlightOffer] = []
         for o_raw in data.get("offers", []):
@@ -22284,9 +22644,10 @@ class QuoteSessionRedisSerializer:
                     total_duration_minutes=o_raw["total_duration_minutes"],
                     booking_url=o_raw["booking_url"],
                     pareto_rank=o_raw.get("pareto_rank", 1),
-                    is_best_price=o_raw.get("is_best_price", False),
-                    is_fastest=o_raw.get("is_fastest", False),
-                    is_best_value=o_raw.get("is_best_value", False),
+                    is_top_1=o_raw.get("is_top_1", False),
+                    is_top_2=o_raw.get("is_top_2", False),
+                    is_top_3=o_raw.get("is_top_3", False),
+                    is_round_trip=o_raw.get("is_round_trip", False),
                 )
             )
         session = QuoteSession(
@@ -22653,13 +23014,13 @@ async def test_scenario_1_redis_cache_aside_with_jitter() -> None:
         stops_count=0,
         total_duration_minutes=80,
         booking_url="https://latam.com/book",
-        is_best_price=True,
+        is_top_2=True,
     )
     session = QuoteSession(
         id=cache_key,
         criteria=crit,
         _offers=[off],
-        _pareto_podium=ParetoPodium(best_price_offer_id="OFF-01"),
+        _pareto_podium=ParetoPodium(top_2_offer_id="OFF-01"),
         from_cache=False,
     )
 
@@ -22672,7 +23033,7 @@ async def test_scenario_1_redis_cache_aside_with_jitter() -> None:
     assert hit.id == cache_key
     assert hit.from_cache is True
     assert len(hit.get_offers()) == 1
-    assert hit.get_offers()[0].is_best_price is True
+    assert hit.get_offers()[0].is_top_2 is True
     print("  [OK] Escenario 1: Cache-Aside en Redis con Jitter ±5% operó deterministamente.")
 
 

@@ -90,13 +90,13 @@ La siguiente tabla resume todos los endpoints expuestos por la plataforma Navby,
 | **IAM** | `PATCH` | `/api/v1/users/profile` | Autenticado | Modificación de metadatos de perfil (nombre, país, avatar). |
 | **IAM** | `POST` | `/api/v1/users/{user_id}/suspend` | Admin | Bloqueo o suspensión administrativa de una cuenta de usuario. |
 | **Routing** | `POST` | `/api/v1/routing/routes/search` | Público | Búsqueda geodésica $A^*$/BFS sobre el grafo en RAM con telemetría de benchmarking. |
-| **Routing** | `GET` | `/api/v1/routing/airports/nearest` | Público | Resolución por vecino más cercano de Haversine ($O(V)$) para localidades sin pista. |
+| **Routing** | `GET` | `/api/v1/routing/cities` | Público | Búsqueda y autocompletado de ciudades servidas con sus aeropuertos comerciales asociados. |
 | **Routing** | `GET` | `/api/v1/routing/airports` | Público | Catálogo paginado y autocompletado de los 3,354 aeropuertos comerciales. |
 | **Routing** | `GET` | `/api/v1/routing/airports/{iata_code}` | Público | Consulta de metadatos canónicos de un aeropuerto por código IATA. |
-| **Routing** | `GET` | `/api/v1/routing/topology/metrics` | Público | Telemetría estructural de la red de grafos (nodos, aristas, conexidad UFDS). |
+| **Routing** | `GET` | `/api/v1/routing/topology/metrics` | Público | Telemetría estructural de la red de grafos (nodos, aristas, grado promedio y conectividad). |
 | **Quotes** | `POST` | `/api/v1/quotes/search` | Autenticado | Cotización en vivo vía FlightAPI, optimización Pareto y débito de 5 créditos. |
 | **Quotes** | `GET` | `/api/v1/quotes/{session_id}` | Autenticado | Recuperación de los resultados completos de una sesión de cotización previa. |
-| **Quotes** | `GET` | `/api/v1/quotes/{session_id}/podium` | Autenticado | Extracción del Podio de Pareto (Más Barato, Más Rápido y Mejor Balance). |
+| **Quotes** | `GET` | `/api/v1/quotes/{session_id}/podium` | Autenticado | Extracción del Podio de Pareto (Top 1, Top 2 y Top 3 de Mayor Valor Global). |
 | **Quotes** | `GET` | `/api/v1/quotes/quota/status` | Autenticado | Monitoreo del saldo externo consumido en FlightAPI y Circuit Breaker. |
 | **Itineraries** | `POST` | `/api/v1/itineraries` | Autenticado | Creación y custodia persistente de un itinerario en PostgreSQL 16. |
 | **Itineraries** | `GET` | `/api/v1/itineraries/{itinerary_id}` | Autenticado | Detalle completo de un itinerario guardado por su identificador UUID. |
@@ -299,47 +299,48 @@ El Bounded Context de Routing gestiona la red aeroportuaria en memoria RAM (**3,
           "dijkstra_nodes_expanded": 1890,
           "dijkstra_execution_time_ms": 19.20,
           "bfs_stops_count": 0,
+          "bfs_execution_time_ms": 2.10,
           "efficiency_gain_pct": 92.48
         }
       }
     }
     ```
   * `400 Bad Request`: Si el origen y destino son idénticos (`origin == destination`).
-  * `404 Not Found`: Si uno de los códigos IATA no existe en la red aeroportuaria comercial activa o no existe conexidad física en la componente comercial (evaluada en $O(\alpha(V))$ por UFDS).
+  * `404 Not Found`: Si uno de los códigos IATA no existe en la red aeroportuaria comercial activa o no existe ruta viable en el grafo comercial.
 
-### 4.2. `GET /api/v1/routing/airports/nearest`
-* **Propósito:** Resuelve la terminal aeroportuaria comercial más cercana para localidades, municipios o destinos turísticos que carecen de aeropuerto propio (por ejemplo, Máncora, Machu Picchu o Andorra). Ejecuta un barrido lineal exhaustivo en memoria RAM ($O(V)$, $< 0.08\text{ ms}$) calculando la distancia ortodrómica de Haversine contra los 3,354 nodos comerciales del sistema.
+### 4.2. `GET /api/v1/routing/cities`
+* **Propósito:** Provee el servicio de autocompletado y resolución de ciudades con aeropuertos comerciales para el buscador principal de la Webapp. Permite búsquedas directas por nombre de metrópoli (ej. "Tokio", "Lima", "Nueva York", "Madrid"), devolviendo las terminales comerciales asociadas (identificando el aeropuerto primario y terminales alternativas en ciudades multiaeropuerto).
 * **Nivel de Acceso:** Público.
 * **Parámetros de Consulta (Query Params):**
-  * `latitude` (`float`, requerido): Latitud en grados decimales (entre $-90.0$ y $90.0$).
-  * `longitude` (`float`, requerido): Longitud en grados decimales (entre $-180.0$ y $180.0$).
-  * `limit` (`int`, opcional, por defecto `3`): Cantidad de terminales de proximidad alternativas a retornar.
-* **Ejemplo de Solicitud:** `GET /api/v1/routing/airports/nearest?latitude=-4.1078&longitude=-81.0475&limit=2`
+  * `q` (`string`, requerido): Término de búsqueda o prefijo de la ciudad (mínimo 2 caracteres).
+  * `limit` (`int`, opcional, por defecto `10`): Cantidad máxima de metrópolis a retornar.
+* **Ejemplo de Solicitud:** `GET /api/v1/routing/cities?q=Tokyo`
 * **Respuestas:**
-  * `200 OK` (`NearestAirportResponseSchema`):
+  * `200 OK` (`CitySearchResponseSchema`):
     ```json
     {
-      "query_location": {
-        "latitude": -4.1078,
-        "longitude": -81.0475
-      },
-      "nearest_airport": {
-        "iata": "TYL",
-        "icao": "SPYL",
-        "name": "Capitán FAP Víctor Montes Arias Airport",
-        "city": "Talara",
-        "country": "Peru",
-        "distance_km": 68.42,
-        "latitude": -4.3764,
-        "longitude": -81.2542
-      },
-      "alternative_airports": [
+      "query": "Tokyo",
+      "results_count": 1,
+      "cities": [
         {
-          "iata": "PIU",
-          "name": "Capitán FAP Guillermo Concha Iberico International Airport",
-          "city": "Piura",
-          "country": "Peru",
-          "distance_km": 118.25
+          "city": "Tokyo",
+          "country": "Japan",
+          "total_airports": 2,
+          "primary_airport_iata": "HND",
+          "airports": [
+            {
+              "iata": "HND",
+              "icao": "RJTT",
+              "name": "Tokyo Haneda International Airport",
+              "is_primary": true
+            },
+            {
+              "iata": "NRT",
+              "icao": "RJAA",
+              "name": "Narita International Airport",
+              "is_primary": false
+            }
+          ]
         }
       ]
     }
@@ -389,7 +390,7 @@ El Bounded Context de Quotes es el núcleo económico de Navby. Se integra con *
 
 ### 5.1. `POST /api/v1/quotes/search`
 * **Propósito:** Ejecuta una cotización completa de tarifas reales de mercado para vuelos de solo ida (`ONE_WAY`) o ida y vuelta (`ROUND_TRIP`). El proceso es determinista:
-  1. Valida la viabilidad topológica en memoria RAM mediante el escudo UFDS ($0.00 USD de costo).
+  1. Valida la viabilidad topológica y cota de escalas en memoria RAM mediante BFS ($0.00 USD de costo).
   2. Comprueba si existe caché previa en Redis 7 (`quote:{origin}:{dest}:{date}:{cabin}:{pax}`). Ante *Cache Hit*, retorna de inmediato en $< 5\text{ ms}$ a 0 créditos de penalización.
   3. Ante *Cache Miss*, descuenta atómicamente **5 créditos Navby** de la billetera del usuario en Redis.
   4. Realiza **una sola petición HTTPS** hacia FlightAPI (`/onewaytrip` o `/roundtrip`), consumiendo 2 créditos del plan de la plataforma.
@@ -422,7 +423,7 @@ El Bounded Context de Quotes es el núcleo económico de Navby. Se integra con *
       "market_offers_count": 42,
       "pareto_optimal_count": 3,
       "podium": {
-        "best_value": {
+        "top_1_offer": {
           "itinerary_id": "itn_opt_001",
           "airline_name": "Air Europa",
           "airline_code": "UX",
@@ -431,27 +432,42 @@ El Bounded Context de Quotes es el núcleo económico de Navby. Se integra con *
           "total_stops": 0,
           "utility_score": 0.94,
           "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_001",
-          "legs": [...]
+          "legs": [
+            {
+              "origin": "LIM",
+              "destination": "MAD",
+              "departure_time": "2026-10-15T10:15:00",
+              "arrival_time": "2026-10-15T23:35:00",
+              "direction": "OUTBOUND"
+            },
+            {
+              "origin": "MAD",
+              "destination": "LIM",
+              "departure_time": "2026-10-30T13:00:00",
+              "arrival_time": "2026-10-30T21:30:00",
+              "direction": "INBOUND"
+            }
+          ]
         },
-        "cheapest": {
+        "top_2_offer": {
           "itinerary_id": "itn_opt_002",
-          "airline_name": "Avianca",
-          "airline_code": "AV",
-          "total_price": 620.00,
-          "total_duration_minutes": 980,
-          "total_stops": 1,
-          "utility_score": 0.88,
+          "airline_name": "Iberia",
+          "airline_code": "IB",
+          "total_price": 890.00,
+          "total_duration_minutes": 740,
+          "total_stops": 0,
+          "utility_score": 0.91,
           "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_002",
           "legs": [...]
         },
-        "fastest": {
+        "top_3_offer": {
           "itinerary_id": "itn_opt_003",
-          "airline_name": "Iberia",
-          "airline_code": "IB",
-          "total_price": 910.00,
-          "total_duration_minutes": 710,
-          "total_stops": 0,
-          "utility_score": 0.91,
+          "airline_name": "LATAM Airlines",
+          "airline_code": "LA",
+          "total_price": 820.00,
+          "total_duration_minutes": 780,
+          "total_stops": 1,
+          "utility_score": 0.89,
           "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_003",
           "legs": [...]
         }
@@ -471,7 +487,7 @@ El Bounded Context de Quotes es el núcleo económico de Navby. Se integra con *
   * `404 Not Found`: Sesión expirada o inexistente en caché.
 
 ### 5.3. `GET /api/v1/quotes/{session_id}/podium`
-* **Propósito:** Extrae de forma concisa exclusivamente las 3 alternativas ganadoras del podio de Pareto (Mejor Balance, Más Barato y Más Rápido) para la visualización de tarjetas destacadas en la interfaz de usuario.
+* **Propósito:** Extrae de forma concisa exclusivamente las 3 alternativas ganadoras del podio de Pareto (Top 1, Top 2 y Top 3 de mayor puntuación y valor global) para la visualización de tarjetas destacadas en la interfaz de usuario.
 * **Nivel de Acceso:** Autenticado.
 * **Respuestas:**
   * `200 OK` (`ParetoPodiumResponseSchema`).

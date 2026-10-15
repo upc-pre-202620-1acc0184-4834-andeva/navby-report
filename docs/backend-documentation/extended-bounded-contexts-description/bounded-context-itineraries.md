@@ -32075,9 +32075,9 @@ class RouteSnapshot(ValueObject):
 
 
 class QuoteRank(IntEnum):
-    CHEAPEST = 1
-    FASTEST = 2
-    BEST_VALUE = 3
+    FIRST = 1
+    SECOND = 2
+    THIRD = 3
 
 
 class ItineraryStatus(StrEnum):
@@ -33098,7 +33098,7 @@ async def run_itineraries_uow_outbox_tests() -> None:
         q1 = ItineraryQuote(
             id=quote_id_1,
             itinerary_id=ItineraryId(itin_id_5),
-            rank=QuoteRank.CHEAPEST,
+            rank=QuoteRank.FIRST,
             total_price=Money(amount=Decimal("120.00"), currency="USD"),
             base_fare=Money(amount=Decimal("100.00"), currency="USD"),
             taxes=Money(amount=Decimal("20.00"), currency="USD"),
@@ -33113,7 +33113,7 @@ async def run_itineraries_uow_outbox_tests() -> None:
         q2 = ItineraryQuote(
             id=quote_id_2,
             itinerary_id=ItineraryId(itin_id_5),
-            rank=QuoteRank.FASTEST,
+            rank=QuoteRank.SECOND,
             total_price=Money(amount=Decimal("180.00"), currency="USD"),
             base_fare=Money(amount=Decimal("150.00"), currency="USD"),
             taxes=Money(amount=Decimal("30.00"), currency="USD"),

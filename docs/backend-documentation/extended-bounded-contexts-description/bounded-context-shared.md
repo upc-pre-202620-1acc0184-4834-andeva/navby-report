@@ -3093,7 +3093,7 @@ En la planificación de rutas intercontinentales, suponer distancias euclidianas
 ##### Justificación Táctica del Servicio de Dominio Puro (HaversineGeometryDomainService)
 En la taxonomía de Domain-Driven Design, una operación matemática o un algoritmo que involucra múltiples entidades o Value Objects y que no posee estado mutable propio no debe forzarse artificialmente dentro de una sola entidad:
 * Si el cálculo ortodrómico residiera exclusivamente dentro del Value Object `GeoPoint`, dicho objeto se sobrecargaría con responsabilidades ajenas a su condición de coordenada pura (fórmulas trigonométricas esféricas, cálculo de rumbos iniciales, estimación de tiempo de bloque y detección de antípodas).
-* Además, los algoritmos de búsqueda heurística en grafos ($A^*$, Dijkstra con heurística geográfica, poda geométrica en Backtracking) requieren invocar cálculos de distancia ortodrómica y estimaciones cinemáticas sobre miles de pares de nodos por segundo.
+* Además, los algoritmos de búsqueda espacial en grafos ($A^*$, Dijkstra y barrido de proximidad) requieren invocar cálculos de distancia ortodrómica y estimaciones cinemáticas sobre miles de pares de nodos por segundo.
 * Por ello, la lógica matemática reside en un **Servicio de Dominio puro y sin estado** (`HaversineGeometryDomainService`). Este servicio no almacena sesión, no depende de bases de datos ni de APIs de terceros, opera únicamente con parámetros inmutables y es idempotente y determinista. Para mayor conveniencia expresiva, `GeoPoint` provee métodos de acceso (`distance_to`, `initial_bearing_to`) que delegan formalmente en este servicio de dominio.
 
 ##### Convenciones y Estándares Aeronáuticos Internacionales (IATA, OACI y Millas Náuticas)
@@ -15693,9 +15693,9 @@ de **Andeva**.
 ## Arquitectura Modular de Bounded Contexts
 El sistema se organiza en cinco dominios desacoplados regidos por DDD táctico:
 - **IAM:** Gestión de identidades, perfiles, sesiones seguras y emisión de tokens JWT.
-- **Flight Infrastructure:** Red de grafos geodésicos ortodrómicos, nodos aeroportuarios y rutas comerciales.
-- **Flights:** Motor de optimización combinatoria multiobjetivo de itinerarios (Dijkstra, A*, DFS, Bellman-Ford).
-- **Checkout:** Gestión del ciclo de vida de órdenes, carritos de compra y reservas.
+- **Routing:** Red de grafos geodésicos ortodrómicos, nodos aeroportuarios, cálculo de rutas óptimas (A*, BFS) y benchmarking con Dijkstra.
+- **Quotes:** Inteligencia tarifaria en tiempo real y optimización multicriterio de Pareto (Top 1, Top 2, Top 3).
+- **Itineraries:** Gestión del ciclo de vida y persistencia de itinerarios cotizados por el usuario.
 - **Billing:** Billeteras virtuales, créditos de consumo y pasarelas de pago.
 
 ## Estándar Contractual de Errores

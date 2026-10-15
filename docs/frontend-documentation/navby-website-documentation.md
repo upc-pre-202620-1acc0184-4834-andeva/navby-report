@@ -16,9 +16,9 @@ La infraestructura de ejecución y empaquetado del sitio web se fundamenta en he
 
 ---
 
-## 2. Islas Interactivas y Componentes de UI
+## 2. Islas Interactivas y Runtime React en Cliente
 
-Para aquellos elementos de la página que requieren interactividad dinámica en el cliente, se utiliza la integración oficial de componentes desacoplados.
+Para aquellos módulos de la página que requieren interactividad dinámica en el cliente, se utiliza la integración oficial de componentes desacoplados.
 
 * **`@astrojs/react` (v4.2.x / `^4.2.0`):** Integración oficial de Astro que permite incrustar y renderizar componentes de React de manera aislada dentro de las plantillas de Astro. Facilita la directiva de hidratación selectiva (`client:load`, `client:idle`, `client:visible`), cargando el bundle de JavaScript únicamente cuando el componente entra en el viewport del usuario.
 * **React (v19.0.x / `^19.0.0`):** Biblioteca para la construcción de interfaces de usuario declarativas. Se emplea exclusivamente en componentes aislados que demandan estado reactivo en el navegador, como selectores interactivos de moneda/idioma, menús de navegación móvil colapsables o micro-widgets de demostración funcional.

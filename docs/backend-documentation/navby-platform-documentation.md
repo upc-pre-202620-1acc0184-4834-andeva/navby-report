@@ -15,7 +15,7 @@ El diseño del backend responde a criterios estrictos de simplicidad operacional
 * **Monolito modular desacoplado:** Se rechaza la arquitectura de microservicios. Todas las capacidades residen en una sola base de código con módulos desacoplados y fronteras lógicas claras (Clean Architecture / Vertical Slice), facilitando el desarrollo local, las pruebas unitarias y el despliegue determinista.
 * **Motor de grafos zero-dependency en RAM:** El grafo aeroportuario de OpenFlights (3,354 nodos y 37,326 aristas) se procesa íntegramente con estructuras de datos nativas de Python cargadas durante el arranque (`lifespan`), eliminando la necesidad de bases de datos de grafos externas pesadas (como Neo4j) o librerías de alto consumo de memoria.
 * **Resiliencia transaccional sin colas externas complejas:** La persistencia y los eventos de dominio se gestionan mediante el patrón Transactional Outbox sobre PostgreSQL 16. No se incorporan brokers pesados de mensajería (Kafka o RabbitMQ), delegando tareas asíncronas ligeras al mecanismo nativo `BackgroundTasks` de FastAPI.
-* **Protección presupuestaria y fast-path en caché:** Cada consulta externa hacia FlightAPI está precedida por un prefiltro topológico a costo cero ($0.00) mediante UFDS en memoria y una capa de caché en Redis 7 con un tiempo de vida (TTL) de 30 minutos, protegiendo las cuotas financieras de la plataforma.
+* **Protección presupuestaria y fast-path en caché:** Cada consulta externa hacia FlightAPI está precedida por un prefiltro topológico a costo cero ($0.00) mediante BFS en memoria y una capa de caché en Redis 7 con un tiempo de vida (TTL) de 30 minutos, protegiendo las cuotas financieras de la plataforma.
 
 ---
 
@@ -71,10 +71,9 @@ Aloja la topología aeroportuaria mundial y ejecuta el catálogo de algoritmos d
 | Componente | Implementación | Propósito y Justificación Técnica |
 | :--- | :--- | :--- |
 | **Topología en RAM** | **Python nativo** (`dict`, `list`, `set`, `dataclasses(slots=True)`) | Representa los 3,354 aeropuertos comerciales y 37,326 aristas únicas de OpenFlights en listas de adyacencia optimizadas. Ocupa ~10 MB de memoria RAM en el arranque y evita sobrecargas de librerías externas. |
-| **UFDS (Union-Find)** | Arrays planos de enteros (`list[int]`) | Escudo previo de conectividad en tiempo casi constante $O(\alpha(V))$ (< 0.05 ms). Comprueba si origen y destino están en la misma componente conexa antes de invocar APIs externas. |
-| **A\* (A-Star)** | Min-Heap (`heapq`) y trigonometría (`math`) | Búsqueda del camino geodésico óptimo punto a punto sobre pesos Haversine ($O(E \log V)$). Deriva la cota inferior teórica de duración ($T_{\min}$) y calcula los waypoints del arco de vuelo para el mapa. |
-| **BFS** | Doble cola `collections.deque` | Búsqueda por niveles sobre el grafo no ponderado ($O(V + E)$) para derivar la ruta teórica con el menor número de escalas posibles ($k - 1$). |
-| **Motor Multicriterio** | Algoritmo en Python (`math`, sorting) | Optimización multi-objetivo en memoria ($O(N \log N)$) sobre las opciones devueltas por FlightAPI, descartando alternativas dominadas (frontera de Pareto) y ponderando precio, tiempo y escalas. |
+| **A\* (A-Star)** | Min-Heap (`heapq`) y trigonometría (`math`) | Búsqueda del camino geodésico óptimo punto a punto sobre pesos Haversine ($O(E \log V)$). Deriva la cota inferior teórica de duración ($T_{\min}$) y calcula el arco de vuelo geodésico proyectado inmediatamente en el mapa durante la carga. |
+| **BFS** | Doble cola `collections.deque` | Búsqueda por niveles sobre el grafo no ponderado ($O(V + E)$) para derivar la ruta teórica con el menor número de escalas posibles ($k - 1$) y validar la conectividad comercial previa a costo cero. |
+| **Motor Multicriterio (Pareto)** | Algoritmo en Python (`math`, sorting) | Optimización multi-objetivo en memoria ($O(N \log N)$) sobre las opciones de FlightAPI, descartando alternativas dominadas y seleccionando deterministamente el Podio Navby (Top 1, Top 2, Top 3) al punto ideal $(0, 0, 0)$. |
 
 ### 2.6. Seguridad, Autenticación y Criptografía
 
@@ -311,7 +310,7 @@ Cada Bounded Context se alinea con una clasificación de subdominio según su ni
 
 | Bounded Context | Tipo de Subdominio | Ventaja Competitiva y Rol de Negocio | Persistencia y Estado | Complejidad y Estrategia de Implementación |
 | :--- | :---: | :--- | :--- | :--- |
-| **Routing** | **Core Domain** | **Ventaja algorítmica principal:** Cálculo geodésico de rutas óptimas sobre el grafo aeroportuario mundial, prefiltro topológico ultrarrápido con UFDS y proyección de arcos ortodrómicos. | En memoria RAM (~10 MB, precargado en *lifespan*). Cero tablas en base de datos relacional. | **Muy alta:** Implementación pura en Python de estructuras de adyacencia espacial, UFDS ($O(\alpha(V))$), A* con pesos Haversine ($O(E \log V)$) y BFS ($O(V + E)$). |
+| **Routing** | **Core Domain** | **Ventaja algorítmica principal:** Cálculo geodésico de rutas óptimas sobre el grafo aeroportuario mundial, prefiltro de conectividad y escalas con BFS y proyección de arcos ortodrómicos con A*. | En memoria RAM (~10 MB, precargado en *lifespan*). Cero tablas en base de datos relacional. | **Muy alta:** Implementación pura en Python de estructuras de adyacencia espacial, A* con pesos Haversine ($O(E \log V)$) y BFS ($O(V + E)$). |
 | **Quotes** | **Core Domain** | **Ventaja de mercado:** Cotización de vuelos comerciales en tiempo real, *fast-path* en caché a costo $0 y optimización multicriterio sobre la frontera de Pareto (balance de precio, duración y escalas). | Clave-valor efímero en Redis 7 (TTL 30 min). Cero tablas en base de datos relacional. | **Alta:** Consumo asíncrono de FlightAPI bajo Capa Anticorrupción, algoritmos de descarte de soluciones dominadas y cálculo vectorial de Pareto. |
 | **Itineraries** | **Supporting Domain** | **Custodia de planes de viaje:** Persistencia duradera de itinerarios planificados y guardados por usuarios autenticados, congelando la ruta y el podio de ofertas en *snapshots* inmutables JSONB. | PostgreSQL 16 (tabla `itineraries`). Cero dependencia en tiempo real del grafo o de APIs externas. | **Baja-Media:** Operaciones CRUD con verificación estricta de propiedad de usuario (`user_id`), serialización de documentos JSONB inmutables y ordenamiento por fecha. |
 | **Billing** | **Supporting Domain** | **Habilitador de monetización:** Venta de paquetes prepagos de créditos de búsqueda, débitos atómicos instantáneos sin condiciones de carrera y conciliación de cobros con pasarela de pago. | PostgreSQL 16 (libro mayor duradero y *outbox*) + Redis 7 (débito atómico con scripts Lua). | **Media:** Integración con Checkout Pro de Mercado Pago, validación HMAC de webhooks, scripts Lua en Redis y patrón Transactional Outbox. |
@@ -334,7 +333,6 @@ El contexto de **Routing** es el núcleo de cálculo espacial de la plataforma. 
 | **AirportNode** | Vértice de la red aeroportuaria identificado por un código IATA de tres caracteres, con nombre formal, ciudad, país y coordenadas geográficas. | Representa exclusivamente la infraestructura física aeroportuaria en memoria. No contiene información de aerolíneas ni tarifas. |
 | **FlightEdge** | Conexión física dirigida directa entre dos aeropuertos con distancia ortodrómica Haversine precalculada en kilómetros y tiempo estimado en minutos. | Modela la existencia física de la ruta. No equivale a un vuelo comercial con número de vuelo ni horario programado. |
 | **AirportGraph** | Dígrafo dirigido ponderado en memoria RAM organizado en listas de adyacencia con optimización de memoria mediante tuplas y diccionarios nativos. | Raíz de agregado principal del módulo de enrutamiento cargada durante el arranque del servidor. |
-| **DisjointSetForest** | Bosque de conjuntos disjuntos (UFDS) que almacena las componentes conexas de la red aeroportuaria para validación topológica instantánea. | Estructura interna de aceleración matemática para responder si dos nodos están conectados antes de iniciar búsquedas pesadas. |
 | **RoutePlan** | Secuencia ordenada de aeropuertos y tramos geodésicos resultantes de la búsqueda óptima, acompañada de métricas de distancia, tiempo y waypoints. | Es un agregado inmutable de solo lectura emitido como resultado de un cálculo. |
 | **GeodesicWaypoint** | Par de coordenadas de latitud y longitud intermedias interpoladas sobre el círculo máximo para el renderizado del arco curvo en el mapa. | Dato geométrico espacial consumido por la capa de presentación cartográfica. |
 
@@ -351,7 +349,7 @@ El contexto de **Routing** es el núcleo de cálculo espacial de la plataforma. 
   * **RoutePlanningCommandService:** Orquesta la ejecución de algoritmos A* o BFS sobre el grafo según los criterios solicitados (menor tiempo estimado o mínimo número de escalas).
 * **Query Services:**
   * **AirportCatalogQueryService:** Resuelve búsquedas de aeropuertos por código IATA, nombre de ciudad o proximidad geográfica.
-  * **ConnectivityQueryService:** Consulta la estructura UFDS para comprobar en $O(\alpha(V))$ (< 0.05 ms) si existe ruta teórica entre dos aeropuertos.
+  * **ConnectivityQueryService:** Ejecuta BFS para comprobar de forma inmediata si existe ruta comercial y calcular la cota mínima de escalas entre dos aeropuertos.
 
 ##### Interfaces y Adaptadores
 * **Controladores REST:**
@@ -592,7 +590,7 @@ flowchart TD
         subgraph Routing_Module ["Routing Bounded Context"]
             Routing_REST["AirportController / RouteController"]
             Routing_OHS["RoutingContextFacade [OHS]"]
-            Routing_Domain["AirportGraph in RAM / UFDS / A*"]
+            Routing_Domain["AirportGraph in RAM / A* / BFS"]
         end
 
         subgraph Itineraries_Module ["Itineraries Bounded Context"]
@@ -673,6 +671,6 @@ Para evitar inconsistencias semánticas entre desarrolladores y garantizar el es
 
 Con los Bounded Contexts formalmente catalogados y delimitados estratégicamente, la especificación técnica continuará con los componentes de infraestructura y persistencia que sustentan el monolito modular:
 
-1. **Ciclo de vida del monolito (`lifespan`) y precarga del grafo:** Especificación del gestor de contexto asíncrono de FastAPI que carga en memoria RAM la topología aeroportuaria de OpenFlights (~10 MB), inicializa la estructura UFDS y abre los pools de conexiones de PostgreSQL 16 (`asyncpg`) y Redis 7 (`redis-py`).
+1. **Ciclo de vida del monolito (`lifespan`) y precarga del grafo:** Especificación del gestor de contexto asíncrono de FastAPI que carga en memoria RAM la topología aeroportuaria de OpenFlights (~10 MB), inicializa las listas de adyacencia de la red y abre los pools de conexiones de PostgreSQL 16 (`asyncpg`) y Redis 7 (`redis-py`).
 2. **Esquema físico relacional DDL (PostgreSQL 16):** Definición detallada de las sentencias DDL para las tablas de Billing (`credit_wallets`, `credit_transactions`, `credit_orders`), Itineraries (`itineraries`), IAM (`users`, `user_credentials`, `user_identities`, `refresh_tokens`) y el mecanismo de fiabilidad (`outbox_events`).
 3. **Operaciones concurrentes y scripts Lua (Redis 7):** Detalle técnico de los scripts Lua para la ejecución de débitos atómicos libres de condiciones de carrera y la configuración del patrón Cache-Aside para cotizaciones comerciales.

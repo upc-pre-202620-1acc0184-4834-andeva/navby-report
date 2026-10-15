@@ -1,57 +1,64 @@
-# Datasets Limpios y Definitivos de Navby (OpenFlights)
+# Datasets Canónicos y Limpios de Navby (OpenFlights)
 
-Este directorio contiene los conjuntos de datos limpios, validados y estructurados para el modelado algorítmico de grafos y la plataforma de backend de **Navby**.
+Este directorio contiene los conjuntos de datos limpios, consolidados y estrictamente necesarios para el modelado algorítmico del grafo de rutas y la plataforma de backend de **Navby**.
 
 ---
 
-## 1. Resumen de Archivos y Métricas
+## 1. Catálogo de Archivos Canónicos de Producción
 
-| Archivo | Filas (con cabecera) | Registros de Datos | Descripción y Rol en Navby |
+En cumplimiento estricto del principio de anti-sobreingeniería y eficiencia de datos, el sistema retiene exclusivamente los tres conjuntos indispensables:
+
+| Archivo | Filas (con cabecera) | Registros de Datos | Rol Arquitectónico en Navby Platform |
 | :--- | :---: | :---: | :--- |
-| **`airports.csv`** | 3,355 | **3,354** | **Vértices del Grafo ($|V|$):** Aeropuertos comerciales con código IATA válido y grado de conectividad $k > 0$. |
-| **`routes_unique.csv`** | 37,327 | **37,326** | **Aristas del Grafo ($|E|$):** Pares dirigidos únicos origen $\to$ destino con distancia Haversine calculada en kilómetros. |
-| **`routes.csv`** | 67,306 | **67,305** | **Multigrafo de Rutas:** Conexiones comerciales activas considerando frecuencias y aerolíneas concurrentes. |
-| **`airports_commercial_all.csv`** | 6,473 | **6,472** | Catálogo completo de aeropuertos comerciales con código IATA válido (incluye terminales sin vuelos comerciales activos en el dataset). |
-| **`airlines.csv`** | 6,163 | **6,162** | Catálogo de aerolíneas mundiales (metadatos de nombre, alias, IATA, ICAO y estado activo). |
-| **`countries.csv`** | 262 | **261** | Catálogo de países soberanos con códigos ISO y DAFIF para enriquecimiento contextual. |
-| **`planes.csv`** | 247 | **246** | Catálogo de aeronaves comerciales con designadores IATA e ICAO. |
+| **`airports.csv`** | 3,355 | **3,354** | **Vértices del Grafo ($|V|$):** Nodos aeroportuarios comerciales activos con código IATA válido de 3 letras, nombre oficial, ciudad de servicio, país y coordenadas ortodrómicas WGS84. |
+| **`routes_unique.csv`** | 37,327 | **37,326** | **Aristas del Grafo ($|E|$):** Conexiones dirigidas únicas entre terminales comerciales con distancias ortodrómicas de Haversine ($R = 6371.0\text{ km}$) para los motores $A^*$ y BFS. |
+| **`airlines.csv`** | 6,163 | **6,162** | **Metadatos de Operadores:** Catálogo referencial de aerolíneas comerciales (código IATA de 2 letras, nombre comercial y designador ICAO) para resolución y enriquecimiento visual de ofertas en la interfaz de usuario. |
+
+*Nota.* Todo archivo redundante o auxiliar (multigrafos con arcos duplicados, catálogos mecánicos de turbinas de aeronaves o listados de terminales cerradas con $k=0$) ha sido purgado del repositorio para mantener un árbol de datos limpio, determinista y ligero (< 2 MB en total).
 
 ---
 
-## 2. Proceso de Limpieza y Validación Matemática
+## 2. Pipeline de Depuración y Validación Matemática
 
-Los datos originales provienen del repositorio oficial de OpenFlights (`docs/backend-documentation/datasets/`). La depuración siguió cuatro fases deterministas:
+Los datos provienen de la red global de OpenFlights y fueron sometidos a un pipeline de sanitización determinista en cuatro fases:
 
-1. **Fase 1 (Tipo de instalación):** Filtrado de `airports-extended.dat` para retener exclusivamente terminales aéreas comerciales (`type = "airport"`), excluyendo estaciones de tren (`station`), puertos marítimos (`port`) y helipuertos.
-2. **Fase 2 (Identificador estándar IATA):** Validación de códigos IATA de tres letras mayúsculas válidos (excluyendo valores nulos `\N`), resultando en **6,472 aeropuertos comerciales**.
-3. **Fase 3 (Integridad referencial de aristas):** Validación de `routes.dat` exigiendo que tanto el aeropuerto de origen como el de destino existan dentro del universo de aeropuertos comerciales válidos, reteniendo **67,305 rutas comerciales activas**.
-4. **Fase 4 (Poda de vértices aislados):** Eliminación de 3,118 terminales con grado de conectividad nulo ($k = 0$). El grafo final conectado comprende exactamente **3,354 vértices** y **37,326 aristas dirigidas únicas**, superando ampliamente el requisito mínimo de 1,500 nodos de la cátedra de Complejidad Algorítmica (2.2×).
+1. **Fase 1 (Filtrado por tipo de instalación):** Retención exclusiva de terminales aéreas comerciales (`type = "airport"`), descartando helipuertos, estaciones de trenes (`station`) y terminales fluviales o marítimas (`port`).
+2. **Fase 2 (Validación de identificadores estándar IATA):** Exigencia estricta de códigos IATA alfanuméricos de 3 caracteres en mayúsculas (`^[A-Z]{3}$`), descartando registros sin identificador comercial asignado (`\N`).
+3. **Fase 3 (Integridad referencial y colapso de multigrafo):** Depuración de rutas asegurando que tanto el aeropuerto de origen como el de destino existan dentro del universo comercial válido. El multigrafo inicial de 67,305 rutas multioperador concurrentes fue colapsado a un grafo simple dirigido de **37,326 aristas únicas**, computando la distancia geodésica ortodrómica exacta mediante la formulación de Haversine.
+4. **Fase 4 (Poda topológica de nodos aislados):** Eliminación de 3,118 aeropuertos con grado de conectividad nulo ($k = 0$). El grafo final activo consolida exactamente **3,354 vértices** y **37,326 aristas dirigidas únicas**, superando holgadamente el requisito de la cátedra de Complejidad Algorítmica (2.2×).
 
 ---
 
-## 3. Esquema de Datos por Archivo
+## 3. Esquemas de Datos Canónicos
 
-### `airports.csv` / `airports_commercial_all.csv`
-* `airport_id` (Entero): Identificador secuencial OpenFlights.
-* `name` (Texto): Nombre oficial de la terminal aérea.
-* `city` (Texto): Ciudad metropolitana servida.
-* `country` (Texto): País donde se ubica la infraestructura.
-* `iata` (Texto, 3 caracteres): Clave canónica del nodo.
-* `icao` (Texto, 4 caracteres): Código OACI.
+### `airports.csv` (Vértices del Grafo)
+* `airport_id` (Entero): Identificador secuencial original de OpenFlights.
+* `name` (Texto): Nombre oficial de la terminal aeroportuaria.
+* `city` (Texto): Ciudad metropolitana servida (base del autocompletado en el buscador).
+* `country` (Texto): País de ubicación geográfica.
+* `iata` (Texto, 3 caracteres): Clave canónica unívoca del nodo ($u \in V$).
+* `icao` (Texto, 4 caracteres): Código OACI de control de tráfico aéreo.
 * `latitude` (Decimal WGS84): Coordenada latitudinal (-90.0 a 90.0).
 * `longitude` (Decimal WGS84): Coordenada longitudinal (-180.0 a 180.0).
 * `altitude` (Entero): Elevación sobre el nivel del mar en pies.
-* `timezone` (Decimal): Desplazamiento respecto a UTC.
+* `timezone` (Decimal): Desplazamiento horario respecto a UTC.
 * `dst` (Carácter): Regla de horario de verano (E, A, S, O, Z, N).
 * `tz_database_timezone` (Texto): Zona horaria canónica IANA (ej. `America/Lima`).
 
-### `routes_unique.csv` (Aristas del Grafo)
-* `source_airport` (Texto, 3): Código IATA origen ($u \in V$).
-* `destination_airport` (Texto, 3): Código IATA destino ($v \in V$).
-* `distance_km` (Decimal): Distancia ortodrómica calculada en kilómetros mediante la fórmula de Haversine ($R = 6371.0\text{ km}$).
-* `operating_airlines` (Texto): Lista de códigos de aerolíneas separadas por `;`.
-* `min_stops` (Entero): Mínimo número de paradas intermedias de la conexión (0 = vuelo sin paradas técnicas).
-* `equipment_types` (Texto): Tipos de aeronaves que cubren el trayecto separados por `;`.
+### `routes_unique.csv` (Aristas Ponderadas del Grafo)
+* `source_airport` (Texto, 3 caracteres): Código IATA del nodo origen ($u$).
+* `destination_airport` (Texto, 3 caracteres): Código IATA del nodo destino ($v$).
+* `distance_km` (Decimal): Distancia física ortodrómica sobre la esfera terrestre WGS84 en kilómetros ($w_t = d_H(u, v)$).
+* `operating_airlines` (Texto): Aerolíneas comerciales que operan el trayecto (separadas por `;`).
+* `min_stops` (Entero): Paradas técnicas de la conexión (0 = tramo directo sin paradas).
+* `equipment_types` (Texto): Designadores de aeronaves que sirven la ruta.
 
-### `routes.csv` (Rutas Operativas)
-* `airline`, `airline_id`, `source_airport`, `source_airport_id`, `destination_airport`, `destination_airport_id`, `codeshare`, `stops`, `equipment`.
+### `airlines.csv` (Catálogo de Aerolíneas)
+* `airline_id` (Entero): Identificador OpenFlights.
+* `name` (Texto): Razón social o nombre comercial de la aerolínea.
+* `alias` (Texto): Nombre alternativo o comercial secundario.
+* `iata` (Texto, 2 caracteres): Código IATA de la compañía aérea (ej. `LA` para LATAM, `IB` para Iberia).
+* `icao` (Texto, 3 caracteres): Designador OACI de la aerolínea.
+* `callsign` (Texto): Indicativo radiotelefónico de la tripulación.
+* `country` (Texto): País de certificación y bandera de la aerolínea.
+* `active` (Carácter): Indicador de actividad comercial (`Y` / `N`).

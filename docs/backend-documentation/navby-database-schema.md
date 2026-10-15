@@ -200,7 +200,7 @@ Almacena el podio de las tres mejores ofertas de mercado capturadas en el instan
 | :--- | :--- | :---: | :---: | :--- | :--- |
 | `id` | `UUID` | PK | Sí | `gen_random_uuid()` | Identificador técnico del snapshot de oferta |
 | `itinerary_id` | `UUID` | FK | Sí | - | Itinerario asociado (`FK -> itineraries(id) ON DELETE CASCADE`) |
-| `rank` | `SMALLINT` | - | Sí | - | Posición en el podio de optimalidad de Pareto (1 = mejor balance/precio) |
+| `rank` | `SMALLINT` | - | Sí | - | Posición en el podio de optimalidad de Pareto (1 = mayor valor global / 1.er puesto) |
 | `price` | `DECIMAL(12,2)` | - | Sí | - | Tarifa monetaria total capturada para todos los pasajeros |
 | `currency` | `CHAR(3)` | - | Sí | `'USD'` | Código de divisa ISO 4217 de la tarifa |
 | `total_duration_minutes` | `INTEGER` | - | Sí | - | Duración total acumulada del itinerario en minutos |
@@ -636,7 +636,7 @@ En correspondencia con las directrices de `redis-best-practices` y los límites 
 Un principio de diseño central en Navby Platform es que **la topología aeroportuaria mundial no reside ni en PostgreSQL ni en Redis**.
 
 * **Justificación Cuantitativa:** El dataset comercial consolidado de Navby comprende 3,354 nodos aeroportuarios y 37,326 aristas de vuelo. En formato binario de grafo en memoria (mediante listas de adyacencia e índices directos de arrays en Python), esta estructura ocupa **~10.4 MB de memoria RAM**.
-* **Rendimiento Algorítmico:** Mantener el grafo en memoria de proceso del backend permite que los algoritmos de búsqueda heurística (A* con distancia ortodrómica Haversine, BFS y Backtracking con poda) recorran el grafo con cero sobrecarga de red o deserialización, logrando tiempos de cómputo inferiores a **1.8 milisegundos por ruta**.
+* **Rendimiento Algorítmico:** Mantener el grafo en memoria de proceso del backend permite que los algoritmos de búsqueda espacial (A* con distancia ortodrómica Haversine y BFS) recorran el grafo con cero sobrecarga de red o deserialización, logrando tiempos de cómputo inferiores a **1.8 milisegundos por ruta**.
 * **Ciclo de Vida:** La carga del grafo se realiza de forma determinista durante el evento `lifespan` del arranque de FastAPI, leyendo directamente los archivos inmutables `airports.csv` y `routes_unique.csv` de `docs/navby-datasets/`.
 
 ---
