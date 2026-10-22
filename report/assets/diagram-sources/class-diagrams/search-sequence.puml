@@ -1,0 +1,74 @@
+@startuml
+skinparam dpi 300
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam defaultFontName "Liberation Sans"
+skinparam defaultFontSize 11
+skinparam sequenceMessageAlign center
+skinparam sequenceLifeLineBorderColor #4B5563
+skinparam participantBackgroundColor #F3F4F6
+skinparam participantBorderColor #4B5563
+skinparam arrowColor #1F2937
+
+autonumber
+
+actor "Viajero" as U
+participant "Webapp (SPA)\n[React 19 / MapLibre]" as W
+participant "Plataforma API\n[FastAPI / Python]" as A
+participant "Motor de Rutas (RAM)\n[BFS / A*]" as R
+participant "Caché Efímera\n[Redis 7]" as C
+participant "FlightAPI\n[Servicio Externo]" as F
+participant "Motor Multicriterio\n[Pareto / Podio]" as Q
+
+U -> W : Ingresa origen, destino y fechas
+activate W
+
+group Fase 1: Vista Previa Inmediata (Costo 0)
+    W -> A : GET /routing/preview (ciudades, tipo viaje)
+    activate A
+    A -> R : evaluate_reachability(origen, destino)
+    activate R
+    R -> R : BFS: valida conectividad (≤ 2 escalas)
+    R -> R : A*: calcula ruta más rápida y T_min
+    R --> A : Pares alcanzables + T_min + coordenadas
+    deactivate R
+    A --> W : GeoJSON preliminar + T_min
+    deactivate A
+    W -> W : Proyecta ruta física preliminar en mapa 2D
+end
+
+group Fase 2: Cotización y Optimización Multicriterio
+    W -> A : POST /quotes/search (criterios de viaje)
+    activate A
+    A -> R : select_pairs(origen, destino, limit=2)
+    activate R
+    R --> A : ≤ 2 mejores pares comerciales
+    deactivate R
+    A -> C : Consulta caché de cotizaciones por par
+    activate C
+    alt Ofertas no presentes en caché
+        C --> A : Fallo de caché (Cache miss)
+        A -> F : GET /offers (consulta en paralelo)
+        activate F
+        F --> A : Tarifas comerciales vigentes
+        deactivate F
+        A -> C : Almacena ofertas (TTL 30 min)
+    else Ofertas en caché
+        C --> A : Ofertas vigentes cacheadas
+    end
+    deactivate C
+    A -> Q : rank_podium(ofertas, pesos)
+    activate Q
+    Q -> Q : Filtro de Pareto (elimina dominadas)
+    Q -> Q : Normalización min-max de criterios
+    Q -> Q : Cálculo de puntaje S y afinidad
+    Q --> A : Podio Top 3 diversificado
+    deactivate Q
+    A --> W : 3 mejores ofertas + coordenadas + deep links
+    deactivate A
+    W -> W : Desvanece ruta preliminar y dibuja podio
+end
+
+W --> U : Despliega tarjetas del podio y mapa interactivo
+deactivate W
+@enduml
