@@ -36,7 +36,6 @@ Navby Platform es un **monolito modular** asíncrono en Python. Mantiene el graf
 | **Billing** | Supporting | Billetera, créditos diarios, débitos, reembolsos y compras con Mercado Pago. | PostgreSQL | [billing](extended-bounded-contexts-description/bounded-context-billing.md) |
 | **Itineraries** | Supporting | Guardar, listar, ver y eliminar ofertas del podio. | PostgreSQL | [itineraries](extended-bounded-contexts-description/bounded-context-itineraries.md) |
 | **IAM** | Generic | Registro con términos, verificación de correo, login local y con Google, sesiones, recuperación de contraseña y eliminación de cuenta. | PostgreSQL + Redis | [iam](extended-bounded-contexts-description/bounded-context-iam.md) |
-| **Support** | Generic | Libro de Reclamaciones virtual (RL-03). | PostgreSQL | [support](extended-bounded-contexts-description/bounded-context-support.md) |
 | **Shared Kernel** | — | Clases base, `Result`, errores, outbox, Unit of Work y rate limiting. | — | [shared](extended-bounded-contexts-description/bounded-context-shared.md) |
 
 ## 4. Mapa de contextos
@@ -52,16 +51,13 @@ flowchart LR
         Quotes["Quotes"]
         Billing["Billing"]
         Itin["Itineraries"]
-        Support["Support"]
     end
 
     FlightAPI["FlightAPI"]
     Google["Google Identity"]
     Resend["Resend"]
 
-    Website["Website (Astro)"]
     Webapp --> IAM & Routing & Quotes & Billing & Itin
-    Website --> Support
     MP -- webhook --> Billing
 
     Quotes -- "OHS: select_pairs()" --> Routing
@@ -74,7 +70,6 @@ flowchart LR
     Billing -- ACL --> MP
     IAM -- ACL --> Google
     IAM -- ACL --> Resend
-    Support -- ACL --> Resend
 ```
 
 | Proveedor | Consumidor | Patrón | Contrato |
@@ -177,22 +172,25 @@ Si el grafo no carga, la aplicación no arranca. `/health` reporta PostgreSQL, R
 | `redis` | `redis:7` | Interno |
 | `caddy` | `caddy:2` | Público `:80` y `:443` (TLS automático con Let's Encrypt) |
 
-La VM solo expone los puertos 80, 443 y 22. El crédito de Azure de $100 USD alcanza para más de 3 meses 24/7 en `Standard_B2s`.
+La VM solo expone los puertos 80, 443 y 22. El crédito de Azure de $100 USD alcanza para más de 3 meses 24/7 en `Standard_B2s`. Dominios, entornos, secretos y despliegue continuo: [navby-environments-and-deployment.md](navby-environments-and-deployment.md).
 
 ### Variables de entorno
 
-| Variable | Uso |
-| :--- | :--- |
-| `DATABASE_URL`, `REDIS_URL` | Conexiones. |
-| `JWT_SECRET` | Firma HS256 de los tokens de acceso. |
-| `GOOGLE_CLIENT_ID` | Audiencia esperada del `id_token` de Google. |
-| `FLIGHT_API_KEY` | Clave de FlightAPI. Si falta, se usa el adaptador mock. |
-| `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Pagos y validación de webhooks. |
-| `RESEND_API_KEY` | Correo. Si falta, el OTP se escribe en el log (solo desarrollo). |
-| `WEBAPP_URL` | URL base para enlaces de recuperación y retorno de pagos. También es el único origen permitido por CORS con credenciales. |
-| `FLIGHT_API_MAX_CONCURRENCY` | Llamadas simultáneas permitidas por el plan de FlightAPI (5 en LITE, RN-16). |
-| `TERMS_VERSION` | Versión vigente de los Términos y la Política de Privacidad (RL-01). |
-| `SUPPORT_EMAIL`, `COMPANY_NAME`, `COMPANY_RUC`, `COMPANY_ADDRESS` | Datos del Libro de Reclamaciones (RL-03). |
+| Variable | Uso | Local | Producción |
+| :--- | :--- | :--- | :--- |
+| `APP_ENV` | Entorno. | `local` | `production` |
+| `DATABASE_URL`, `REDIS_URL` | Conexiones. | Contenedores de `docker-compose.dev.yml` | Contenedores internos de la VM |
+| `JWT_SECRET` | Firma HS256 de los tokens de acceso (≥ 32 bytes aleatorios). | Cualquier valor | Secreto único |
+| `GOOGLE_CLIENT_ID` | Audiencia esperada del `id_token` de Google. | Cliente OAuth propio de desarrollo | Cliente OAuth de producción |
+| `FLIGHT_API_KEY` | Clave de FlightAPI. Si falta, se usa el adaptador mock. | Vacía (mock) | Clave del plan LITE |
+| `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Pagos y validación de webhooks. | Credenciales `TEST-` propias | Credenciales `TEST-` del proyecto hasta RL-04 |
+| `RESEND_API_KEY` | Correo. Si falta, el OTP se escribe en el log (solo `local`). | Vacía | Clave con dominio `andeva.tech` |
+| `WEBAPP_URL` | Base de los enlaces de correo y de las `back_urls` de Mercado Pago. | `http://localhost:5173/app` | `https://navby.andeva.tech/app` |
+| `API_PUBLIC_URL` | URL directa de la VM, usada como `notification_url` del webhook. | Túnel opcional (`ngrok`) | `https://navby-api.<región>.cloudapp.azure.com` |
+| `COOKIE_SECURE` | Atributo `Secure` de la cookie `navby_refresh`. | `false` | `true` |
+| `TRUST_PROXY_HEADERS` | Toma la IP del cliente de `X-Forwarded-For` (proxy de Vercel). | `false` | `true` |
+| `FLIGHT_API_MAX_CONCURRENCY` | Llamadas simultáneas del plan de FlightAPI (RN-16). | `5` | `5` |
+| `TERMS_VERSION` | Versión vigente de los Términos y la Política de Privacidad (RL-01). | `2026-10` | `2026-10` |
 
 ### Modos de desarrollo (costo cero)
 

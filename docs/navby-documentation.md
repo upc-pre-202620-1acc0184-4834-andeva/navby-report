@@ -213,7 +213,7 @@ La validación académica mide **los tres algoritmos del producto**; no existen 
 
 ## 10. Alcance
 
-**Incluido:** búsqueda por ciudad (en español o inglés), vista previa de ruta, cotización real, podio multicriterio con perfiles de preferencias, guardado de itinerarios, créditos diarios y paquetes prepagados, registro con correo verificado y aceptación de términos, inicio de sesión con Google, recuperación de contraseña, eliminación de cuenta y Libro de Reclamaciones.
+**Incluido:** búsqueda por ciudad (en español o inglés), vista previa de ruta, cotización real, podio multicriterio con perfiles de preferencias, guardado de itinerarios, créditos diarios y paquetes prepagados, registro con correo verificado y aceptación de términos, inicio de sesión con Google, recuperación de contraseña y eliminación de cuenta.
 
 **Excluido:**
 
@@ -221,7 +221,7 @@ La validación académica mide **los tres algoritmos del producto**; no existen 
 | :--- | :--- |
 | Viajes multidestino | FlightAPI exige 3–5 tramos fijos, cuesta 5 créditos por llamada y no es un problema de caminos sobre el grafo. |
 | Venta de pasajes y emisión de boletos | La compra ocurre en la aerolínea o agencia vía *deep link*. |
-| Boletas electrónicas SUNAT | Pendiente obligatorio antes de vender en producción (ver RL-05 en la sección 12). |
+| Boletas electrónicas SUNAT | Pendiente obligatorio antes de vender en producción (ver RL-04 en la sección 12). |
 | Suscripciones o cobros recurrentes | Solo pagos únicos prepagados. |
 | Roles de administrador y perfiles públicos | No aportan a la recomendación. |
 | Explorador de conectividad o del grafo completo | No aporta a la recomendación. |
@@ -242,7 +242,7 @@ La validación académica mide **los tres algoritmos del producto**; no existen 
 | FlightAPI | Ofertas reales (`/onewaytrip`, `/roundtrip`). |
 | Mercado Pago | Compra de paquetes de créditos. |
 | Google Identity Services | Inicio de sesión con Google. |
-| Resend | Correos de verificación, recuperación de contraseña y constancias del Libro de Reclamaciones. |
+| Resend | Correos de verificación, y recuperación de contraseña. |
 | CARTO Basemaps | Mapa base de la webapp. |
 
 ---
@@ -253,6 +253,5 @@ La validación académica mide **los tres algoritmos del producto**; no existen 
 | :--- | :--- | :--- |
 | **RL-01** | Consentimiento para tratar datos personales (Ley 29733). | El registro, local o con Google, exige aceptar los Términos y la Política de Privacidad. Se guardan la fecha y la versión aceptada. |
 | **RL-02** | Derecho a suprimir los datos personales (Ley 29733). | El usuario puede eliminar su cuenta. Se anonimizan nombre y correo, se borran sesiones e itinerarios, y se conservan las órdenes de compra por obligación tributaria. |
-| **RL-03** | Libro de Reclamaciones virtual (Ley 29571). | Formulario público con número correlativo. La constancia se envía por correo al consumidor y al equipo. El plazo legal de respuesta es de 15 días hábiles. |
-| **RL-04** | Precios referenciales. | Toda tarifa se muestra con el aviso «Precio referencial obtenido de terceros; se confirma en el sitio del vendedor». |
-| **RL-05** | Comprobantes de pago (SUNAT). | **Pendiente.** El MVP opera con Mercado Pago en modo sandbox. Antes de cobrar dinero real se debe integrar un facturador electrónico (Nubefact u otro) que emita la boleta al aprobarse cada orden. |
+| **RL-03** | Precios referenciales. | Toda tarifa se muestra con el aviso «Precio referencial obtenido de terceros; se confirma en el sitio del vendedor». |
+| **RL-04** | Comprobantes de pago (SUNAT). | **Pendiente.** El MVP opera con Mercado Pago en modo sandbox. Antes de cobrar dinero real se debe integrar un facturador electrónico (Nubefact u otro) que emita la boleta al aprobarse cada orden. |

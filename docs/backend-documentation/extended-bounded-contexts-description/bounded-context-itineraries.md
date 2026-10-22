@@ -4,7 +4,7 @@
 
 Permite al usuario **guardar** una oferta del podio para consultarla después, aunque la búsqueda haya expirado. Solo tiene cuatro operaciones: guardar, listar, ver y eliminar.
 
-**No hace:** renombrar, notas, archivar, estados, versiones, actualizar precios, comparar ni compartir. El precio guardado es una foto del momento (RL-04): para un precio vigente hay que buscar de nuevo, y el *deep link* puede haber expirado.
+**No hace:** renombrar, notas, archivar, estados, versiones, actualizar precios, comparar ni compartir. El precio guardado es una foto del momento (RL-03): para un precio vigente hay que buscar de nuevo, y el *deep link* puede haber expirado.
 
 Reglas: RN-13 y RL-02 de [navby-documentation.md](../../navby-documentation.md).
 

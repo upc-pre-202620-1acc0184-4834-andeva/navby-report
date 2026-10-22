@@ -4,9 +4,9 @@
 
 Administra los créditos del usuario: 10 gratuitos por día, créditos comprados, el débito de 5 por búsqueda, los reembolsos de búsquedas fallidas y la compra de paquetes con Mercado Pago (solo en soles).
 
-**No hace:** suscripciones, boletas electrónicas (pendiente legal RL-05), reembolsos de dinero, ajustes manuales de saldo ni correos de recibo (Mercado Pago envía el suyo). Tampoco decide cuándo cobrar: eso lo decide Quotes (RN-08).
+**No hace:** suscripciones, boletas electrónicas (pendiente legal RL-04), reembolsos de dinero, ajustes manuales de saldo ni correos de recibo (Mercado Pago envía el suyo). Tampoco decide cuándo cobrar: eso lo decide Quotes (RN-08).
 
-Reglas: RN-08, RN-09, RN-17, RL-02, RL-05 y la sección 7 de [navby-documentation.md](../../navby-documentation.md).
+Reglas: RN-08, RN-09, RN-17, RL-02, RL-04 y la sección 7 de [navby-documentation.md](../../navby-documentation.md).
 
 ## 2. Lenguaje ubicuo
 
@@ -116,7 +116,7 @@ Detalles:
      - `currency_id = PEN` y `external_reference = order_id`;
      - `expires = true` y `expiration_date_to = expires_at`;
      - `back_urls` hacia `{WEBAPP_URL}/billing/result`;
-     - `notification_url` hacia el webhook.
+     - `notification_url` hacia `{API_PUBLIC_URL}/api/v1/billing/webhooks/mercadopago` (directo a la VM, sin pasar por Vercel).
 - **HandlePaymentNotification**:
   1. Si `type` no es `payment`, responde `200` y no hace nada.
   2. Valida la firma `x-signature` y que `ts` no tenga más de 300 s de antigüedad. Si falla → `401`.

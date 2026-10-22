@@ -1,0 +1,102 @@
+@startuml
+skinparam dpi 300
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Liberation Sans"
+skinparam defaultFontSize 11
+skinparam classHeaderBackgroundColor #F3F4F6
+skinparam classBorderColor #4B5563
+skinparam arrowColor #1F2937
+
+package "Domain Layer :: Routing Engine (RAM)" {
+
+    class AirportGraph <<aggregate>> {
+        - airports: dict[IataCode, Airport]
+        - adjacency: dict[IataCode, list[Edge]]
+        - cities: dict[CityKey, list[IataCode]]
+        - out_degree: dict[IataCode, int]
+        --
+        + airport(iata: IataCode): Airport | None
+        + search_cities(text: String, limit: Integer): list[City]
+    }
+
+    class Airport <<entity>> {
+        - iata: IataCode
+        - icao: String
+        - name: String
+        - city: String
+        - country: String
+        - coordinates: Coordinates
+        - timezone: String
+    }
+
+    class Coordinates <<value object>> {
+        - lat: Double
+        - lon: Double
+    }
+
+    class Edge <<value object>> {
+        - to: IataCode
+        - distance_km: Double
+        - minutes: Double
+    }
+
+    class IataCode <<value object>> {
+        - value: String
+    }
+
+    class ReachabilityResult <<value object>> {
+        - reachable: Boolean
+        - min_stops: Integer
+    }
+
+    class RoutePath <<value object>> {
+        - airports: list[IataCode]
+        - t_min_minutes: Integer
+        - nodes_expanded: Integer
+    }
+
+    class PairReachability <<value object>> {
+        - origin: IataCode
+        - destination: IataCode
+        - reachable: Boolean
+        - min_stops: Integer
+        - t_min_minutes: Integer
+        - path: list[IataCode]
+    }
+
+    class BreadthFirstSearch <<domain service>> {
+        + min_stops(graph: AirportGraph, origin: IataCode, destination: IataCode, max_legs: Integer): ReachabilityResult
+    }
+
+    class AStarSearch <<domain service>> {
+        + fastest_path(graph: AirportGraph, origin: IataCode, destination: IataCode, max_legs: Integer): RoutePath | None
+    }
+
+    class Haversine <<domain service>> {
+        + distance_km(a: Coordinates, b: Coordinates): Double
+    }
+
+    class PairSelector <<domain service>> {
+        + select(graph: AirportGraph, origins: list[IataCode], destinations: list[IataCode], round_trip: Boolean, limit: Integer): list[PairReachability]
+    }
+
+    ' Relaciones de composicion y agregacion
+    AirportGraph *-- "3354" Airport : indexa
+    AirportGraph *-- "37326" Edge : contiene
+    Airport *-- "1" Coordinates : posiciona
+    Airport *-- "1" IataCode : identifica
+    Edge *-- "1" IataCode : referencia
+
+    ' Relaciones de dependencia y uso de servicios
+    BreadthFirstSearch ..> AirportGraph : consulta adyacencia
+    BreadthFirstSearch ..> ReachabilityResult : produce
+    AStarSearch ..> AirportGraph : evalua aristas
+    AStarSearch ..> Haversine : calcula heuristica h(u)
+    AStarSearch ..> RoutePath : produce
+    PairSelector ..> BreadthFirstSearch : poda inviables
+    PairSelector ..> AStarSearch : calcula T_min
+    PairSelector ..> PairReachability : produce
+}
+@enduml
