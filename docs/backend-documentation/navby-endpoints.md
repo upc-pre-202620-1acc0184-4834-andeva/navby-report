@@ -1,767 +1,353 @@
-# Navby Platform — Catálogo y Especificación de Endpoints RESTful
+# Navby Platform — Endpoints REST
 
-Este documento constituye la especificación canónica, exhaustiva y unificada de la interfaz de programación de aplicaciones (API RESTful) de la plataforma **Navby**. Detalla cada uno de los endpoints expuestos a través de los cinco Bounded Contexts del monolito modular (**IAM**, **Routing**, **Quotes**, **Itineraries** y **Billing**), así como los servicios transversales de salud, diagnóstico y observabilidad métrica.
+> Base: `https://api.navby.app/api/v1` (producción) y `http://localhost:8000/api/v1` (local). JSON UTF-8, fechas ISO 8601. Los errores siguen RFC 7807 con el catálogo de la [especificación táctica](navby-backend-tactical-specification.md#catálogo-de-códigos-de-error). Las reglas `RN-xx` y `RL-xx` están en [navby-documentation.md](../navby-documentation.md).
 
----
+## 1. Resumen
 
-## 1. Convenciones Globales de la API
+| Contexto | Método y ruta | Acceso | Propósito |
+| :--- | :--- | :---: | :--- |
+| IAM | `POST /auth/register` | Público | Crear una cuenta y enviar el OTP. |
+| IAM | `POST /auth/verify-email` | Público | Validar el OTP y abrir la sesión. |
+| IAM | `POST /auth/verify-email/resend` | Público | Reenviar el OTP. |
+| IAM | `POST /auth/login` | Público | Iniciar sesión con correo y contraseña. |
+| IAM | `POST /auth/google` | Público | Iniciar sesión o registrarse con Google. |
+| IAM | `POST /auth/refresh` | Cookie | Rotar el refresh token. |
+| IAM | `POST /auth/logout` | Cookie | Cerrar la sesión. |
+| IAM | `POST /auth/forgot-password` | Público | Enviar el enlace de recuperación. |
+| IAM | `POST /auth/reset-password` | Público | Definir una contraseña nueva. |
+| IAM | `GET /users/me` | JWT | Consultar el perfil propio. |
+| IAM | `DELETE /users/me` | JWT | Eliminar la cuenta (RL-02). |
+| Routing | `GET /routing/cities?q=` | Público | Autocompletar ciudades y sus aeropuertos. |
+| Routing | `GET /routing/preview` | Público | Obtener BFS + A\*: alcanzabilidad, escalas mínimas, T_min y ruta preliminar. |
+| Quotes | `POST /quotes/search` | JWT verificado | Cotizar y obtener el podio (5 créditos, RN-08). |
+| Quotes | `POST /quotes/{search_id}/rank` | JWT verificado | Reordenar con otro perfil (gratis, RN-11). |
+| Quotes | `GET /quotes/{search_id}` | JWT verificado | Volver a leer el podio vigente. |
+| Billing | `GET /billing/wallet` | JWT | Consultar el saldo. |
+| Billing | `GET /billing/transactions` | JWT | Ver el historial de movimientos de créditos. |
+| Billing | `GET /billing/packages` | Público | Ver el catálogo de paquetes. |
+| Billing | `POST /billing/orders` | JWT verificado | Crear una orden y la preferencia de Mercado Pago. |
+| Billing | `GET /billing/orders/{order_id}` | JWT | Consultar el estado de una orden. |
+| Billing | `POST /billing/webhooks/mercadopago` | Firma HMAC | Recibir la notificación de pago. |
+| Itineraries | `POST /itineraries` | JWT | Guardar una oferta del podio. |
+| Itineraries | `GET /itineraries` | JWT | Listar los itinerarios guardados. |
+| Itineraries | `GET /itineraries/{id}` | JWT | Ver el detalle de un itinerario. |
+| Itineraries | `DELETE /itineraries/{id}` | JWT | Eliminar un itinerario. |
+| Support | `POST /complaints` | Público | Registrar un reclamo o queja (RL-03). |
+| Sistema | `GET /health` | Público | Estado de PostgreSQL, Redis y grafo. |
 
-La arquitectura de interfaces de Navby sigue las mejores prácticas de la industria para APIs orientadas a recursos bajo la especificación **OpenAPI 3.1** y el marco de trabajo **FastAPI**.
+**Autenticación:**
+- **Access token**: cabecera `Authorization: Bearer <access_token>` (JWT HS256, 15 min).
+- **Refresh token**: viaja solo en la cookie `navby_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/v1/auth`). La webapp hace sus peticiones con `credentials: "include"`.
 
-### 1.1. URLs Base y Versionamiento
-El acceso perimetral se organiza mediante prefijos semánticos versionados:
-* **Entorno de Producción:** `https://api.navby.com/api/v1`
-* **Entorno de Desarrollo Local:** `http://localhost:8000/api/v1`
-* **Estrategia de Versionamiento:** Versionamiento en la ruta URI (`/api/v1/`). Cualquier cambio con ruptura de compatibilidad hacia atrás requerirá la publicación bajo `/api/v2/`.
+**Errores comunes** (no se repiten en cada endpoint):
+- `401 UNAUTHENTICATED` en todo endpoint con acceso JWT o JWT verificado si falta el token o venció.
+- `403 EMAIL_NOT_VERIFIED` en todo endpoint con acceso JWT verificado si el correo no está verificado.
+- `422 VALIDATION_ERROR` en todo endpoint si el cuerpo o los parámetros no cumplen el schema (formato, rangos, límites de paginación, RN-01 a RN-04).
+- `429 RATE_LIMITED` en todo endpoint con rate limit.
 
-### 1.2. Protocolo, Codificación y Tipos de Contenido
-* **Transporte:** Exclusivamente HTTPS (TLS 1.3 recomendado, TLS 1.2 mínimo) gobernado por el proxy inverso Caddy 2.
-* **Codificación:** UTF-8 estricto en cabeceras y cuerpos de mensaje.
-* **Content-Type Solicitud:** `application/json; charset=utf-8` para mutaciones con cuerpo.
-* **Accept Cabecera:** `application/json` requerida en todas las consultas.
-* **Formato Temporal:** Fechas y marcas de tiempo en conformidad con **ISO 8601** (`YYYY-MM-DD` para fechas calendario de vuelos y `YYYY-MM-DDTHH:MM:SS.ffffffZ` en UTC para marcas temporales auditables).
+## 2. IAM
 
-### 1.3. Esquema de Autenticación y Seguridad
-* **Esquema:** Portador de credenciales (*Bearer Token*) mediante **JSON Web Tokens (JWT)** firmados criptográficamente con algoritmo **Ed25519** o **RS256**.
-* **Cabecera Requerida:**
-  ```http
-  Authorization: Bearer <access_token>
-  ```
-* **Tiempo de Vida:** Los tokens de acceso (`access_token`) poseen un TTL de **15 minutos**. La renovación se gestiona mediante tokens de actualización (`refresh_token`) persistidos en Redis con rotación atómica y detección de reutilización fraudulenta.
-* **Endpoints Públicos vs. Protegidos:** Aquellos endpoints marcados como `[Público]` no exigen la cabecera `Authorization`. Los endpoints marcados como `[Autenticado]` rechazan la petición con código `401 Unauthorized` si el token es inexistente, inválido o expirado.
-
-### 1.4. Formato Canónico de Errores (RFC 7807)
-Todas las respuestas con código de error HTTP ($4xx$ y $5xx$) retornan una estructura uniforme basada en **RFC 7807 (Problem Details for HTTP APIs)**:
+### `POST /auth/register`
 
 ```json
-{
-  "type": "https://errors.navby.com/errors/RESOURCE_NOT_FOUND",
-  "title": "Recurso no encontrado",
-  "status": 404,
-  "detail": "El aeropuerto con código IATA 'XYZ' no existe en la red comercial activa.",
-  "instance": "/api/v1/routing/airports/XYZ",
-  "code": "AIRPORT_NOT_FOUND",
-  "invalid_params": [],
-  "timestamp": "2026-09-29T18:30:00.000000Z"
-}
+{ "email": "ana@mail.com", "password": "Viajar2026", "full_name": "Ana Torres", "accept_terms": true }
 ```
 
-En errores de validación de esquemas Pydantic (`422 Unprocessable Content`), la propiedad `invalid_params` desglosa el campo exacto, la ubicación en la petición y el motivo del rechazo:
+`201` → `{ "user_id": "uuid", "email": "ana@mail.com", "email_verified": false }`. Envía un OTP de 6 dígitos (10 min).
+
+Errores:
+- `409 EMAIL_ALREADY_REGISTERED`;
+- `422 TERMS_NOT_ACCEPTED`;
+- `422 DISPOSABLE_EMAIL`;
+- `422 VALIDATION_ERROR` (contraseña de 8 a 72 caracteres con letras y números).
+
+### `POST /auth/verify-email`
+
+```json
+{ "email": "ana@mail.com", "code": "849201" }
+```
+
+`200` → **Session** y cookie `navby_refresh`. Errores: `400 INVALID_OTP` (también si el correo no existe o ya está verificado) y `429 OTP_ATTEMPTS_EXCEEDED`.
+
+**Session** (respuesta común de verify, login, google y refresh):
+
+```json
+{ "access_token": "eyJ...", "token_type": "Bearer", "expires_in": 900,
+  "user": { "user_id": "uuid", "email": "ana@mail.com", "full_name": "Ana Torres", "email_verified": true } }
+```
+
+### `POST /auth/verify-email/resend`
+
+`{ "email": "..." }` → `202` siempre (no revela si el correo existe). Como máximo un envío por minuto por correo.
+
+### `POST /auth/login`
+
+`{ "email": "...", "password": "..." }` → `200 Session`. Errores: `401 INVALID_CREDENTIALS` y `403 EMAIL_NOT_VERIFIED`.
+
+### `POST /auth/google`
+
+`{ "id_token": "eyJ...", "accept_terms": true }` → `200 Session`. Crea la cuenta si no existe (entonces `accept_terms` es obligatorio) o la vincula según las reglas de [IAM](extended-bounded-contexts-description/bounded-context-iam.md). Errores: `401 INVALID_GOOGLE_TOKEN` y `422 TERMS_NOT_ACCEPTED`.
+
+### `POST /auth/refresh`
+
+Sin cuerpo; lee la cookie. `200 Session` con una cookie nueva. Si la cookie es inválida, expiró o fue reutilizada fuera de la ventana de 30 s → `401 INVALID_REFRESH_TOKEN` y la cookie se borra.
+
+### `POST /auth/logout`
+
+Sin cuerpo. Revoca el refresh token de la cookie y la borra. `204` siempre.
+
+### `POST /auth/forgot-password`
+
+`{ "email": "..." }` → `202` siempre. Envía un enlace `{WEBAPP_URL}/reset-password?token=...` válido por 30 min.
+
+### `POST /auth/reset-password`
+
+`{ "token": "...", "new_password": "..." }` → `204`. Revoca todas las sesiones. Errores: `400 INVALID_RESET_TOKEN` y `422 VALIDATION_ERROR`.
+
+### `GET /users/me`
+
+`200` → `{ "user_id", "email", "full_name", "email_verified", "has_password", "has_google", "created_at" }`
+
+### `DELETE /users/me`
+
+`{ "confirmation": "ELIMINAR" }` → `204` y la cookie se borra. Anonimiza la cuenta, borra los itinerarios y anula los créditos; conserva las órdenes de compra. Error: `422 VALIDATION_ERROR` si la confirmación no es exacta.
+
+## 3. Routing
+
+### `GET /routing/cities?q=tok&limit=10`
+
+`q` necesita al menos 2 caracteres y coincide por prefijo con:
+- el nombre de la ciudad en inglés o su alias en español;
+- el nombre del aeropuerto;
+- el código IATA.
+
+No distingue mayúsculas ni tildes. `limit` admite como máximo 20.
+
+```json
+{ "cities": [
+  { "city": "Tokyo", "city_es": "Tokio", "country": "Japan",
+    "airports": [ { "iata": "HND", "name": "Tokyo Haneda International Airport", "lat": 35.5523, "lon": 139.7800 },
+                  { "iata": "NRT", "name": "Narita International Airport", "lat": 35.7647, "lon": 140.3864 } ] } ] }
+```
+
+### `GET /routing/preview?origins=LIM&destinations=HND,NRT&trip_type=ONE_WAY`
+
+La webapp envía todos los aeropuertos de cada ciudad (1 a 5 por lado, sin aeropuertos en común). El servidor evalúa todas las combinaciones con BFS y A\* y devuelve:
+- en `pairs`, los ≤ 2 pares que se cotizarían (RN-14);
+- en `best_route`, la ruta de ida del par con menor T_min.
+
+`trip_type` es opcional (`ONE_WAY` por defecto); con `ROUND_TRIP`, `t_min_minutes` suma ida y vuelta.
 
 ```json
 {
-  "type": "https://errors.navby.com/errors/UNPROCESSABLE_ENTITY",
-  "title": "Error de validación sintáctica o de esquema",
-  "status": 422,
-  "detail": "Uno o más campos no cumplen con las restricciones de formato requeridas.",
-  "instance": "/api/v1/routing/routes/search",
-  "code": "SCHEMA_VALIDATION_ERROR",
-  "invalid_params": [
-    {
-      "field": "origin",
-      "location": "body",
-      "reason": "String should match pattern '^[A-Z]{3}$'"
-    }
+  "reachable": true,
+  "pairs": [
+    { "origin": "LIM", "destination": "HND", "min_stops": 1, "t_min_minutes": 1215 },
+    { "origin": "LIM", "destination": "NRT", "min_stops": 1, "t_min_minutes": 1248 }
   ],
-  "timestamp": "2026-09-29T18:30:00.000000Z"
+  "best_route": {
+    "t_min_minutes": 1215,
+    "airports": [
+      { "iata": "LIM", "lat": -12.0219, "lon": -77.1143 },
+      { "iata": "LAX", "lat": 33.9425, "lon": -118.4081 },
+      { "iata": "HND", "lat": 35.5523, "lon": 139.7800 }
+    ]
+  },
+  "telemetry": { "pairs_evaluated": 2, "bfs_ms": 0.9, "astar_ms": 1.7, "astar_nodes_expanded": 214 }
 }
 ```
 
----
+Si ningún par tiene ruta: `200` con `"reachable": false`, `pairs: []` y `best_route: null`. `telemetry` suma todos los pares evaluados. Errores: `404 AIRPORT_NOT_FOUND` y `422 VALIDATION_ERROR`.
 
-## 2. Matriz Sinóptica de Endpoints
+## 4. Quotes
 
-La siguiente tabla resume todos los endpoints expuestos por la plataforma Navby, clasificados por Bounded Context, método HTTP, ruta perimetral y nivel de acceso requerido:
+### `POST /quotes/search`
 
-| Bounded Context | Método | Ruta Relativa | Nivel de Acceso | Propósito Operacional |
-| :--- | :---: | :--- | :---: | :--- |
-| **IAM** | `POST` | `/api/v1/auth/register` | Público | Registro de nueva cuenta de usuario y emisión de OTP vía Resend. |
-| **IAM** | `POST` | `/api/v1/auth/login` | Público | Autenticación local con credenciales (email y password) y entrega de JWT. |
-| **IAM** | `POST` | `/api/v1/auth/google` | Público | Autenticación federada Single Sign-On con Google OAuth 2.0 / OIDC. |
-| **IAM** | `POST` | `/api/v1/auth/refresh` | Público | Rotación atómica de access token mediante refresh token. |
-| **IAM** | `POST` | `/api/v1/auth/logout` | Autenticado | Revocación e invalidación de sesión en lista negra de Redis 7. |
-| **IAM** | `POST` | `/api/v1/auth/verify-email` | Público | Verificación de dirección de correo mediante código OTP de 6 dígitos. |
-| **IAM** | `GET` | `/api/v1/auth/me` | Autenticado | Obtención del perfil y estado de cuenta del usuario activo. |
-| **IAM** | `POST` | `/api/v1/auth/change-password` | Autenticado | Actualización segura de contraseña para usuario autenticado. |
-| **IAM** | `POST` | `/api/v1/auth/forgot-password` | Público | Solicitud de código de restablecimiento de contraseña vía email. |
-| **IAM** | `POST` | `/api/v1/auth/reset-password` | Público | Confirmación y aplicación de nueva contraseña mediante token. |
-| **IAM** | `GET` | `/api/v1/users/{username}` | Público | Consulta pública de perfil de usuario por nombre de usuario. |
-| **IAM** | `GET` | `/api/v1/users/check-availability` | Público | Validación reactiva de disponibilidad de username o email en UI. |
-| **IAM** | `PATCH` | `/api/v1/users/profile` | Autenticado | Modificación de metadatos de perfil (nombre, país, avatar). |
-| **IAM** | `POST` | `/api/v1/users/{user_id}/suspend` | Admin | Bloqueo o suspensión administrativa de una cuenta de usuario. |
-| **Routing** | `POST` | `/api/v1/routing/routes/search` | Público | Búsqueda geodésica $A^*$/BFS sobre el grafo en RAM con telemetría de benchmarking. |
-| **Routing** | `GET` | `/api/v1/routing/cities` | Público | Búsqueda y autocompletado de ciudades servidas con sus aeropuertos comerciales asociados. |
-| **Routing** | `GET` | `/api/v1/routing/airports` | Público | Catálogo paginado y autocompletado de los 3,354 aeropuertos comerciales. |
-| **Routing** | `GET` | `/api/v1/routing/airports/{iata_code}` | Público | Consulta de metadatos canónicos de un aeropuerto por código IATA. |
-| **Routing** | `GET` | `/api/v1/routing/topology/metrics` | Público | Telemetría estructural de la red de grafos (nodos, aristas, grado promedio y conectividad). |
-| **Quotes** | `POST` | `/api/v1/quotes/search` | Autenticado | Cotización en vivo vía FlightAPI, optimización Pareto y débito de 5 créditos. |
-| **Quotes** | `GET` | `/api/v1/quotes/{session_id}` | Autenticado | Recuperación de los resultados completos de una sesión de cotización previa. |
-| **Quotes** | `GET` | `/api/v1/quotes/{session_id}/podium` | Autenticado | Extracción del Podio de Pareto (Top 1, Top 2 y Top 3 de Mayor Valor Global). |
-| **Quotes** | `GET` | `/api/v1/quotes/quota/status` | Autenticado | Monitoreo del saldo externo consumido en FlightAPI y Circuit Breaker. |
-| **Itineraries** | `POST` | `/api/v1/itineraries` | Autenticado | Creación y custodia persistente de un itinerario en PostgreSQL 16. |
-| **Itineraries** | `GET` | `/api/v1/itineraries/{itinerary_id}` | Autenticado | Detalle completo de un itinerario guardado por su identificador UUID. |
-| **Itineraries** | `GET` | `/api/v1/itineraries` | Autenticado | Listado paginado de itinerarios asociados a la cuenta del usuario. |
-| **Itineraries** | `PATCH` | `/api/v1/itineraries/{itinerary_id}/name` | Autenticado | Modificación del nombre personalizado del itinerario. |
-| **Itineraries** | `PATCH` | `/api/v1/itineraries/{itinerary_id}/notes` | Autenticado | Actualización de notas personales de viaje en el itinerario. |
-| **Itineraries** | `POST` | `/api/v1/itineraries/{itinerary_id}/quotes` | Autenticado | Vinculación de nuevas alternativas cotizadas a un itinerario persistido. |
-| **Itineraries** | `POST` | `/api/v1/itineraries/{itinerary_id}/archive` | Autenticado | Transición de estado a archivado para un itinerario completado. |
-| **Itineraries** | `DELETE` | `/api/v1/itineraries/{itinerary_id}` | Autenticado | Eliminación lógica (*soft delete*) de un itinerario persistido. |
-| **Billing** | `GET` | `/api/v1/billing/wallets/me` | Autenticado | Saldo de créditos de cortesía, créditos adquiridos y caducidad diaria. |
-| **Billing** | `GET` | `/api/v1/billing/wallets/me/transactions`| Autenticado | Libro mayor contable paginado de ingresos, débitos y recargas de créditos. |
-| **Billing** | `GET` | `/api/v1/billing/packages` | Público | Catálogo oficial de paquetes de créditos prepagados (`pack_50`, `pack_100`, etc.). |
-| **Billing** | `POST` | `/api/v1/billing/orders` | Autenticado | Creación de orden de compra e inicialización de Checkout Pro de Mercado Pago. |
-| **Billing** | `GET` | `/api/v1/billing/orders/{order_id}` | Autenticado | Consulta de estado de orden de pago individual por identificador UUID. |
-| **Billing** | `GET` | `/api/v1/billing/orders` | Autenticado | Listado paginado de intenciones de recarga y pagos del usuario. |
-| **Billing** | `POST` | `/api/v1/billing/webhooks/mercadopago` | Público (Firma HMAC) | Notificación idempotente de cobro exitoso vía Mercado Pago Webhook. |
-| **Sistema** | `GET` | `/health` / `/api/v1/health` | Público | Liveness y readiness check de base de datos, Redis 7 y grafo en RAM. |
-| **Sistema** | `GET` | `/metrics` | Admin / Interno | Exportador de telemetría de Prometheus para latencias y nodos explorados. |
-| **Sistema** | `GET` | `/docs` / `/redoc` | Público | Documentación interactiva Swagger UI / ReDoc generada en OpenAPI 3.1. |
+```json
+{
+  "trip_type": "ROUND_TRIP",
+  "origins": ["LIM"],
+  "destinations": ["HND", "NRT"],
+  "departure_date": "2026-11-01",
+  "return_date": "2026-11-15",
+  "passengers": { "adults": 2, "children": 1, "infants": 0 },
+  "cabin": "ECONOMY",
+  "currency": "USD",
+  "preferences": { "profile": "BALANCED" }
+}
+```
 
----
+`origins` y `destinations` son los aeropuertos de cada ciudad elegida (1 a 5 por lado). El servidor elige qué pares cotizar (RN-14). `preferences` es opcional (por defecto `BALANCED`). Con `"profile": "CUSTOM"` se agregan `"weights": { "price": 0.4, "duration": 0.4, "stops": 0.2 }`.
 
-## 3. Bounded Context IAM: Identidad y Control de Acceso
+`200` → **PodiumResponse**:
 
-El Bounded Context de IAM gestiona el ciclo de vida de los usuarios, la autenticación local y federada, la verificación de identidad y la emisión segura de credenciales temporales.
-
-### 3.1. `POST /api/v1/auth/register`
-* **Propósito:** Inicia el registro de una cuenta de usuario local mediante credenciales de correo y contraseña. Genera un código OTP de 6 dígitos con expiración de 10 minutos y lo despacha de forma asíncrona mediante el adaptador transaccional de Resend.
-* **Nivel de Acceso:** Público (`Rate Limit: 5 req/min por IP`).
-* **Request Body (`RegisterRequestSchema`):**
-  ```json
-  {
-    "email": "viajero@andeva.io",
-    "password": "PasswordSegura123!",
-    "full_name": "Carlos Mendoza",
-    "username": "cmendoza"
-  }
-  ```
-* **Respuestas:**
-  * `201 Created`: Usuario creado exitosamente en estado pendiente de verificación.
-    ```json
+```json
+{
+  "search_id": "srch_01J9Z...",
+  "expires_at": "2026-10-15T15:30:00Z",
+  "credits_charged": 5,
+  "credits_remaining": 5,
+  "partial": false,
+  "pairs_quoted": [ { "origin": "LIM", "destination": "HND" }, { "origin": "LIM", "destination": "NRT" } ],
+  "t_min_minutes": 2430,
+  "offers_received": 87,
+  "pareto_size": 9,
+  "preferences": { "profile": "BALANCED", "weights": { "price": 0.5, "duration": 0.3, "stops": 0.2 } },
+  "price_disclaimer": "Precio referencial obtenido de terceros; se confirma en el sitio del vendedor.",
+  "podium": [
     {
-      "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "email": "viajero@andeva.io",
-      "username": "cmendoza",
-      "status": "PENDING_VERIFICATION",
-      "message": "Se ha remitido un código de verificación de 6 dígitos a su dirección de correo electrónico.",
-      "created_at": "2026-09-29T18:30:00Z"
-    }
-    ```
-  * `409 Conflict`: Si el correo o el nombre de usuario ya se encuentran registrados en el sistema.
-  * `422 Unprocessable Content`: Si la contraseña no satisface la complejidad requerida (mínimo 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial).
-
-### 3.2. `POST /api/v1/auth/login`
-* **Propósito:** Autentica a un usuario existente mediante verificación criptográfica Argon2id de la contraseña. Ante éxito, emite un par de tokens JWT (Access Token y Refresh Token) e inicializa la sesión en Redis 7.
-* **Nivel de Acceso:** Público (`Rate Limit: 10 req/min por IP`).
-* **Request Body (`LoginRequestSchema`):**
-  ```json
-  {
-    "email": "viajero@andeva.io",
-    "password": "PasswordSegura123!"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Autenticación exitosa.
-    ```json
-    {
-      "access_token": "eyJhbGciOiJFZERTQ...",
-      "refresh_token": "eyJhbGciOiJFZERTQ...",
-      "token_type": "Bearer",
-      "expires_in": 900,
-      "user": {
-        "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-        "email": "viajero@andeva.io",
-        "username": "cmendoza",
-        "role": "USER",
-        "status": "ACTIVE"
-      }
-    }
-    ```
-  * `401 Unauthorized`: Credenciales erróneas o cuenta inexistente.
-  * `403 Forbidden`: Cuenta suspendida por un administrador o pendiente de verificación de correo.
-
-### 3.3. `POST /api/v1/auth/google`
-* **Propósito:** Procesa la autenticación federada Single Sign-On (SSO) mediante Google Identity Services. Valida el token de identidad JWT (`id_token`) contra los servidores de Google mediante `google-auth`, aprovisiona automáticamente la cuenta si es un usuario nuevo y emite el par de credenciales JWT de Navby.
-* **Nivel de Acceso:** Público.
-* **Request Body (`GoogleAuthRequestSchema`):**
-  ```json
-  {
-    "id_token": "eyJhbGciOiJSUzI1NiIs..."
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Sesión federada autorizada con entrega de tokens JWT.
-
-### 3.4. `POST /api/v1/auth/refresh`
-* **Propósito:** Permite renovar un `access_token` caducado utilizando un `refresh_token` válido. Aplica **rotación estricta de refresh token**: el token antiguo se invalida en Redis y se entrega uno nuevo, detectando intentos de reutilización de tokens robados.
-* **Nivel de Acceso:** Público.
-* **Request Body (`RefreshTokenRequestSchema`):**
-  ```json
-  {
-    "refresh_token": "eyJhbGciOiJFZERTQ..."
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Nuevo par de tokens emitido.
-  * `401 Unauthorized`: Token de refresco expirado, revocado o inválido.
-
-### 3.5. `POST /api/v1/auth/logout`
-* **Propósito:** Cierra la sesión activa del usuario. Extrae el JTI (*JWT ID*) del token de acceso y lo persiste en la lista negra (*blocklist*) de Redis 7 con un TTL igual al tiempo remanente del token, revocando de inmediato su validez en el sistema.
-* **Nivel de Acceso:** Autenticado (`Bearer Token`).
-* **Respuestas:**
-  * `204 No Content`: Sesión revocada con éxito.
-
-### 3.6. `POST /api/v1/auth/verify-email`
-* **Propósito:** Valida el código OTP de 6 dígitos ingresado por el usuario para activar su cuenta.
-* **Nivel de Acceso:** Público.
-* **Request Body (`VerifyEmailRequestSchema`):**
-  ```json
-  {
-    "email": "viajero@andeva.io",
-    "otp_code": "849201"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Correo verificado satisfactoriamente; cuenta transicionada a estado `ACTIVE`.
-  * `400 Bad Request`: Código OTP incorrecto o expirado.
-
-### 3.7. `GET /api/v1/auth/me`
-* **Propósito:** Retorna la información completa del perfil, roles y estado de la cuenta del usuario portador del token JWT de la sesión activa.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "email": "viajero@andeva.io",
-      "username": "cmendoza",
-      "full_name": "Carlos Mendoza",
-      "role": "USER",
-      "status": "ACTIVE",
-      "email_verified": true,
-      "created_at": "2026-09-29T18:30:00Z"
-    }
-    ```
-
----
-
-## 4. Bounded Context Routing: Topología y Motor de Grafos
-
-El Bounded Context de Routing gestiona la red aeroportuaria en memoria RAM (**3,354 nodos y 37,326 aristas**) compilada de OpenFlights, resuelve algoritmos geodésicos en $O(E \log V)$ y provee telemetría cuantitativa para el benchmarking académico.
-
-### 4.1. `POST /api/v1/routing/routes/search`
-* **Propósito:** Resuelve la trayectoria de vuelo física óptima entre dos aeropuertos mediante el motor algorítmico en memoria. Ejecuta la búsqueda informada $A^*$ guiada por la heurística admisible de Haversine ($h(u) = d_H(u, \text{dest}) / v_{\text{crucero}}$), calcula la cota inferior teórica de duración física ($T_{\min}$) para normalizar el motor multicriterio, interpola 26 waypoints ortodrómicos para la visualización en MapLibre GL 2D / deck.gl y genera la telemetría comparativa con Dijkstra y BFS.
-* **Nivel de Acceso:** Público.
-* **Request Body (`RouteSearchRequestSchema`):**
-  ```json
-  {
-    "origin": "LIM",
-    "destination": "MAD",
-    "max_stops": 2,
-    "max_duration_minutes": 1200,
-    "strategy": "OPTIMAL_DURATION"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK` (`RouteSearchResponseSchema`):
-    ```json
-    {
-      "route_id": "route_LIM_MAD_1759178400",
-      "origin": "LIM",
-      "destination": "MAD",
-      "total_distance_km": 9524.38,
-      "estimated_flight_duration_minutes": 744,
-      "total_stops": 0,
-      "path_nodes": ["LIM", "MAD"],
+      "rank": 1,
+      "offer_id": "9f2c41ab07d3e655",
+      "score": 0.1834,
+      "match_pct": 82,
+      "price": { "amount": "2140.30", "currency": "USD" },
+      "duration_minutes": 3010,
+      "extra_minutes_vs_t_min": 580,
+      "stops": 2,
+      "airlines": [ { "iata": "LA", "name": "LATAM Airlines", "logo": "https://..." } ],
       "legs": [
-        {
-          "origin": "LIM",
-          "destination": "MAD",
-          "distance_km": 9524.38,
-          "estimated_duration_minutes": 744,
-          "geodesic_waypoints": [
-            [-77.1143, -12.0219],
-            [-60.5012, -2.1092],
-            [-30.1294, 15.4091],
-            [-3.5673, 40.4839]
-          ]
-        }
+        { "direction": "OUTBOUND", "departure": "2026-11-01T08:30:00", "arrival": "2026-11-02T17:10:00",
+          "duration_minutes": 1540, "stops": 1,
+          "segments": [
+            { "from": "LIM", "to": "LAX", "departure": "2026-11-01T08:30:00", "arrival": "2026-11-01T15:05:00",
+              "flight_number": "LA2600", "airline": "LA" },
+            { "from": "LAX", "to": "HND", "departure": "2026-11-01T18:20:00", "arrival": "2026-11-02T17:10:00",
+              "flight_number": "NH105", "airline": "NH" }
+          ] },
+        { "direction": "INBOUND", "...": "..." }
       ],
-      "telemetry": {
-        "algorithm_name": "ASTAR",
-        "execution_time_ms": 1.84,
-        "execution_time_us": 1840,
-        "nodes_expanded": 142,
-        "edges_evaluated": 1240,
-        "effective_branching_factor": 2.14,
-        "cache_hit": false,
-        "benchmark_comparison": {
-          "dijkstra_nodes_expanded": 1890,
-          "dijkstra_execution_time_ms": 19.20,
-          "bfs_stops_count": 0,
-          "bfs_execution_time_ms": 2.10,
-          "efficiency_gain_pct": 92.48
-        }
-      }
+      "airports": [
+        { "iata": "LIM", "lat": -12.0219, "lon": -77.1143, "timezone": "America/Lima" },
+        { "iata": "LAX", "lat": 33.9425, "lon": -118.4081, "timezone": "America/Los_Angeles" }
+      ],
+      "deep_link": "https://..."
     }
-    ```
-  * `400 Bad Request`: Si el origen y destino son idénticos (`origin == destination`).
-  * `404 Not Found`: Si uno de los códigos IATA no existe en la red aeroportuaria comercial activa o no existe ruta viable en el grafo comercial.
+  ]
+}
+```
 
-### 4.2. `GET /api/v1/routing/cities`
-* **Propósito:** Provee el servicio de autocompletado y resolución de ciudades con aeropuertos comerciales para el buscador principal de la Webapp. Permite búsquedas directas por nombre de metrópoli (ej. "Tokio", "Lima", "Nueva York", "Madrid"), devolviendo las terminales comerciales asociadas (identificando el aeropuerto primario y terminales alternativas en ciudades multiaeropuerto).
-* **Nivel de Acceso:** Público.
-* **Parámetros de Consulta (Query Params):**
-  * `q` (`string`, requerido): Término de búsqueda o prefijo de la ciudad (mínimo 2 caracteres).
-  * `limit` (`int`, opcional, por defecto `10`): Cantidad máxima de metrópolis a retornar.
-* **Ejemplo de Solicitud:** `GET /api/v1/routing/cities?q=Tokyo`
-* **Respuestas:**
-  * `200 OK` (`CitySearchResponseSchema`):
-    ```json
-    {
-      "query": "Tokyo",
-      "results_count": 1,
-      "cities": [
-        {
-          "city": "Tokyo",
-          "country": "Japan",
-          "total_airports": 2,
-          "primary_airport_iata": "HND",
-          "airports": [
-            {
-              "iata": "HND",
-              "icao": "RJTT",
-              "name": "Tokyo Haneda International Airport",
-              "is_primary": true
-            },
-            {
-              "iata": "NRT",
-              "icao": "RJAA",
-              "name": "Narita International Airport",
-              "is_primary": false
-            }
-          ]
-        }
-      ]
-    }
-    ```
+- `podium` tiene de 0 a 3 elementos, ordenados por `score` ascendente. Con 0, FlightAPI no tiene vuelos para esa fecha y `credits_charged` es `0` (RN-09).
+- Las horas de `legs` y `segments` son hora local de cada aeropuerto. La zona de cada uno está en `airports[].timezone`.
+- Los montos se serializan como texto con 2 decimales.
+- `credits_charged` es `0` si todos los pares estaban en caché o si hubo reembolso.
 
-### 4.3. `GET /api/v1/routing/airports`
-* **Propósito:** Provee el catálogo maestro de terminales aéreas comerciales para el buscador flotante con autocompletado en el frontend, permitiendo búsquedas rápidas por nombre, ciudad, país o código IATA.
-* **Nivel de Acceso:** Público.
-* **Parámetros de Consulta:**
-  * `q` (`string`, opcional): Término de búsqueda de coincidencia parcial en nombre, ciudad o IATA.
-  * `country` (`string`, opcional): Filtro estricto por nombre de país.
-  * `page` (`int`, opcional, default `1`): Número de página.
-  * `page_size` (`int`, opcional, default `20`, máximo `100`): Registros por página.
-* **Respuestas:**
-  * `200 OK`: Lista paginada con metadatos de los aeropuertos encontrados.
+Errores:
+- `402 INSUFFICIENT_CREDITS`;
+- `403 EMAIL_NOT_VERIFIED`;
+- `409 SEARCH_IN_PROGRESS`;
+- `422 ROUTE_NOT_REACHABLE`, `422 VALIDATION_ERROR`, `422 INVALID_WEIGHTS`;
+- `503 PROVIDER_UNAVAILABLE`.
 
-### 4.4. `GET /api/v1/routing/airports/{iata_code}`
-* **Propósito:** Retorna la ficha técnica de un aeropuerto comercial específico indexado en la red a partir de su código IATA de 3 letras.
-* **Nivel de Acceso:** Público.
-* **Respuestas:**
-  * `200 OK`: Metadatos del nodo (nombre, ciudad, coordenadas geodésicas, altitud, zona horaria y grado $k$).
-  * `404 Not Found`: Si el código IATA no existe en la red.
+### `POST /quotes/{search_id}/rank`
 
-### 4.5. `GET /api/v1/routing/topology/metrics`
-* **Propósito:** Expone las métricas analíticas y cuantitativas del grafo residente en memoria RAM para fines de validación técnica y auditoría de la cátedra de Complejidad Algorítmica.
-* **Nivel de Acceso:** Público.
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "total_airports": 3354,
-      "total_routes_directed_unique": 37326,
-      "multigraph_raw_routes": 67305,
-      "average_degree": 22.25,
-      "connected_components_count": 1,
-      "graph_memory_footprint_bytes": 10485760,
-      "spatial_indexing": "Haversine In-Memory KD-Tree / Adjacency Array",
-      "status": "HEALTHY"
-    }
-    ```
+`{ "profile": "FAST" }` o `{ "profile": "CUSTOM", "weights": { ... } }` → `200 PodiumResponse` con `credits_charged: 0` y la misma `expires_at`. Errores: `404 SEARCH_NOT_FOUND` y `422 INVALID_WEIGHTS`.
 
----
+### `GET /quotes/{search_id}`
 
-## 5. Bounded Context Quotes: Inteligencia Tarifaria y Optimización Pareto
+`200 PodiumResponse` con los pesos usados por última vez. Error: `404 SEARCH_NOT_FOUND`.
 
-El Bounded Context de Quotes es el núcleo económico de Navby. Se integra con **FlightAPI** mediante la Capa Anticorrupción (ACL), aplica caché distribuida en Redis 7 (TTL 30 min) y computa la **frontera de Pareto** en microsegundos para entregar itinerarios de vuelo óptimos no dominados.
+## 5. Billing
 
-### 5.1. `POST /api/v1/quotes/search`
-* **Propósito:** Ejecuta una cotización completa de tarifas reales de mercado para vuelos de solo ida (`ONE_WAY`) o ida y vuelta (`ROUND_TRIP`). El proceso es determinista:
-  1. Valida la viabilidad topológica y cota de escalas en memoria RAM mediante BFS ($0.00 USD de costo).
-  2. Comprueba si existe caché previa en Redis 7 (`quote:{origin}:{dest}:{date}:{cabin}:{pax}`). Ante *Cache Hit*, retorna de inmediato en $< 5\text{ ms}$ a 0 créditos de penalización.
-  3. Ante *Cache Miss*, descuenta atómicamente **5 créditos Navby** de la billetera del usuario en Redis.
-  4. Realiza **una sola petición HTTPS** hacia FlightAPI (`/onewaytrip` o `/roundtrip`), consumiendo 2 créditos del plan de la plataforma.
-  5. Ejecuta la optimización multicriterio en memoria: normaliza precio monetario, duración en minutos y escalas con base en $T_{\min}$, descarta alternativas dominadas (frontera de Pareto) y clasifica las recomendaciones óptimas.
-* **Nivel de Acceso:** Autenticado (`Bearer Token`).
-* **Request Body (`QuoteSearchRequestSchema`):**
-  ```json
-  {
-    "origin": "LIM",
-    "destination": "MAD",
-    "departure_date": "2026-10-15",
-    "return_date": "2026-10-30",
-    "cabin_class": "ECONOMY",
-    "adults": 1,
-    "children": 0,
-    "infants": 0,
-    "currency": "USD"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK` (`QuoteSearchResponseSchema`):
-    ```json
-    {
-      "session_id": "session_8f3d1b9a2c_1759178400",
-      "search_type": "ROUND_TRIP",
-      "currency": "USD",
-      "cached": false,
-      "credits_debited": 5,
-      "remaining_user_credits": 45,
-      "market_offers_count": 42,
-      "pareto_optimal_count": 3,
-      "podium": {
-        "top_1_offer": {
-          "itinerary_id": "itn_opt_001",
-          "airline_name": "Air Europa",
-          "airline_code": "UX",
-          "total_price": 845.50,
-          "total_duration_minutes": 725,
-          "total_stops": 0,
-          "utility_score": 0.94,
-          "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_001",
-          "legs": [
-            {
-              "origin": "LIM",
-              "destination": "MAD",
-              "departure_time": "2026-10-15T10:15:00",
-              "arrival_time": "2026-10-15T23:35:00",
-              "direction": "OUTBOUND"
-            },
-            {
-              "origin": "MAD",
-              "destination": "LIM",
-              "departure_time": "2026-10-30T13:00:00",
-              "arrival_time": "2026-10-30T21:30:00",
-              "direction": "INBOUND"
-            }
-          ]
-        },
-        "top_2_offer": {
-          "itinerary_id": "itn_opt_002",
-          "airline_name": "Iberia",
-          "airline_code": "IB",
-          "total_price": 890.00,
-          "total_duration_minutes": 740,
-          "total_stops": 0,
-          "utility_score": 0.91,
-          "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_002",
-          "legs": [...]
-        },
-        "top_3_offer": {
-          "itinerary_id": "itn_opt_003",
-          "airline_name": "LATAM Airlines",
-          "airline_code": "LA",
-          "total_price": 820.00,
-          "total_duration_minutes": 780,
-          "total_stops": 1,
-          "utility_score": 0.89,
-          "deep_link": "https://book.flightapi.io/checkout?ref=navby&id=itn_opt_003",
-          "legs": [...]
-        }
-      },
-      "all_candidates": [...]
-    }
-    ```
-  * `402 Payment Required`: Saldo de créditos insuficiente en la billetera del usuario (requiere recargar mediante paquete prepagado de Mercado Pago o esperar la cuota diaria).
-  * `404 Not Found`: Si la ruta entre origen y destino no tiene conectividad física o comercial.
-  * `503 Service Unavailable`: Si el agregador externo FlightAPI se encuentra saturado y el Circuit Breaker conmuta a estado `OPEN`.
+### `GET /billing/wallet`
 
-### 5.2. `GET /api/v1/quotes/{session_id}`
-* **Propósito:** Recupera el desglose íntegro de ofertas de vuelo recopiladas durante una sesión de búsqueda previa sin volver a invocar a la API externa ni debitar créditos.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK`: Estructura completa de la sesión de búsqueda con todas las alternativas de aerolíneas evaluadas.
-  * `404 Not Found`: Sesión expirada o inexistente en caché.
+```json
+{ "free_credits": 10, "paid_credits": 45, "total_credits": 55, "searches_available": 11,
+  "free_credits_reset_at": "2026-10-16T05:00:00Z" }
+```
 
-### 5.3. `GET /api/v1/quotes/{session_id}/podium`
-* **Propósito:** Extrae de forma concisa exclusivamente las 3 alternativas ganadoras del podio de Pareto (Top 1, Top 2 y Top 3 de mayor puntuación y valor global) para la visualización de tarjetas destacadas en la interfaz de usuario.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK` (`ParetoPodiumResponseSchema`).
+`free_credits_reset_at` es la próxima medianoche de Lima expresada en UTC.
 
-### 5.4. `GET /api/v1/quotes/quota/status`
-* **Propósito:** Endpoint de monitoreo operacional que expone el porcentaje de cuota consumido sobre el plan corporativo de FlightAPI y el estado actual del Circuit Breaker (`CLOSED`, `OPEN`, `HALF_OPEN`).
-* **Nivel de Acceso:** Autenticado (`Role: ADMIN` o desarrollador autorizado).
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "monthly_requests_limit": 10000,
-      "monthly_requests_used": 1420,
-      "circuit_breaker_state": "CLOSED",
-      "failure_count": 0,
-      "resilience_mode": "LIVE"
-    }
-    ```
+### `GET /billing/transactions?page=1&page_size=20`
 
----
+`200` → `{ "items": [ { "id", "type", "free_delta", "paid_delta", "reference_id", "created_at" } ], "page", "page_size", "total" }`. `page_size` admite como máximo 50. `type` ∈ `SEARCH_DEBIT`, `SEARCH_REFUND`, `PURCHASE`, `PURCHASE_REVERSAL`, `ACCOUNT_DELETION`.
 
-## 6. Bounded Context Itineraries: Custodia y Gestión de Itinerarios
+### `GET /billing/packages`
 
-El Bounded Context de Itineraries administra la persistencia transaccional en PostgreSQL 16 de los itinerarios elegidos, guardados y planificados por los usuarios registrados.
+```json
+{ "currency": "PEN", "packages": [
+  { "code": "pack_50", "name": "Escapada", "credits": 50, "searches": 10, "price": "9.90", "usd_reference": "2.49" },
+  { "code": "pack_100", "name": "Viajero Frecuente", "credits": 100, "searches": 20, "price": "16.90", "usd_reference": "4.49" },
+  { "code": "pack_250", "name": "Nómada", "credits": 250, "searches": 50, "price": "34.90", "usd_reference": "8.99" } ] }
+```
 
-### 6.1. `POST /api/v1/itineraries`
-* **Propósito:** Almacena de forma persistente un itinerario de vuelo seleccionado a partir de una cotización de mercado exitosa, asociándolo a la cuenta del usuario.
-* **Nivel de Acceso:** Autenticado.
-* **Request Body (`CreateItineraryRequestSchema`):**
-  ```json
-  {
-    "name": "Vacaciones Europa 2026",
-    "session_id": "session_8f3d1b9a2c_1759178400",
-    "quote_candidate_id": "itn_opt_001",
-    "origin": "LIM",
-    "destination": "MAD",
-    "departure_date": "2026-10-15",
-    "return_date": "2026-10-30",
-    "total_price": 845.50,
-    "currency": "USD",
-    "notes": "Vuelo directo con Air Europa."
-  }
-  ```
-* **Respuestas:**
-  * `201 Created`:
-    ```json
-    {
-      "itinerary_id": "d3b07384-d113-4a15-b778-4db8a313e9a1",
-      "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "name": "Vacaciones Europa 2026",
-      "status": "ACTIVE",
-      "created_at": "2026-09-29T18:35:00Z"
-    }
-    ```
+Se cobra siempre en soles; `usd_reference` es solo informativo.
 
-### 6.2. `GET /api/v1/itineraries/{itinerary_id}`
-* **Propósito:** Recupera la información detallada de un itinerario persistido, incluyendo sus tramos, aerolíneas, precios guardados y enlaces de reserva oficiales.
-* **Nivel de Acceso:** Autenticado (verificación de propiedad: solo el usuario dueño puede leerlo).
-* **Respuestas:**
-  * `200 OK`: Entidad completa de itinerario.
-  * `403 Forbidden`: Si el itinerario pertenece a otro usuario.
-  * `404 Not Found`: Si no existe el identificador en la base de datos.
+### `POST /billing/orders`
 
-### 6.3. `GET /api/v1/itineraries`
-* **Propósito:** Retorna la lista paginada de todos los itinerarios creados por el usuario autenticado, ordenados cronológicamente por fecha de creación o de salida.
-* **Nivel de Acceso:** Autenticado.
-* **Parámetros de Consulta:**
-  * `status` (`string`, opcional: `ACTIVE`, `ARCHIVED`, `CANCELLED`).
-  * `page` (`int`, default `1`).
-  * `page_size` (`int`, default `10`).
-* **Respuestas:**
-  * `200 OK`: Lista paginada de itinerarios.
+`{ "package_code": "pack_100" }` → `201`:
 
-### 6.4. `PATCH /api/v1/itineraries/{itinerary_id}/name`
-* **Propósito:** Actualiza el nombre personalizado de un itinerario existente.
-* **Nivel de Acceso:** Autenticado.
-* **Request Body:**
-  ```json
-  {
-    "name": "Luna de Miel en Madrid"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Itinerario renombrado exitosamente.
+```json
+{ "order_id": "uuid", "package_code": "pack_100", "credits": 100, "amount": "16.90", "currency": "PEN",
+  "status": "PENDING", "expires_at": "2026-10-16T14:00:00Z",
+  "checkout_url": "https://www.mercadopago.com.pe/checkout/v1/redirect?pref_id=..." }
+```
 
-### 6.5. `PATCH /api/v1/itineraries/{itinerary_id}/notes`
-* **Propósito:** Actualiza las anotaciones de viaje del usuario en el itinerario persistido.
-* **Nivel de Acceso:** Autenticado.
-* **Request Body:**
-  ```json
-  {
-    "notes": "Equipaje de mano de 10 kg incluido; llevar pasaporte biométrico."
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Notas actualizadas.
+Error: `404 PACKAGE_NOT_FOUND`.
 
-### 6.6. `POST /api/v1/itineraries/{itinerary_id}/archive`
-* **Propósito:** Cambia el estado de un itinerario a `ARCHIVED` para ocultarlo de la vista principal sin eliminarlo del historial.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK`: Itinerario archivado.
+### `GET /billing/orders/{order_id}`
 
-### 6.7. `DELETE /api/v1/itineraries/{itinerary_id}`
-* **Propósito:** Aplica eliminación lógica (*soft delete*) sobre el itinerario del usuario.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `204 No Content`: Itinerario eliminado.
+`200` → la orden con su `status` (`PENDING`, `APPROVED`, `REJECTED`, `EXPIRED` o `REVERSED`). Error: `404 ORDER_NOT_FOUND`.
 
----
+### `POST /billing/webhooks/mercadopago`
 
-## 7. Bounded Context Billing: Billetera y Pagos con Mercado Pago
+Cuerpo emitido por Mercado Pago (`{ "type": "payment", "data": { "id": "123" } }`). Si `type` no es `payment`, responde `200` sin hacer nada. Si no:
 
-El Bounded Context de Billing administra la economía de créditos del usuario, aplica el consumo de cuotas mediante scripts Lua atómicos en Redis 7 y procesa la compra de paquetes prepagados mediante **Mercado Pago Checkout Pro**.
+1. Valida la cabecera `x-signature` y que `ts` no tenga más de 300 s. Si falla → `401 INVALID_WEBHOOK_SIGNATURE`.
+2. Consulta el pago en la API de Mercado Pago, sin confiar en el cuerpo.
+3. Aplica el cambio de estado una sola vez (ver [Billing](extended-bounded-contexts-description/bounded-context-billing.md)) y responde `200`.
 
-### 7.1. `GET /api/v1/billing/wallets/me`
-* **Propósito:** Consulta el estado actual de la billetera de créditos del usuario portador del token JWT. Detalla los créditos de cortesía diarios (`free_credits`), los créditos adquiridos perpetuos (`paid_credits`), el saldo total disponible y la fecha de expiración de la cuota diaria (00:00 UTC).
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "wallet_id": "wal_8f3d1b9a2c_001",
-      "user_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "free_credits": 10,
-      "paid_credits": 50,
-      "total_credits": 60,
-      "daily_grant_expires_at": "2026-09-30T00:00:00Z",
-      "equivalent_searches": 12
-    }
-    ```
+## 6. Itineraries
 
-### 7.2. `GET /api/v1/billing/wallets/me/transactions`
-* **Propósito:** Retorna el extracto de cuenta contable paginado con todos los movimientos de saldo del usuario (débitos por búsqueda, acreditación diaria de cortesía, recargas comerciales y expiraciones).
-* **Nivel de Acceso:** Autenticado.
-* **Parámetros de Consulta:**
-  * `page` (`int`, default `1`).
-  * `page_size` (`int`, default `20`).
-* **Respuestas:**
-  * `200 OK`: Lista paginada de transacciones asentadas en la tabla `credit_transactions`.
+### `POST /itineraries`
 
-### 7.3. `GET /api/v1/billing/packages`
-* **Propósito:** Retorna el catálogo oficial de paquetes prepagados de recarga de créditos disponibles para adquisición en moneda local (PEN) y divisa internacional (USD).
-* **Nivel de Acceso:** Público.
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "packages": [
-        {
-          "package_code": "pack_50",
-          "name": "Paquete Inicial / Escapada",
-          "credits": 50,
-          "equivalent_searches": 10,
-          "price_pen": 9.90,
-          "price_usd": 2.49,
-          "currency_rates": { "PEN": 9.90, "USD": 2.49 },
-          "popular": false
-        },
-        {
-          "package_code": "pack_100",
-          "name": "Paquete Frecuente / Viajero",
-          "credits": 100,
-          "equivalent_searches": 20,
-          "price_pen": 16.90,
-          "price_usd": 4.49,
-          "currency_rates": { "PEN": 16.90, "USD": 4.49 },
-          "popular": true
-        },
-        {
-          "package_code": "pack_250",
-          "name": "Paquete Corporativo / Nómada",
-          "credits": 250,
-          "equivalent_searches": 50,
-          "price_pen": 34.90,
-          "price_usd": 8.99,
-          "currency_rates": { "PEN": 34.90, "USD": 8.99 },
-          "popular": false
-        }
-      ]
-    }
-    ```
+`{ "search_id": "srch_...", "offer_id": "9f2c41ab07d3e655", "name": "Japón 2026" }`. `name` es opcional; por defecto es `"LIM → HND · 2026-11-01"`.
 
-### 7.4. `POST /api/v1/billing/orders`
-* **Propósito:** Registra una intención de compra para un paquete de créditos e interactúa con la pasarela de **Mercado Pago** para generar la preferencia de pago de Checkout Pro. Retorna los enlaces de redirección a la pasarela (`init_point` y `sandbox_init_point`).
-* **Nivel de Acceso:** Autenticado.
-* **Request Body (`CreateCreditOrderRequestSchema`):**
-  ```json
-  {
-    "package_code": "pack_100",
-    "currency": "PEN"
-  }
-  ```
-* **Respuestas:**
-  * `201 Created`:
-    ```json
-    {
-      "order_id": "ord_8f3d1b9a2c_1759178400",
-      "package_code": "pack_100",
-      "credits_to_grant": 100,
-      "amount": 16.90,
-      "currency": "PEN",
-      "status": "PENDING",
-      "mercadopago_preference_id": "98127391-72a1-4321-b3b2-910283910293",
-      "init_point": "https://www.mercadopago.com.pe/checkout/v1/redirect?pref_id=98127391-72a1-4321-b3b2-910283910293",
-      "sandbox_init_point": "https://sandbox.mercadopago.com.pe/checkout/v1/redirect?pref_id=98127391-72a1-4321-b3b2-910283910293",
-      "created_at": "2026-09-29T18:40:00Z"
-    }
-    ```
-  * `400 Bad Request`: Si el código de paquete o divisa no es soportado.
+`201` (nuevo) o `200` (ya estaba guardado) → **Itinerary**:
 
-### 7.5. `GET /api/v1/billing/orders/{order_id}`
-* **Propósito:** Consulta el estado de procesamiento de una orden de compra específica.
-* **Nivel de Acceso:** Autenticado.
-* **Respuestas:**
-  * `200 OK`: Estado de la orden (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`).
+```json
+{ "id": "uuid", "name": "Japón 2026", "trip_type": "ROUND_TRIP", "origin": "LIM", "destination": "HND",
+  "departure_date": "2026-11-01", "return_date": "2026-11-15",
+  "offer": { "...": "elemento de podium congelado, más profile, weights y quoted_at" },
+  "price_disclaimer": "Precio del 2026-10-15; puede haber cambiado.",
+  "created_at": "..." }
+```
 
-### 7.6. `POST /api/v1/billing/webhooks/mercadopago`
-* **Propósito:** Receptor perimetral de notificaciones HTTP (Webhooks) emitidas por Mercado Pago cuando se actualiza el estado de una transacción. El controlador aplica:
-  1. Validación criptográfica de la cabecera `x-signature` con el secreto del webhook (`MERCADOPAGO_WEBHOOK_SECRET`).
-  2. Verificación de **idempotencia** en Redis 7 (`idempotency:mp:{payment_id}`) para evitar dobles acreditaciones ante reintentos automáticos.
-  3. Despacho del evento `CreditOrderPaidDomainEvent` y acreditación atómica de los créditos perpetuos en la billetera del usuario.
-* **Nivel de Acceso:** Público con verificación de firma HMAC-SHA256.
-* **Cabeceras Críticas:**
-  * `x-signature`: Firma HMAC con timestamp (`ts=...,v1=...`).
-  * `x-request-id`: Identificador de trazabilidad del webhook.
-* **Request Body (Emitido por Mercado Pago):**
-  ```json
-  {
-    "action": "payment.created",
-    "api_version": "v1",
-    "data": {
-      "id": "12345678901"
-    },
-    "date_created": "2026-09-29T18:40:15Z",
-    "id": 1029384756,
-    "live_mode": false,
-    "type": "payment"
-  }
-  ```
-* **Respuestas:**
-  * `200 OK`: Evento procesado o descartado por idempotencia de manera satisfactoria.
-  * `401 Unauthorized`: Firma criptográfica ausente o no coincidente.
+Errores: `404 SEARCH_NOT_FOUND`, `404 OFFER_NOT_FOUND` y `409 ITINERARY_LIMIT_REACHED`.
 
----
+### `GET /itineraries?page=1&page_size=20`
 
-## 8. Servicios de Diagnóstico, Salud y Observabilidad
+`200` → lista paginada de **Itinerary**, del más reciente al más antiguo. `page_size` admite como máximo 50.
 
-### 8.1. `GET /health` y `GET /api/v1/health`
-* **Propósito:** Sondeo unificado de disponibilidad (*Liveness* y *Readiness*) para orquestadores perimetrales (Docker Compose, Kubernetes o Caddy). Verifica la conectividad asíncrona hacia PostgreSQL 16, la latencia de ping hacia Redis 7 y la presencia del grafo mundial cargado en memoria RAM.
-* **Nivel de Acceso:** Público.
-* **Respuestas:**
-  * `200 OK`:
-    ```json
-    {
-      "status": "HEALTHY",
-      "timestamp": "2026-09-29T18:42:00Z",
-      "services": {
-        "database": { "status": "UP", "engine": "PostgreSQL 16", "latency_ms": 1.2 },
-        "cache": { "status": "UP", "engine": "Redis 7", "latency_ms": 0.4 },
-        "graph_in_memory": { "status": "UP", "nodes": 3354, "edges": 37326 }
-      }
-    }
-    ```
-  * `503 Service Unavailable`: Si alguno de los servicios esenciales está degradado.
+### `GET /itineraries/{id}`
 
-### 8.2. `GET /metrics`
-* **Propósito:** Expone el catálogo de métricas en formato estándar de **Prometheus** para la ingestión por paneles de telemetría y grafana de observabilidad.
-* **Nivel de Acceso:** Red interna o autenticación básica perimetral.
-* **Métricas Principales Expuestas:**
-  * `navby_routing_algorithm_duration_seconds`: Histograma de duración de $A^*$, Dijkstra y BFS.
-  * `navby_routing_nodes_evaluated_total`: Contador de nodos explorados por algoritmo.
-  * `navby_routing_edges_explored_total`: Contador de aristas evaluadas.
-  * `navby_routing_graph_nodes_total`: Métrica Gauge fija de 3,354 nodos activos.
-  * `navby_routing_graph_edges_total`: Métrica Gauge fija de 37,326 aristas activas.
-  * `navby_quotes_flightapi_requests_total`: Contador de llamadas a la API externa.
-  * `navby_quotes_cache_hits_total`: Contador de aciertos en caché Redis fast-path.
+`200 Itinerary`. Error: `404 ITINERARY_NOT_FOUND`.
+
+### `DELETE /itineraries/{id}`
+
+`204`. Error: `404 ITINERARY_NOT_FOUND`.
+
+## 7. Support
+
+### `POST /complaints`
+
+```json
+{
+  "kind": "CLAIM",
+  "consumer": { "full_name": "Ana Torres", "document_type": "DNI", "document_number": "45678912",
+                "address": "Av. Arequipa 123, Lima", "phone": "987654321", "email": "ana@mail.com",
+                "is_minor": false, "guardian_name": null },
+  "good_type": "PRODUCT",
+  "good_description": "Paquete Viajero Frecuente",
+  "amount_claimed": "16.90",
+  "detail": "Pagué el paquete y los créditos no aparecen en mi billetera.",
+  "request": "Que se acrediten los 100 créditos o se devuelva el pago."
+}
+```
+
+`201` → `{ "number": "LR-2026-000014", "created_at": "...", "response_due_at": "2026-11-05" }` y la constancia llega al correo del consumidor. Errores: `422 VALIDATION_ERROR` y `429 RATE_LIMITED`.
+
+## 8. Sistema
+
+### `GET /health`
+
+`200` → `{ "status": "UP", "postgres": "UP", "redis": "UP", "graph": { "status": "UP", "nodes": 3354, "edges": 37326 } }`. Responde `503` si algún componente está caído.
