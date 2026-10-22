@@ -2,8 +2,6 @@
 
 Cada búsqueda se resuelve en dos etapas. La primera usa solo el grafo en memoria y no tiene costo. La segunda consulta las ofertas reales y las ordena.
 
-### Etapa 1: exploración del grafo
-
 **BFS.** El sistema recorre el grafo por niveles desde el aeropuerto de origen: primero los destinos directos, luego los alcanzables con una escala y finalmente con dos. Si el destino no aparece en esos tres niveles, la búsqueda termina sin consultar tarifas. Si aparece, el nivel en que se encontró indica el mínimo de escalas posible. El usuario elige ciudades y no aeropuertos. Cuando una ciudad tiene varios aeropuertos, BFS y A\* evalúan todas las combinaciones de origen y destino, y solo se cotizan las dos más prometedoras: las de menos escalas y, entre ellas, las de aeropuertos con más rutas directas y menor tiempo estimado.
 
 **A\*.** Con la ruta confirmada, A\* calcula la ruta más rápida. El tiempo de cada tramo es el definido en la sección 1.2, y cada escala agrega 60 minutos de conexión. Así, el tiempo estimado de una ruta $P = (v_0, v_1, \ldots, v_k)$ de $k$ tramos es:
@@ -15,8 +13,6 @@ La penalización por escala evita que la ruta óptima se fragmente en muchos tra
 $$h(u) = \frac{d_H(u, \text{destino})}{v_{\text{crucero}}}$$
 
 Esta estimación nunca supera el tiempo real, porque ningún vuelo recorre menos que el arco de círculo máximo ni viaja más rápido que la velocidad de crucero. Por ello A\* encuentra siempre la ruta óptima. La búsqueda se limita a tres tramos para respetar el máximo de dos escalas. El resultado entrega dos datos: la duración mínima físicamente posible, denotada $T_{\min}$, y la secuencia de aeropuertos que el mapa dibuja mientras se obtienen las tarifas.
-
-### Etapa 2: selección multicriterio
 
 El sistema consulta al proveedor de tarifas, que devuelve las ofertas vigentes con su precio total, duración real y número de escalas. Sobre ellas se aplican cuatro pasos.
 
