@@ -13,11 +13,12 @@ El repositorio gestiona dos ámbitos documentales claramente diferenciados:
 ### 1.1. Ámbito Académico Oficial: Reporte del Curso Complejidad Algorítmica (`report/`)
 * **Asignatura:** 1ACC0184 - Complejidad Algorítmica (UPC).
 * **Propósito:** Elaboración formal de la memoria de ingeniería y reporte de entregables para los hitos del curso (TB1 e informe final TB2).
-* **Enfoque:** Aplicación rigurosa de teoría de grafos y algoritmos de optimización (BFS, DFS, Dijkstra, A*, Bellman-Ford, Floyd-Warshall, UFDS, MST, Programación Dinámica) sobre una red aeroportuaria modelada con datos de OpenFlights.
+* **Enfoque:** Aplicación de teoría de grafos sobre la red aeroportuaria de OpenFlights mediante tres técnicas: BFS, A* y optimización multicriterio sobre la frontera de Pareto (ver sección 2.2).
 * **Estándar:** Formato académico estricto bajo la **7.ª edición de las Normas APA (APA 7)** mediante el paradigma **Docs as Code**.
 * **Límite de alcance:** Este documento oficial **no debe sobrecargarse** con el diseño táctico DDD detallado del backend, ya que la cátedra de Complejidad Algorítmica evalúa exclusivamente el problema, dataset de grafos, propuesta algorítmica, validación de resultados y diseño general del aplicativo.
 
 ### 1.2. Ámbito de Ingeniería de Software: Documentación Extendida del Sistema (`docs/`)
+* **Fuente de verdad del producto:** `docs/navby-documentation.md` define las reglas de negocio (`RN-01` a `RN-17` y `RL-01` a `RL-05`), los algoritmos, los créditos y el alcance. Cualquier otro documento (incluido el informe) debe coincidir con él. El índice de lectura está en `docs/README.md`.
 * **Propósito:** Guía maestra de arquitectura e ingeniería para el ecosistema desacoplado de Navby:
   * **Backend Platform (`docs/backend-documentation/`):** Monolito modular en Python 3.12+, FastAPI, uv, PostgreSQL 16, Redis 7 y Caddy 2, gobernado por Clean Architecture, Tactical-Level DDD-lite, CQRS-lite y Transactional Outbox. Incluye la arquitectura de plataforma, especificación táctica canónica, catálogo de endpoints RESTful (`navby-endpoints.md`), esquema relacional DDL, integración con FlightAPI y los diccionarios tácticos de los Bounded Contexts en `docs/backend-documentation/extended-bounded-contexts-description/`.
   * **Datasets Canónicos (`docs/backend-documentation/navby-datasets/`):** Pipeline depurado de OpenFlights consolidando 3,354 nodos aeroportuarios comerciales y 37,326 aristas dirigidas únicas (colapso de arcos paralelos desde un multigrafo original de 67,305 rutas comerciales concurrentes multioperador).
@@ -47,26 +48,17 @@ La memoria de ingeniería en `report/` responde a las competencias del curso (Ra
      * Referencias bibliográficas en formato APA 7.
    * Ensamblado con la aplicación funcional en Python (algoritmia de backend) y GUI interactiva.
 
-### 2.2. Técnicas Algorítmicas Aceptadas por la Cátedra y Mapeo en Navby
-Las técnicas de la rúbrica se estructuran operativamente en tres ámbitos de ejecución:
-1. **Motor de Rutas en Tiempo Real (Runtime / Python):**
-   * **BFS:** Rutas con el mínimo número de escalas posibles ($O(V + E)$).
-   * **Dijkstra:** Caminos de menor tiempo estimado acumulado sobre aristas ponderadas Haversine ($O((V + E) \log V)$).
-   * **A\*:** Búsqueda voraz guiada por la heurística admisible de distancia ortodrómica directa al destino ($O(E \log V)$).
-   * **Backtracking con Poda:** Enumeración acotada de rutas alternativas viables con poda por escalas ($\le 2$), duración y desvío geométrico ($O(b^d)$ acotado).
-   * **Programación Dinámica (DP en grafos):** Optimización multi-criterio balanceando tiempo de vuelo y escalas mediante recurrencia sobre estados $(u, \text{escalas\_restantes})$ ($O(K \cdot (V + E))$).
-   * **Divide y Vencerás:** Descomposición intercontinental por macro-regiones IATA y hubs de transferencia (*gateways*).
-   * **DFS:** Detección de ciclos y validación de aciclicidad en itinerarios multiconexión ($u \neq v$).
-2. **Preprocesamiento, Conectividad y Estructura (Data Pipeline / Offline):**
-   * **UFDS (Union-Find Disjoint Sets):** Poda de terminales aisladas ($k = 0$), validación de conectividad previa en $O(\alpha(V))$ y estructura base para Kruskal.
-   * **SCC (Tarjan / Kosaraju):** Detección de la componente fuertemente conexa dominante y análisis de centralidad de hubs globales.
-   * **MST (Kruskal o Prim):** Construcción del esqueleto de conectividad de distancia mínima y análisis de resiliencia/redundancia de la red.
-   * **Ordenamiento Topológico:** Secuenciación temporal estricta de las etapas de vuelo en el DAG de itinerarios ($t_{\text{salida}}^{i+1} > t_{\text{llegada}}^i + t_{\text{conexión}}$).
-3. **Validación y Benchmarking Asintótico (Reporte Académico):**
-   * **Fuerza Bruta:** Cota inferior de optimalidad y demostración experimental de la explosión combinatoria en subgrafos pequeños ($N \le 10$).
-   * **Bellman-Ford:** Demostración empírica de ineficiencia ($O(V \cdot E)$) frente a Dijkstra en grafos con pesos no negativos ($w_t \ge 0$).
-   * **Floyd-Warshall:** Programación dinámica todos-a-todos ($O(V^3)$) en subgrafos densos de principales hubs.
-   * **Flujo Máximo (Edmonds-Karp / Dinic):** Modelado experimental de capacidad teórica y saturación de corredores aéreos troncales.
+### 2.2. Técnicas Algorítmicas de Navby (Decisión Cerrada)
+Navby usa **exactamente tres técnicas**. No se agregan otras al producto, a `docs/` ni al informe sin decisión explícita del equipo. La especificación completa (fórmulas, perfiles y reglas) está en `docs/navby-documentation.md`, secciones 5 y 9.
+
+| Técnica | Pregunta que responde | Complejidad |
+| :--- | :--- | :---: |
+| **BFS** | ¿Existe ruta con ≤ 2 escalas (profundidad 3)? ¿Cuál es el mínimo de escalas? Si no existe, la búsqueda se detiene sin costo. | $O(V + E)$ |
+| **A\*** | ¿Cuál es la ruta físicamente más rápida (≤ 2 escalas)? Da $T_{\min}$ y la ruta preliminar del mapa. Peso: $d_H/800 + 30$ min por tramo, +60 min por escala. Heurística admisible: $h(u) = d_H(u, \text{destino})/800$. | $O(K \cdot E \log(K \cdot V))$, $K = 3$ |
+| **Optimización multicriterio** | ¿Cuáles son las 3 mejores ofertas reales? Filtro de Pareto → normalización min–max con la mejor oferta real (no con $T_{\min}$) → puntaje $S = \sqrt{\alpha p'^2 + \beta t'^2 + \gamma e'^2}$ → podio Top 3. Pesos predeterminados 0.5 / 0.3 / 0.2, ajustables por el usuario. | $O(N^2)$ |
+
+* **Podio sin sesgos:** las 3 recomendaciones salen del mismo puntaje combinado. Nunca se documentan categorías como «el más barato», «el más rápido» o «el de menos escalas».
+* **Validación y benchmarking:** se mide experimentalmente el desempeño de estas mismas tres técnicas (tiempo de ejecución, nodos expandidos por A\* y crecimiento del motor multicriterio respecto a N) con un script offline. **No** se usan Dijkstra, Backtracking, DFS, UFDS, SCC, MST, Bellman-Ford, Floyd-Warshall, flujo máximo, programación dinámica ni fuerza bruta.
 
 ---
 
@@ -95,7 +87,7 @@ Cada Bounded Context se documenta y estructura en cuatro capas desacopladas:
    * **Assemblers:** Mapeo desacoplado entre esquemas Pydantic v2 (OpenAPI 3.1) y Commands/DTOs del dominio.
 4. **Infrastructure Layer (Capa de Infraestructura):**
    * Adaptadores secundarios: Implementación de repositorios desacoplados del modelo de dominio (modelos ORM SQLAlchemy en infraestructura).
-   * **Transactional Outbox Pattern:** Persistencia atómica de eventos en tabla `outbox_events` para publicación asíncrona hacia Message Brokers.
+   * **Transactional Outbox Pattern:** Persistencia atómica de eventos de integración en la tabla `shared.outbox_events`, despachados por un relay asíncrono hacia un bus de eventos en memoria (sin brokers externos).
    * **Anti-Corruption Layer (ACL):** Adaptadores de traducción para Flight API, pasarelas de pago y proveedores externos, aislando el dominio de modelos de datos foráneos.
    * **Open Host Service (OHS):** Fachadas públicas (`interfaces/acl/facade/`) para la comunicación síncrona segura entre Bounded Contexts dentro del monolito.
    * **Aislamiento Físico de Datos:** Prohibidas las Foreign Keys físicas entre tablas de distintos Bounded Contexts (enlace exclusivo por IDs lógicos).
@@ -163,6 +155,7 @@ Para garantizar el ordenamiento determinista en la concatenación de Pandoc (`$(
 ```text
 navby-report/
 ├── docs/                                      # Documentación de ingeniería extendida (Backend, Datasets, Guías)
+│   ├── README.md                              # Índice y orden de lectura de la documentación
 │   ├── backend-documentation/                 # Plataforma Backend, DDD táctico, esquemas BD, FlightAPI
 │   │   ├── extended-bounded-contexts-description/ # Especificaciones tácticas de IAM, Routing, Quotes, etc.
 │   │   ├── navby-datasets/                    # Datasets canónicos depurados (airports, routes_unique, etc.)
@@ -190,7 +183,7 @@ navby-report/
 │   │   └── 30-algorithmic-proposal/       #   Capítulo 3 (archivos 31 al 39)
 │   ├── back-matter/                       # Rango 90 - 99: Conclusiones, recomendaciones y referencias
 │   ├── annexes/                           # Anexos y material suplementario
-│   ├── assets/                            # PNGs compilados y diagram-sources/ (C4 DSL, PlantUML)
+│   ├── assets/                            # Figuras del informe (graphs/) y logos (logos/)
 │   └── bibliography/                      # Fuentes bibliográficas (.bib)
 ├── pandoc/                                # Plantilla LaTeX (eisvogel), filtros Lua y configuración de idioma
 └── Makefile                               # Automatización de tareas y compilación contenerizada
@@ -205,6 +198,7 @@ Al redactar o editar documentos en `report/`, es mandatorio acatar las siguiente
 ### 6.1. Voz y Tono Académico
 * **Perspectiva:** Redactar en tercera persona del plural («el equipo analizó», «se diseñó») o impersonal («se propone»).
 * **Prosa continua:** Privilegiar párrafos estructurados y explicativos sobre listas excesivas de viñetas.
+* **Claridad ante todo:** Escribir para que una persona entienda a la primera. Frases cortas, una idea por oración y vocabulario simple. Evitar adjetivos grandilocuentes («rigurosa», «canónica», «determinista», «de alta fidelidad») y explicar el problema y la solución de forma directa antes de entrar en detalles técnicos.
 * **Prohibición de menciones meta-académicas a la rúbrica:** Queda prohibido escribir expresiones como «según la rúbrica», «en cumplimiento con la rúbrica» o «conforme al criterio de evaluación». Toda decisión técnica debe justificarse por su impacto ingenieril, complejidad algorítmica o requerimiento de la solución.
 * **Erradicación de redundancias bilingües:** Prohibidas las aclaraciones entre paréntesis de términos técnicos (ej. «árbol de expansión mínima (*Minimum Spanning Tree*)»). Se utiliza únicamente el término en inglés establecido por la industria o su traducción técnica formal en español, pero nunca ambos a la vez en la misma frase.
 * **Supresión de incisos y ejemplos superfluos:** Evitar `(por ejemplo, ...)`, `(ej. ...)`, `(p. ej., ...)` o `(e.g., ...)`. Los paréntesis se reservan exclusivamente para citas bibliográficas APA 7 `(autor, año)`, signaturas de métodos o restricciones numéricas formales.

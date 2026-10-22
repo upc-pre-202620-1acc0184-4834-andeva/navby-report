@@ -1,13 +1,15 @@
 ## 2.3. Visualización del Grafo Aéreo
 
-La representación visual de la topología aerocomercial permite contrastar la distribución espacial de las conexiones y validar empíricamente los fenómenos de escala postulados en el modelado formal. En la @fig:red-global-vuelos se presenta la proyección geodésica del grafo global consolidado, trazando los 3,354 vértices activos y sus 37,326 aristas dirigidas.
+En la @fig:red-global-vuelos se muestra el grafo completo: 3,354 aeropuertos y 37,326 rutas directas. Cada ruta se dibuja como un arco de círculo máximo, que es la trayectoria más corta sobre la superficie terrestre y por eso aparece curvada en un mapa plano. La alta densidad de arcos en Europa, Norteamérica y el este de Asia refleja la concentración de rutas en grandes aeropuertos centrales.
 
-![Topología de la Red Aerocomercial Global sobre el Catálogo de OpenFlights](report/assets/graphs/global-flight-network.png){#fig:red-global-vuelos width=72%}
+![Red aerocomercial global de OpenFlights](report/assets/graphs/global-flight-network.png){#fig:red-global-vuelos width=82%}
 
-*Nota.* Proyección geodésica del grafo completo depurado
+_Nota._ Cada punto es un aeropuerto comercial y cada arco, una ruta directa.
 
-La panorámica global evidencia una marcada heterogeneidad espacial congruente con la distribución libre de escala de la red. Se aprecian conglomerados densamente mallados en Norteamérica, Europa Occidental y Asia Oriental, interconectados a través de corredores transoceánicos troncales sobre las cuencas del Atlántico Norte y el Pacífico. En contraposición, las regiones de Sudamérica, África y Oceanía presentan una topología marcadamente radial y arborescente, donde los vuelos comerciales convergen en centros nodales primarios antes de proyectarse a destinos intercontinentales.
+Debido a que el grafo global es difícil de leer a esa escala, en la @fig:subgrafo-sudamerica se amplía el subgrafo de Sudamérica. En él se distingue con claridad qué representa cada elemento del modelo. Un **nodo** es un aeropuerto, identificado por su código IATA y sus coordenadas. Una **arista** es una ruta directa entre dos aeropuertos, con un peso igual al tiempo estimado de vuelo. Se observa también que São Paulo (GRU, 109 rutas dentro de la región), Bogotá (BOG, 96) y Lima (LIM, 74) concentran más conexiones que el resto y funcionan como puntos de transferencia.
 
-Esta concentración espacial de la conectividad tiene implicancias directas en el diseño de los algoritmos de optimización. La presencia de nodos hiperconectados, tales como Frankfurt (FRA), Londres Heathrow (LHR), Atlanta (ATL) o Tokio Haneda (HND), así como centros articuladores regionales como São Paulo (GRU), Bogotá (BOG) y Lima (LIM), confirma la preponderancia de estructuras centro-periferia. Dicha configuración justifica la descomposición jerárquica del espacio de búsqueda y el uso de cotas heurísticas admisibles para podar ramas combinatorias innecesarias en trayectos de larga distancia.
+![Subgrafo aerocomercial de Sudamérica](report/assets/graphs/south-america-flight-subgraph.png){#fig:subgrafo-sudamerica width=58%}
+
+_Nota._ Cada punto es un aeropuerto sudamericano (nodo) y cada arco, una ruta directa entre ellos (arista).
 
 \newpage

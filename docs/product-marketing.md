@@ -38,10 +38,10 @@ Aplicación web B2C (Freemium / Pay-per-use por créditos de búsqueda).
 Modelo transparente y sostenible de créditos por uso (*Pay-per-use*):
 * **10 créditos diarios gratuitos:** Asignados a cada usuario registrado y renovados automáticamente cada 24 horas. Cada búsqueda completa (Solo Ida o Ida y Vuelta) consume 5 créditos, permitiendo realizar **2 búsquedas completas al día** sin costo alguno.
 * **Paquetes de créditos prepagados acumulables (sin caducidad):** Adquiridos puntualmente a través de pasarela segura (Mercado Pago Checkout Pro), sin suscripciones forzosas ni cobros automáticos recurrentes:
-  * **Paquete Básico / Escapada:** 50 créditos Navby (10 búsquedas completas) por **$2.49 USD** (o **S/ 9.90 PEN**).
-  * **Paquete Viajero Frecuente:** 100 créditos Navby (20 búsquedas completas) por **$4.49 USD** (o **S/ 16.90 PEN**).
-  * **Paquete Nómada / Pro:** 250 créditos Navby (50 búsquedas completas) por **$8.99 USD** (o **S/ 34.90 PEN**).
-* **Cero comisiones sobre pasajes:** Navby no infla los precios ni cobra comisiones de emisión; redirige directamente al operador o aerolínea oficial mediante enlaces directos.
+  * **Paquete Escapada:** 50 créditos Navby (10 búsquedas completas) por **S/ 9.90** (≈ $2.49 USD como referencia).
+  * **Paquete Viajero Frecuente:** 100 créditos Navby (20 búsquedas completas) por **S/ 16.90** (≈ $4.49 USD como referencia).
+  * **Paquete Nómada:** 250 créditos Navby (50 búsquedas completas) por **S/ 34.90** (≈ $8.99 USD como referencia).
+* **Cero comisiones sobre pasajes:** Navby no infla los precios ni cobra comisiones de emisión; redirige directamente a la aerolínea o agencia vendedora mediante enlaces directos.
 
 ---
 
@@ -222,7 +222,7 @@ Por la claridad, la honestidad y la sencillez: *«Navby me dice cuál es el vuel
 * **Conexiones inteligentes y seguras**
 * **Red global de más de 3,000 aeropuertos**
 * **Búsquedas gratuitas diarias**
-* **Reserva directa con la aerolínea**
+* **Compra directa con la aerolínea o agencia vendedora**
 
 ### Words & Phrases to Avoid (Strictly forbidden in marketing & UI copy):
 * ~~Nodos~~ / ~~Vértices~~ / ~~Aristas~~ *(Jerga interna de grafos)*
@@ -236,6 +236,9 @@ Por la claridad, la honestidad y la sencillez: *«Navby me dice cuál es el vuel
 | Término | Significado para el Usuario |
 | :--- | :--- |
 | **Vuelo Recomendado** | Opción de vuelo seleccionada por Navby por ofrecer la mejor combinación simultánea de precio, duración y escalas. |
+| **Podio** | Las 3 mejores recomendaciones de una búsqueda, ordenadas por su balance global de precio, duración y escalas. |
+| **Afinidad** | Porcentaje que indica qué tan cerca está un vuelo del balance ideal según las preferencias del usuario. |
+| **Preferencias** | Perfiles Equilibrado, Ahorro, Rapidez o Personalizado que ajustan cuánto pesa cada criterio en el podio. |
 | **Escala / Conexión** | Parada intermedia entre aeropuertos para cambiar de avión, optimizada para ser segura y sin tiempos muertos excesivos. |
 | **Tarifa Real** | Precio vivo y exacto obtenido del mercado en el momento de la consulta, sin recargos adicionales. |
 | **Enlace Directo** | Acceso inmediato a la web oficial de la aerolínea o proveedor autorizado para concretar la compra. |
@@ -275,7 +278,7 @@ Por la claridad, la honestidad y la sencillez: *«Navby me dice cuál es el vuel
 | Eje de Valor | Promesa al Cliente | Evidencia Concreta |
 | :--- | :--- | :--- |
 | **Optimización Integral** | No tienes que elegir entre pagar una fortuna o viajar 30 horas. | Evaluación conjunta de precio, duración y escalas en cada recomendación. |
-| **Transparencia Total** | El precio que ves es el que pagarás. | Cotización en vivo con enlace directo al operador oficial, sin intermediarios inflados. |
+| **Transparencia Total** | Precios reales del mercado, sin comisiones de Navby. | Cotización en vivo con enlace directo al vendedor (aerolínea o agencia). El precio se confirma en su sitio. |
 | **Ahorro de Tiempo** | Tomas una decisión inteligente en minutos. | Presentación sintetizada de los mejores vuelos sin listas caóticas de 150 opciones. |
 
 ---

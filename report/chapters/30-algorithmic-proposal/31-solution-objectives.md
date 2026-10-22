@@ -2,17 +2,13 @@
 
 ## 3.1. Objetivos y Alcance de la Propuesta
 
-El propósito de la propuesta algorítmica radica en resolver de manera determinista, eficiente y escalable la disyuntiva multiobjetivo inherente a la planificación de itinerarios aéreos comerciales [@koelker2024analyzing], articulando la optimización topológica sobre el grafo aéreo global con la viabilidad y disponibilidad real de boletos de mercado.
+El objetivo general es recomendar los tres vuelos con mejor equilibrio entre precio, duración y número de escalas para un viaje entre dos ciudades, descartando antes las rutas inviables para no consultar tarifas innecesarias [@koelker2024analyzing].
 
-Como objetivo general, se plantea diseñar e implementar un sistema de optimización de rutas sobre la red aerocomercial consolidada de OpenFlights ($|V| = 3,354$, $|E| = 37,326$), capaz de aislar los caminos de mínima duración temporal y menor cantidad de escalas intermedias en tiempos de respuesta subsegundo, prefiltrando el universo de combinaciones viables antes de efectuar cotizaciones tarifarias externas.
+Los objetivos específicos son:
 
-Para la consecución de este fin, se definen los siguientes objetivos específicos:
+- Verificar si existe una ruta con dos escalas como máximo y calcular el mínimo de escalas posible mediante búsqueda en anchura (BFS).
+- Calcular la ruta físicamente más rápida mediante el algoritmo A\* sobre el grafo ponderado por tiempo estimado de vuelo.
+- Seleccionar las tres mejores ofertas reales mediante optimización multicriterio sobre la frontera de Pareto.
+- Medir experimentalmente el tiempo de ejecución y la cantidad de nodos explorados por los tres algoritmos.
 
-1. **Aislamiento de trayectos por escalas mínimas:** Implementar algoritmos de recorrido por niveles sobre el grafo no ponderado para computar los itinerarios con la menor cantidad de transbordos posibles, minimizando el riesgo operativo de transbordo reportado por la industria [@sita2025baggage].
-2. **Determinación de caminos de tiempo mínimo:** Aplicar algoritmos voraces de camino más corto sobre la red ponderada con distancias de Haversine y tiempos operacionales, identificando la ruta geodésicamente óptima.
-3. **Aceleración espacial mediante heurística admisible:** Orientar la exploración hacia la terminal de destino utilizando la distancia ortodrómica remanente como función heurística admisible y consistente, reduciendo la expansión de vértices en centros nodales de alta densidad.
-4. **Exploración acotada de alternativas viables:** Estructurar un esquema de búsqueda exhaustiva controlada con podas heurísticas por profundidad, cota de duración y desvío angular, extrayendo una terna representativa de itinerarios disjuntos con a lo sumo dos escalas intermedias.
-5. **Aproximación de la frontera de Pareto multiobjetivo:** Formular un modelo de programación dinámica que resuelva la recurrencia sobre estados acotados de escalas remanentes, identificando las soluciones no dominadas en tiempo y transbordos [@shovan2025parallel].
-6. **Garantía de integridad y aciclicidad:** Asegurar la conectividad previa entre pares de terminales en tiempo casi constante y certificar la estricta aciclicidad y secuenciación cronológica de las escalas que conforman el itinerario.
-
-El alcance de la solución se enfoca en la perspectiva del pasajero para viajes comerciales de solo ida y de ida y vuelta entre aeropuertos reconocidos por la Asociación Internacional de Transporte Aéreo. Se excluyen del perímetro analítico trayectos con múltiples destinos fijos impuestos manualmente, la reserva transaccional de asientos físicos y la telemetría satelital en tiempo real, concentrando la capacidad de cómputo en la resolución algorítmica del grafo y la selección multicriterio de las tres alternativas óptimas de viaje.
+La solución cubre viajes de solo ida y de ida y vuelta, buscados por ciudad o por aeropuerto, con un máximo de dos escalas por trayecto. Quedan fuera del alcance los viajes con varios destinos, la venta de pasajes y el seguimiento de aeronaves en tiempo real.
