@@ -1,0 +1,55 @@
+@startuml
+skinparam dpi 300
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam defaultFontName "Liberation Sans"
+skinparam defaultFontSize 11
+skinparam ActivityBackgroundColor #F3F4F6
+skinparam ActivityBorderColor #4B5563
+skinparam DiamondBackgroundColor #E5E7EB
+skinparam DiamondBorderColor #4B5563
+skinparam ArrowColor #1F2937
+
+start
+:Usuario ingresa ciudades de origen y destino;
+:PairSelector genera combinaciones de pares aeroportuarios;
+
+partition "Fase 1: Verificación y Poda (Routing en RAM)" {
+    :BreadthFirstSearch explora grafo por niveles;
+    if (¿Alcanzable en profundidad <= 3?) then (no)
+        :Descartar par aeroportuario;
+        if (¿Existen otros pares viables?) then (no)
+            :Notificar inviabilidad de ruta con costo cero;
+            stop
+        else (sí)
+        endif
+    else (sí)
+        :Registrar escalas mínimas requeridas;
+        :AStarSearch calcula camino más rápido;
+        :Obtener T_min y secuencia física de aeropuertos;
+        :Proyectar ruta preliminar en el mapa 2D;
+    endif
+}
+
+partition "Fase 2: Cotización de Mercado" {
+    :PairSelector selecciona los 2 mejores pares comerciales;
+    :Consultar caché de cotizaciones en Redis 7;
+    if (¿Tarifas vigentes en caché?) then (sí)
+        :Recuperar ofertas cacheadas;
+    else (no)
+        :Consultar tarifas comerciales en FlightAPI;
+        :Almacenar ofertas en Redis 7 (TTL 30 min);
+    endif
+}
+
+partition "Fase 3: Optimización Multicriterio (Quotes en RAM)" {
+    :ParetoFilter compara ofertas por pares;
+    :Eliminar soluciones dominadas en precio, tiempo y escalas;
+    :MulticriteriaRanker normaliza criterios min-max;
+    :Calcular puntaje cuadrático S y porcentaje de afinidad;
+    :Seleccionar Top 3 con secuencias de escalas distintas;
+}
+
+:Desplegar podio definitivo y renderizar rutas en mapa;
+stop
+@enduml

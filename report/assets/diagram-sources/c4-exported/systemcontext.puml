@@ -1,0 +1,76 @@
+@startuml
+title <size:24>System Context View: Plataforma Navby</size>\n<size:24>Diagrama de Contexto del Sistema Navby</size>
+
+set separator none
+left to right direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Person
+  .Element-RWxlbWVudCxQZXJzb24= {
+    BackgroundColor: #08427b;
+    LineColor: #052e56;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0= {
+    BackgroundColor: #1168bd;
+    LineColor: #0b4884;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System,External
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw= {
+    BackgroundColor: #707070;
+    LineColor: #4e4e4e;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+</style>
+
+person "==Viajero\n<size:16>[Person]</size>\n\nUsuario que planifica y compara vuelos optimizados en precio, duracion y escalas." <<Element-RWxlbWVudCxQZXJzb24=>> as Viajero
+rectangle "==FlightAPI\n<size:16>[Software System]</size>\n\nProveedor externo de cotizaciones y tarifas de vuelos comerciales en tiempo real." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as FlightAPI
+rectangle "==Mercado Pago\n<size:16>[Software System]</size>\n\nPasarela de pagos para adquisicion de paquetes de creditos Navby." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as MercadoPago
+rectangle "==Google Identity\n<size:16>[Software System]</size>\n\nServicio OAuth 2.0 para autenticacion federada de cuentas de usuario." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as GoogleIdentity
+rectangle "==Resend\n<size:16>[Software System]</size>\n\nServicio de mensajeria transaccional para verificacion de correo y recuperacion." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as Resend
+rectangle "==Plataforma Navby\n<size:16>[Software System]</size>\n\nSistema de enrutamiento inteligente de vuelos y optimizacion multicriterio." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as PlataformaNavby
+
+PlataformaNavby --> FlightAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta ofertas comerciales no cacheadas (max 2 pares)\n<size:16>[HTTPS/JSON]</size>"
+FlightAPI --> PlataformaNavby <<Relationship-UmVsYXRpb25zaGlw>> : "Retorna ofertas comerciales vigentes\n<size:16>[HTTPS/JSON]</size>"
+PlataformaNavby --> MercadoPago <<Relationship-UmVsYXRpb25zaGlw>> : "Procesa recargas de paquetes de creditos\n<size:16>[HTTPS/REST]</size>"
+PlataformaNavby --> GoogleIdentity <<Relationship-UmVsYXRpb25zaGlw>> : "Valida tokens de identidad federada\n<size:16>[HTTPS]</size>"
+PlataformaNavby --> Resend <<Relationship-UmVsYXRpb25zaGlw>> : "Despacha correos con enlaces y codigos OTP\n<size:16>[HTTPS/REST]</size>"
+Viajero --> PlataformaNavby <<Relationship-UmVsYXRpb25zaGlw>> : "Interactua con el buscador, mapa cartografico y podio\n<size:16>[HTTPS]</size>"
+
+@enduml

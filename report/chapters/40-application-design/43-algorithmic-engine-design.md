@@ -1,36 +1,33 @@
 ## 4.3. Diseño Detallado del Motor Algorítmico
 
-El motor algorítmico de Navby coordina tres técnicas especializadas en una secuencia estricta de filtros. Esta canalización asegura que las consultas externas a proveedores de tarifas se ejecuten únicamente cuando se ha demostrado analíticamente la existencia de rutas comerciales viables.
+El motor algorítmico de Navby coordina tres técnicas especializadas en una canalización de filtros sucesivos. Este diseño desacoplado asegura que las consultas externas a proveedores de tarifas se ejecuten únicamente cuando se ha demostrado analíticamente la existencia de rutas comerciales viables. Como se ilustra en el diagrama de actividades de la @fig:diagrama-pipeline-algoritmico, el flujo de ejecución prioriza la poda temprana de trayectos inviables con costo computacional y económico cero.
 
-### 4.3.1. Búsqueda en Anchura para Verificación de Conectividad (BFS)
+![Diagrama de Actividades del Pipeline Algorítmico](report/assets/class-diagrams/pipeline-activity-diagram.png){#fig:diagrama-pipeline-algoritmico width=75%}
 
-El servicio **BreadthFirstSearch** comprueba si existe al menos una ruta aérea entre el origen y el destino con un máximo de dos escalas (tres tramos de vuelo). La búsqueda inicializa una cola FIFO con el nodo de origen en nivel 0 y un conjunto de vértices visitados para evitar ciclos.
+*Nota.* Diagrama de actividades que modela las etapas de poda previa, búsqueda espacial guiada y optimización multiobjetivo.
 
-El algoritmo expande los nodos nivel por nivel. Si el aeropuerto de destino se extrae de la cola en una profundidad menor o igual a 3, la búsqueda concluye inmediatamente retornando el indicador de alcanzabilidad y el número mínimo de escalas requeridas. Si la cola se vacía o todos los caminos activos alcanzan la profundidad 3 sin localizar el destino, el par se marca como inviable y el proceso se detiene con costo cero.
+En la @tbl:especificacion-algoritmos se resumen las tres técnicas integradas, detallando su rol operativo en el pipeline, condiciones de evaluación y cotas de complejidad asintótica en tiempo y memoria.
 
-### 4.3.2. Búsqueda Heurística Espacial (A\*)
+| Fase | Algoritmo | Propósito Operativo | Heurística o Criterio de Parada | Complejidad Temporal | Complejidad Espacial |
+| :---: | :---: | :--- | :--- | :---: | :---: |
+| Poda Previa | BFS | Comprobar conectividad y calcular escalas mínimas. | Extracción de destino o profundidad mayor a 3 tramos. | $O(V + E)$ | $O(V)$ |
+| Ruta Rápida | A\* | Calcular el mínimo físico $T_{\min}$ y la ruta cartográfica preliminar. | Extracción de destino en min-heap con máximo 3 tramos. | $O(K \cdot E \log(K \cdot V))$ | $O(K \cdot V)$ |
+| Podio Top 3 | Multicriterio | Filtrar ofertas no dominadas y calcular ranking de afinidad. | Evaluación por pares en Pareto y ordenamiento de podio. | $O(N^2)$ | $O(N)$ |
 
-Una vez confirmada la conectividad del par, el servicio **AStarSearch** calcula la ruta físicamente más rápida y su duración mínima estimada ($T_{\min}$). El espacio de estados se modela mediante el par $(u, k)$, donde $u$ es el aeropuerto actual y $k$ es la cantidad de tramos acumulados ($1 \le k \le 3$).
+: Especificación y Complejidad Asintótica del Motor Algorítmico {#tbl:especificacion-algoritmos}
 
-La exploración utiliza una cola de prioridad min-heap gobernada por la función de evaluación $f(u) = g(u) + h(u)$. La función de costo acumulado $g(u)$ suma la duración de vuelo de cada tramo según $w_t(u, v)$ e incorpora una penalización fija de 60 minutos por cada escala intermedia:
+*Nota.* Análisis formal de complejidad asintótica de las técnicas del motor de enrutamiento y optimización.
+
+**Búsqueda en anchura para verificación de conectividad (BFS).** El servicio recorre el grafo aeroportuario por niveles mediante una cola FIFO desde el aeropuerto de origen. La exploración se limita a una profundidad máxima de 3 tramos (equivalente a dos escalas). Si el destino no es alcanzado dentro de esta cota, el par aeroportuario se descarta inmediatamente, finalizando la búsqueda sin invocar servicios externos ni consumir créditos. Si el destino es localizado, el nivel de extracción determina el número mínimo de escalas comerciales necesarias.
+
+**Búsqueda heurística espacial (A\*).** Con la conectividad confirmada, el algoritmo calcula el camino físicamente más rápido y su duración mínima estimada ($T_{\min}$). El espacio de estados se representa mediante la tupla $(u, k)$, donde $u$ es el vértice actual y $k$ es el contador de tramos acumulados ($1 \le k \le 3$). La función de evaluación $f(u) = g(u) + h(u)$ acumula en $g(v)$ el tiempo de vuelo estimado por Haversine más una penalización constante de 60 minutos por escala intermedia:
 
 $$g(v) = g(u) + w_t(u, v) + 60 \cdot \mathbb{I}(u \neq \text{origen})$$
 
-La heurística admisible $h(u) = \frac{d_H(u, \text{destino})}{800} \cdot 60$ estima el tiempo restante a partir de la distancia ortodrómica de círculo máximo. Dado que ningún vuelo comercial supera la velocidad de crucero en una trayectoria menor a la geodésica, $h(u)$ nunca sobreestima el costo real, garantizando la optimalidad de la ruta encontrada.
+La heurística admisible y consistente $h(u) = \frac{d_H(u, \text{destino})}{800} \cdot 60$ mide el tiempo restante a partir de la distancia ortodrómica de círculo máximo en minutos. Al no existir trayectoria comercial con menor distancia que la geodésica ni mayor velocidad que la de crucero, $h(u)$ nunca sobreestima el costo real restante, asegurando la optimalidad del resultado.
 
-### 4.3.3. Selección de Pares de Aeropuertos en Ciudades Múltiples
+**Optimización multicriterio sobre la frontera de Pareto.** Una vez obtenidas las tarifas de mercado, el motor aplica una poda de dominancia por pares sobre las $N$ ofertas recibidas. Una solución $a$ domina a $b$ si es menor o igual en precio, duración y escalas, y estrictamente menor en al menos una dimensión. Las ofertas dominadas se eliminan y las restantes se normalizan entre 0 y 1 respecto a los extremos de la frontera. Cada alternativa recibe un puntaje cuadrático $S \in [0, 1]$ respecto al punto ideal:
 
-Cuando una búsqueda involucra áreas metropolitanas con varios aeropuertos, el componente **PairSelector** evalúa todas las combinaciones posibles de pares origen–destino (hasta 25 combinaciones para ciudades de hasta 5 terminales). Cada combinación se somete a BFS para descartar pares inconexos y posteriormente a A\*.
+$$S_i = \sqrt{\alpha\, p_i'^2 + \beta\, t_i'^2 + \gamma\, e_i'^2}, \qquad \alpha + \beta + \gamma = 1$$
 
-Los pares alcanzables se ordenan de acuerdo a cuatro criterios jerárquicos: menor número de escalas mínimas, mayor suma de grado de salida comercial $(k_{\text{salida}}(u) + k_{\text{salida}}(v))$, menor duración física $T_{\min}$ y orden léxico. El sistema selecciona como máximo los dos pares más prometedores para su cotización en el mercado real, evitando llamadas innecesarias a aeropuertos secundarios con escasa oferta.
-
-### 4.3.4. Motor Multicriterio y Selección del Podio
-
-Al recibir las cotizaciones del mercado, el motor de optimización aplica un proceso de decisión multiobjetivo en dos etapas:
-
-1. **Filtrado de Dominancia de Pareto:** El servicio **ParetoFilter** compara todas las ofertas recibidas por pares. Una oferta $a$ domina a $b$ si su precio, duración y escalas son menores o iguales a los de $b$, y estrictamente menores en al menos un criterio. Todas las soluciones dominadas se eliminan, conservando únicamente la frontera de Pareto.
-2. **Puntaje Ponderado y Diversidad del Podio:** El evaluador **MulticriteriaRanker** normaliza los tres criterios entre 0 y 1 respecto a los valores extremos observados en la frontera de Pareto. Cada oferta recibe un puntaje $S \in [0, 1]$ mediante la distancia euclidiana ponderada al punto ideal:
-
-$$S_i = \sqrt{\alpha\, p_i'^2 + \beta\, t_i'^2 + \gamma\, e_i'^2}$$
-
-Las ofertas se ordenan de menor a mayor valor de $S$. El sistema selecciona las tres primeras opciones garantizando que no compartan la misma secuencia de aeropuertos de conexión, conformando el podio final de recomendaciones que se presenta al usuario junto a su porcentaje de afinidad $(1 - S) \times 100\%$.
+El sistema selecciona las tres mejores soluciones con distinta combinación de escalas y conexiones, consolidando el podio de recomendaciones presentado al usuario junto con su porcentaje de afinidad $(1 - S) \times 100\%$.

@@ -7,12 +7,12 @@
 | Épica | Historias |
 | :--- | :--- |
 | EP01 · Cuenta y acceso | US-01 a US-10 |
-| EP02 · Búsqueda y recomendación | US-11 a US-19 y US-35 |
+| EP02 · Búsqueda y recomendación | US-11 a US-19 y US-34 |
 | EP03 · Preferencias | US-20 y US-21 |
 | EP04 · Itinerarios guardados | US-22 a US-24 |
 | EP05 · Créditos y pagos | US-25 a US-30 |
-| EP06 · Protección al consumidor | US-31 y US-32 |
-| EP07 · Sitio público | US-33 y US-34 |
+| EP06 · Protección al consumidor | US-31 |
+| EP07 · Sitio público | US-32 y US-33 |
 
 **Actores:** *visitante* (sin cuenta), *viajero* (con cuenta y correo verificado).
 
@@ -491,7 +491,7 @@ Escenario: Búsqueda de otra persona
   Entonces no puede acceder a ella
 ```
 
-### US-35 · Indicar los datos de mi viaje
+### US-34 · Indicar los datos de mi viaje
 
 **Como** viajero **quiero** indicar el tipo de viaje, las fechas, los pasajeros, la cabina y la moneda **para** recibir recomendaciones que correspondan a mi viaje real.
 
@@ -582,7 +582,7 @@ Escenario: Búsqueda vencida
 
 **Como** viajero **quiero** guardar una recomendación **para** revisarla más tarde aunque los resultados hayan vencido.
 
-Reglas: RN-13, RL-04 · Técnica: TS-29
+Reglas: RN-13, RL-03 · Técnica: TS-29
 
 ```gherkin
 Escenario: Guardar dentro de los 30 minutos
@@ -613,7 +613,7 @@ Escenario: Búsqueda vencida
 
 **Como** viajero **quiero** ver mis itinerarios guardados **para** retomar la decisión de compra.
 
-Reglas: RL-04 · Técnica: TS-30, TS-31
+Reglas: RL-03 · Técnica: TS-30, TS-31
 
 ```gherkin
 Escenario: Lista de itinerarios
@@ -786,37 +786,11 @@ Escenario: Pago aún pendiente
 
 ## EP06 · Protección al consumidor
 
-### US-31 · Presentar un reclamo
-
-**Como** consumidor **quiero** registrar un reclamo o una queja en el Libro de Reclamaciones **para** que Navby atienda mi problema dentro del plazo legal.
-
-Reglas: RL-03 · Técnica: TS-33
-
-```gherkin
-Escenario: Reclamo registrado
-  Dado que el consumidor completa sus datos, el detalle y su pedido
-  Cuando envía el reclamo
-  Entonces recibe un número de hoja como "LR-2026-000014"
-  Y una constancia en su correo con la fecha límite de respuesta
-
-Escenario: Datos incompletos
-  Dado que el consumidor no indica su número de documento
-  Cuando envía el reclamo
-  Entonces el reclamo no se registra
-  Y se le indica qué dato falta
-
-Escenario: Consumidor menor de edad
-  Dado que el consumidor declara ser menor de edad
-  Cuando envía el reclamo sin el nombre de su apoderado
-  Entonces el reclamo no se registra
-  Y se le pide el nombre de su apoderado
-```
-
-### US-32 · Saber que el precio es referencial
+### US-31 · Saber que el precio es referencial
 
 **Como** viajero **quiero** saber que el precio mostrado se confirma en el sitio del vendedor **para** no llevarme sorpresas al comprar.
 
-Reglas: RL-04 · Técnica: TS-14, TS-31
+Reglas: RL-03 · Técnica: TS-14, TS-31
 
 ```gherkin
 Escenario: Aviso en las recomendaciones
@@ -833,11 +807,11 @@ Escenario: Aviso en itinerarios guardados
 
 ## EP07 · Sitio público
 
-### US-33 · Entender qué hace Navby
+### US-32 · Entender qué hace Navby
 
 **Como** visitante **quiero** entender en pocos segundos qué hace Navby **para** decidir si lo pruebo.
 
-Técnica: TS-37
+Técnica: TS-36
 
 ```gherkin
 Escenario: Propuesta de valor
@@ -852,11 +826,11 @@ Escenario: Idioma
   Y puede cambiar a español
 ```
 
-### US-34 · Consultar los términos y la privacidad
+### US-33 · Consultar los términos y la privacidad
 
 **Como** visitante **quiero** leer los Términos y la Política de Privacidad **para** saber qué acepto al registrarme.
 
-Reglas: RL-01, RL-02 · Técnica: TS-37
+Reglas: RL-01, RL-02 · Técnica: TS-36
 
 ```gherkin
 Escenario: Versión vigente

@@ -4,6 +4,8 @@
 
 ## 1. Pantallas
 
+Todas las rutas cuelgan de `https://navby.andeva.tech/app` (Vite con `base: "/app/"` y React Router con `basename="/app"`). La API se llama siempre con rutas relativas `/api/v1/...`: en producción las atiende el proxy de Vercel y en local el proxy de Vite (`server.proxy["/api"] = "http://localhost:8000"`). Ver [entornos y dominios](../backend-documentation/navby-environments-and-deployment.md).
+
 | Ruta | Pantalla | Acceso |
 | :--- | :--- | :---: |
 | `/` | Buscador + mapa + panel lateral con el podio | Público (cotizar exige sesión) |
@@ -14,9 +16,9 @@
 | `/billing/result` | Retorno desde Mercado Pago (consulta el estado de la orden; si sigue `PENDING`, reintenta cada 3 s durante 1 min) | Sesión |
 | `/account` | Perfil y **Eliminar mi cuenta** (escribe «ELIMINAR» para confirmar, RL-02) | Sesión |
 
-El pie de página de todas las pantallas enlaza a los Términos, la Política de Privacidad y el **Libro de Reclamaciones** del website (RL-03). Toda tarifa muestra el aviso `price_disclaimer` (RL-04).
+El pie de página de todas las pantallas enlaza a los Términos y la Política de Privacidad del website. Toda tarifa muestra el aviso `price_disclaimer` (RL-03).
 
-La búsqueda vive en la URL (`/?trip=ROUND_TRIP&from=LIM&to=HND,NRT&dep=2026-11-01&ret=2026-11-15&ad=2&ch=1&in=0&cabin=ECONOMY&cur=USD&profile=BALANCED`) para poder compartirla y recargarla.
+La búsqueda vive en la URL (`/app/?trip=ROUND_TRIP&from=LIM&to=HND,NRT&dep=2026-11-01&ret=2026-11-15&ad=2&ch=1&in=0&cabin=ECONOMY&cur=USD&profile=BALANCED`) para poder compartirla y recargarla.
 
 ## 2. Flujo de búsqueda
 
@@ -94,7 +96,7 @@ src/
 
 - **Pruebas**: Vitest + Testing Library (componentes), Playwright (buscar → ver podio → cambiar perfil → guardar) y `@axe-core/playwright` (accesibilidad).
 - **Calidad**: ESLint 9 (`typescript-eslint`, `jsx-a11y`, `react-hooks`) y Prettier con `prettier-plugin-tailwindcss`.
-- **Despliegue**: Vercel como SPA estática, con `vercel.json` que reescribe todas las rutas a `/index.html`.
+- **Despliegue**: proyecto Vercel `navby-webapp` como SPA estática. Su `vercel.json` reescribe `/app/(.*)` a `/app/index.html`. El website publica la webapp bajo `navby.andeva.tech/app` mediante un rewrite.
 - **Gestor de paquetes**: `pnpm`.
 
 ## 7. Dependencias

@@ -1,0 +1,143 @@
+@startuml
+title <size:24>Container View: Plataforma Navby</size>\n<size:24>Diagrama de Contenedores de la Plataforma Navby</size>
+
+set separator none
+left to right direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Container,API
+  .Element-RWxlbWVudCxDb250YWluZXIsQVBJ {
+    BackgroundColor: #2a6496;
+    LineColor: #1d4669;
+    LineStyle: 0;
+    LineThickness: 2;
+    RoundCorner: 20;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,Database
+  .Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U= {
+    BackgroundColor: #2a6496;
+    LineColor: #1d4669;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,Engine
+  .Element-RWxlbWVudCxDb250YWluZXIsRW5naW5l {
+    BackgroundColor: #604aff;
+    LineColor: #4333b2;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Container,WebBrowser
+  .Element-RWxlbWVudCxDb250YWluZXIsV2ViQnJvd3Nlcg== {
+    BackgroundColor: #438dd5;
+    LineColor: #2e6295;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Person
+  .Element-RWxlbWVudCxQZXJzb24= {
+    BackgroundColor: #08427b;
+    LineColor: #052e56;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System,External
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw= {
+    BackgroundColor: #707070;
+    LineColor: #4e4e4e;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+  // Plataforma Navby
+  .Boundary-UGxhdGFmb3JtYSBOYXZieQ== {
+    BackgroundColor: #ffffff;
+    LineColor: #0b4884;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+  }
+</style>
+
+person "==Viajero\n<size:16>[Person]</size>\n\nUsuario que planifica y compara vuelos optimizados en precio, duracion y escalas." <<Element-RWxlbWVudCxQZXJzb24=>> as Viajero
+rectangle "==FlightAPI\n<size:16>[Software System]</size>\n\nProveedor externo de cotizaciones y tarifas de vuelos comerciales en tiempo real." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as FlightAPI
+rectangle "==Mercado Pago\n<size:16>[Software System]</size>\n\nPasarela de pagos para adquisicion de paquetes de creditos Navby." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as MercadoPago
+rectangle "==Google Identity\n<size:16>[Software System]</size>\n\nServicio OAuth 2.0 para autenticacion federada de cuentas de usuario." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as GoogleIdentity
+rectangle "==Resend\n<size:16>[Software System]</size>\n\nServicio de mensajeria transaccional para verificacion de correo y recuperacion." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0sRXh0ZXJuYWw=>> as Resend
+
+rectangle "Plataforma Navby\n<size:16>[Software System]</size>" <<Boundary-UGxhdGFmb3JtYSBOYXZieQ==>> {
+  component "==Motor de Cotizaciones y Podio\n<size:16>[Container: Python, NumPy]</size>\n\nFiltra la frontera de Pareto, normaliza criterios y calcula el ranking multicriterio Top 3." <<Element-RWxlbWVudCxDb250YWluZXIsRW5naW5l>> as PlataformaNavby.MotordeCotizacionesyPodio
+  database "==Cache Efimera y Sesiones\n<size:16>[Container: Redis 7]</size>\n\nAlmacena temporalmente cotizaciones de vuelos (TTL 30 min) y control de sesiones." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as PlataformaNavby.CacheEfimeraySesiones
+  database "==Base de Datos Relacional\n<size:16>[Container: PostgreSQL 16]</size>\n\nPersiste de forma durable cuentas de usuario, saldo de creditos e itinerarios guardados." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as PlataformaNavby.BasedeDatosRelacional
+  rectangle "==Aplicacion Web Interactiva (SPA)\n<size:16>[Container: React 19, TypeScript, MapLibre GL, deck.gl]</size>\n\nProporciona la interfaz de usuario, buscador de ciudades, mapa plano 2D y panel del podio." <<Element-RWxlbWVudCxDb250YWluZXIsV2ViQnJvd3Nlcg==>> as PlataformaNavby.AplicacionWebInteractivaSPA
+  rectangle "==Plataforma Backend API\n<size:16>[Container: Python 3.12+, FastAPI, Uvicorn]</size>\n\nMonolito modular asincrono que orquesta las solicitudes y expone endpoints REST." <<Element-RWxlbWVudCxDb250YWluZXIsQVBJ>> as PlataformaNavby.PlataformaBackendAPI
+  component "==Motor de Rutas (RAM)\n<size:16>[Container: Estructuras nativas de Python]</size>\n\nMantiene el grafo en memoria de 3,354 aeropuertos y ejecuta BFS (poda) y A* (T_min)." <<Element-RWxlbWVudCxDb250YWluZXIsRW5naW5l>> as PlataformaNavby.MotordeRutasRAM
+}
+
+PlataformaNavby.AplicacionWebInteractivaSPA --> PlataformaNavby.PlataformaBackendAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Envia peticiones de ruta y cotizaciones via REST\n<size:16>[JSON/HTTPS]</size>"
+PlataformaNavby.PlataformaBackendAPI --> PlataformaNavby.AplicacionWebInteractivaSPA <<Relationship-UmVsYXRpb25zaGlw>> : "Responde podio con coordenadas y deep links\n<size:16>[JSON/HTTPS]</size>"
+PlataformaNavby.PlataformaBackendAPI --> PlataformaNavby.MotordeRutasRAM <<Relationship-UmVsYXRpb25zaGlw>> : "Verifica viabilidad con BFS y ruta minima con A*\n<size:16>[Llamada en RAM]</size>"
+PlataformaNavby.MotordeRutasRAM --> PlataformaNavby.PlataformaBackendAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Retorna pares alcanzables y T_min\n<size:16>[Llamada en RAM]</size>"
+PlataformaNavby.PlataformaBackendAPI --> PlataformaNavby.MotordeCotizacionesyPodio <<Relationship-UmVsYXRpb25zaGlw>> : "Solicita calculo de Pareto y ordenamiento de podio\n<size:16>[Llamada en RAM]</size>"
+PlataformaNavby.MotordeCotizacionesyPodio --> PlataformaNavby.PlataformaBackendAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Retorna podio Top 3 de ofertas\n<size:16>[Llamada en RAM]</size>"
+PlataformaNavby.PlataformaBackendAPI --> PlataformaNavby.CacheEfimeraySesiones <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta y almacena cotizaciones en cache (TTL 30 min)\n<size:16>[RESP/TCP]</size>"
+PlataformaNavby.CacheEfimeraySesiones --> PlataformaNavby.PlataformaBackendAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Retorna cotizaciones cacheadas\n<size:16>[RESP/TCP]</size>"
+PlataformaNavby.MotordeCotizacionesyPodio --> PlataformaNavby.CacheEfimeraySesiones <<Relationship-UmVsYXRpb25zaGlw>> : "Verifica y almacena cotizaciones en cache (TTL 30 min)\n<size:16>[RESP/TCP]</size>"
+PlataformaNavby.MotordeCotizacionesyPodio --> FlightAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta ofertas comerciales no cacheadas (max 2 pares)\n<size:16>[HTTPS/JSON]</size>"
+PlataformaNavby.PlataformaBackendAPI --> FlightAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta ofertas comerciales no cacheadas (max 2 pares)\n<size:16>[HTTPS/JSON]</size>"
+FlightAPI --> PlataformaNavby.PlataformaBackendAPI <<Relationship-UmVsYXRpb25zaGlw>> : "Retorna ofertas comerciales vigentes\n<size:16>[HTTPS/JSON]</size>"
+PlataformaNavby.PlataformaBackendAPI --> PlataformaNavby.BasedeDatosRelacional <<Relationship-UmVsYXRpb25zaGlw>> : "Persiste usuarios, saldo de creditos e itinerarios\n<size:16>[asyncpg / TCP]</size>"
+PlataformaNavby.PlataformaBackendAPI --> MercadoPago <<Relationship-UmVsYXRpb25zaGlw>> : "Procesa recargas de paquetes de creditos\n<size:16>[HTTPS/REST]</size>"
+PlataformaNavby.PlataformaBackendAPI --> GoogleIdentity <<Relationship-UmVsYXRpb25zaGlw>> : "Valida tokens de identidad federada\n<size:16>[HTTPS]</size>"
+PlataformaNavby.PlataformaBackendAPI --> Resend <<Relationship-UmVsYXRpb25zaGlw>> : "Despacha correos con enlaces y codigos OTP\n<size:16>[HTTPS/REST]</size>"
+Viajero --> PlataformaNavby.AplicacionWebInteractivaSPA <<Relationship-UmVsYXRpb25zaGlw>> : "Interactua con el buscador, mapa cartografico y podio\n<size:16>[HTTPS]</size>"
+
+@enduml

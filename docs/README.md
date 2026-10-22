@@ -20,6 +20,7 @@ Navby recomienda los 3 mejores vuelos entre dos ciudades combinando precio, dura
 | [navby-endpoints.md](backend-documentation/navby-endpoints.md) | Catálogo de endpoints REST con contratos de entrada y salida. |
 | [navby-database-schema.md](backend-documentation/navby-database-schema.md) | DDL de PostgreSQL 16 y claves de Redis 7. |
 | [flight-api-documentation.md](backend-documentation/flight-api-documentation.md) | Integración con FlightAPI. |
+| [navby-environments-and-deployment.md](backend-documentation/navby-environments-and-deployment.md) | Dominios (`navby.andeva.tech`, `/app`, `/api`), entornos, secretos y despliegue continuo. |
 | [navby-datasets/README.md](backend-documentation/navby-datasets/README.md) | Datasets de OpenFlights y pipeline de depuración. |
 | **Bounded contexts** | |
 | [bounded-context-shared.md](backend-documentation/extended-bounded-contexts-description/bounded-context-shared.md) | Shared Kernel: clases base, `Result`, outbox, errores y rate limiting. |
@@ -28,7 +29,6 @@ Navby recomienda los 3 mejores vuelos entre dos ciudades combinando precio, dura
 | [bounded-context-quotes.md](backend-documentation/extended-bounded-contexts-description/bounded-context-quotes.md) | FlightAPI, caché, motor multicriterio y podio. |
 | [bounded-context-billing.md](backend-documentation/extended-bounded-contexts-description/bounded-context-billing.md) | Billetera, créditos diarios, paquetes y Mercado Pago. |
 | [bounded-context-itineraries.md](backend-documentation/extended-bounded-contexts-description/bounded-context-itineraries.md) | Guardar, listar, ver y eliminar ofertas del podio. |
-| [bounded-context-support.md](backend-documentation/extended-bounded-contexts-description/bounded-context-support.md) | Libro de Reclamaciones virtual. |
 | **Backlog** | |
 | [user-stories.md](backlog/user-stories.md) | Historias de usuario con criterios de aceptación en Gherkin (comportamiento, sin diseño). |
 | [technical-stories.md](backlog/technical-stories.md) | Historias técnicas: una por endpoint y por tarea de plataforma. |
