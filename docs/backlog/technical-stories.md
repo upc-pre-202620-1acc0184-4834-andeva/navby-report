@@ -200,7 +200,7 @@ Rate limit `forgot_password`.
 ```gherkin
 Escenario: Usuario existente
   Entonces guarda navby:iam:reset:{sha256(token)} con el user_id y TTL 1,800 s
-  Y envía el enlace {WEBAPP_URL}/reset-password?token=... y responde 202
+  Y envía el enlace {WEBAPP_URL}/reset-password (con WEBAPP_URL = https://navby.andeva.tech/app)?token=... y responde 202
 
 Escenario: Usuario inexistente o eliminado
   Entonces responde 202 sin enviar correo
@@ -768,7 +768,7 @@ Escenario: Arranque limpio
   Entonces se aplican las migraciones, /health responde 200 vía HTTPS y solo los puertos 80, 443 y 22 están expuestos
 
 Escenario: Un solo worker
-  Entonces Uvicorn corre con --workers 1 y CORS permite credenciales solo para WEBAPP_URL
+  Entonces Uvicorn corre con --workers 1, CORS está desactivado y Caddy sirve navby-api.<región>.cloudapp.azure.com con TLS
 ```
 
 ### TS-39 · Webapp: sesión y flujo de búsqueda

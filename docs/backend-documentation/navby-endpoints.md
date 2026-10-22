@@ -1,6 +1,6 @@
 # Navby Platform — Endpoints REST
 
-> Base: `https://api.navby.app/api/v1` (producción) y `http://localhost:8000/api/v1` (local). JSON UTF-8, fechas ISO 8601. Los errores siguen RFC 7807 con el catálogo de la [especificación táctica](navby-backend-tactical-specification.md#catálogo-de-códigos-de-error). Las reglas `RN-xx` y `RL-xx` están en [navby-documentation.md](../navby-documentation.md).
+> Base: `https://navby.andeva.tech/api/v1` (producción, vía el proxy de Vercel; ver [entornos](navby-environments-and-deployment.md)) y `http://localhost:8000/api/v1` (local). JSON UTF-8, fechas ISO 8601. Los errores siguen RFC 7807 con el catálogo de la [especificación táctica](navby-backend-tactical-specification.md#catálogo-de-códigos-de-error). Las reglas `RN-xx` y `RL-xx` están en [navby-documentation.md](../navby-documentation.md).
 
 ## 1. Resumen
 
@@ -36,7 +36,7 @@
 
 **Autenticación:**
 - **Access token**: cabecera `Authorization: Bearer <access_token>` (JWT HS256, 15 min).
-- **Refresh token**: viaja solo en la cookie `navby_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/v1/auth`). La webapp hace sus peticiones con `credentials: "include"`.
+- **Refresh token**: viaja solo en la cookie `navby_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/v1/auth`). Como la webapp y la API comparten el origen `navby.andeva.tech`, la cookie es de primera parte y no hace falta CORS.
 
 **Errores comunes** (no se repiten en cada endpoint):
 - `401 UNAUTHENTICATED` en todo endpoint con acceso JWT o JWT verificado si falta el token o venció.

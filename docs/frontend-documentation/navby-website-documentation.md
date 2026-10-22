@@ -41,7 +41,7 @@ Regla de contenido: el sitio **nunca** promete «el vuelo más barato» o «el m
 
 - ESLint 9, Prettier con `prettier-plugin-astro` y `prettier-plugin-tailwindcss`.
 - Playwright: navegación, cambio de idioma, CTAs y auditoría de accesibilidad.
-- Despliegue estático en Vercel (plan gratuito, $0 USD/mes). No requiere adaptador de servidor.
+- Despliegue estático en Vercel (proyecto `navby-website`, dominio `navby.andeva.tech`). Su `vercel.json` también enruta `/app/**` hacia la webapp y `/api/**` hacia el backend en Azure ([detalle](../backend-documentation/navby-environments-and-deployment.md#1-dominios-y-urls)).
 
 ## 6. Dependencias
 

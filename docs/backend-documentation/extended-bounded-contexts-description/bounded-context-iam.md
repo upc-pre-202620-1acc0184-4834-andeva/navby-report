@@ -141,7 +141,7 @@ Detalles de los flujos:
 | `GET /users/me` | **GetMyProfile** | — |
 | `DELETE /users/me` | **DeleteMyAccount** | — |
 
-**Cookie del refresh token:** nombre `navby_refresh`, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/v1/auth` y 7 días de vida. Funciona porque la webapp (`app.navby.app`) y la API (`api.navby.app`) comparten dominio registrable; la API responde con CORS `allow_credentials` solo para el origen de la webapp. En desarrollo local se omite `Secure`.
+**Cookie del refresh token:** nombre `navby_refresh`, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/v1/auth` y 7 días de vida. Funciona porque el navegador ve la webapp (`navby.andeva.tech/app`) y la API (`navby.andeva.tech/api`) en el mismo origen, gracias al proxy de Vercel ([entornos](../navby-environments-and-deployment.md)). En local, el proxy de Vite hace lo mismo y la cookie omite `Secure` (`COOKIE_SECURE=false`).
 
 Los contratos están en [navby-endpoints.md](../navby-endpoints.md#2-iam). IAM no expone fachada OHS: los demás contextos autentican con *get_current_user()* del Shared Kernel.
 

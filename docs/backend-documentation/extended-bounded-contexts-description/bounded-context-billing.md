@@ -116,7 +116,7 @@ Detalles:
      - `currency_id = PEN` y `external_reference = order_id`;
      - `expires = true` y `expiration_date_to = expires_at`;
      - `back_urls` hacia `{WEBAPP_URL}/billing/result`;
-     - `notification_url` hacia el webhook.
+     - `notification_url` hacia `{API_PUBLIC_URL}/api/v1/billing/webhooks/mercadopago` (directo a la VM, sin pasar por Vercel).
 - **HandlePaymentNotification**:
   1. Si `type` no es `payment`, responde `200` y no hace nada.
   2. Valida la firma `x-signature` y que `ts` no tenga más de 300 s de antigüedad. Si falla → `401`.

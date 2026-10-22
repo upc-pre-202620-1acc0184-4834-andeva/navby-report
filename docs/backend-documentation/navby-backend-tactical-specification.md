@@ -58,7 +58,7 @@ El router convierte un `Result` fallido en una respuesta RFC 7807 usando el cat�
 
 ```json
 {
-  "type": "https://api.navby.app/errors/INSUFFICIENT_CREDITS",
+  "type": "https://navby.andeva.tech/errors/INSUFFICIENT_CREDITS",
   "title": "Créditos insuficientes",
   "status": 402,
   "detail": "Se requieren 5 créditos y la billetera tiene 3.",
