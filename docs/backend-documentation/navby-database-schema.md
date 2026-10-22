@@ -11,7 +11,6 @@
 | Quotes | — | Caché de ofertas por par, sesiones de búsqueda y candado de búsqueda en curso |
 | Billing | `billing.credit_wallets`, `billing.credit_transactions`, `billing.credit_orders` | — |
 | Itineraries | `itineraries.saved_itineraries` | — |
-| Support | `support.complaints` | — |
 | Shared Kernel | `shared.outbox_events` | Contadores de rate limiting |
 
 Reglas:
@@ -26,7 +25,6 @@ Reglas:
 CREATE SCHEMA iam;
 CREATE SCHEMA billing;
 CREATE SCHEMA itineraries;
-CREATE SCHEMA support;
 CREATE SCHEMA shared;
 
 -- ============================ IAM ============================
@@ -116,24 +114,6 @@ CREATE TABLE itineraries.saved_itineraries (
     CONSTRAINT one_save_per_offer UNIQUE (user_id, offer_id)
 );
 CREATE INDEX ix_saved_itineraries_user_created ON itineraries.saved_itineraries (user_id, created_at DESC);
-
--- ========================== SUPPORT ==========================
-CREATE TABLE support.complaints (
-    id                UUID PRIMARY KEY,
-    number            VARCHAR(16) NOT NULL UNIQUE,           -- LR-AAAA-NNNNNN
-    kind              VARCHAR(10) NOT NULL CHECK (kind IN ('CLAIM', 'GRIEVANCE')),
-    consumer          JSONB NOT NULL,                        -- nombre, documento, dirección, teléfono, correo, apoderado
-    good_type         VARCHAR(10) NOT NULL CHECK (good_type IN ('PRODUCT', 'SERVICE')),
-    good_description  VARCHAR(300) NOT NULL,
-    amount_claimed    NUMERIC(10, 2) CHECK (amount_claimed >= 0),
-    detail            VARCHAR(2000) NOT NULL,
-    request           VARCHAR(1000) NOT NULL,
-    user_id           UUID,                                  -- opcional
-    response_due_at   DATE NOT NULL,                         -- + 15 días hábiles
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
-);
--- Una secuencia por año: support.complaint_seq_2026, support.complaint_seq_2027, …
--- La crea la aplicación (CREATE SEQUENCE IF NOT EXISTS) al registrar el primer reclamo del año.
 
 -- ========================== SHARED ===========================
 CREATE TABLE shared.outbox_events (

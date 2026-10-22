@@ -14,7 +14,7 @@
 | `/billing/result` | Retorno desde Mercado Pago (consulta el estado de la orden; si sigue `PENDING`, reintenta cada 3 s durante 1 min) | Sesión |
 | `/account` | Perfil y **Eliminar mi cuenta** (escribe «ELIMINAR» para confirmar, RL-02) | Sesión |
 
-El pie de página de todas las pantallas enlaza a los Términos, la Política de Privacidad y el **Libro de Reclamaciones** del website (RL-03). Toda tarifa muestra el aviso `price_disclaimer` (RL-04).
+El pie de página de todas las pantallas enlaza a los Términos y la Política de Privacidad del website. Toda tarifa muestra el aviso `price_disclaimer` (RL-03).
 
 La búsqueda vive en la URL (`/?trip=ROUND_TRIP&from=LIM&to=HND,NRT&dep=2026-11-01&ret=2026-11-15&ad=2&ch=1&in=0&cabin=ECONOMY&cur=USD&profile=BALANCED`) para poder compartirla y recargarla.
 

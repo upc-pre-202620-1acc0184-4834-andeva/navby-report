@@ -36,7 +36,6 @@ Navby Platform es un **monolito modular** asíncrono en Python. Mantiene el graf
 | **Billing** | Supporting | Billetera, créditos diarios, débitos, reembolsos y compras con Mercado Pago. | PostgreSQL | [billing](extended-bounded-contexts-description/bounded-context-billing.md) |
 | **Itineraries** | Supporting | Guardar, listar, ver y eliminar ofertas del podio. | PostgreSQL | [itineraries](extended-bounded-contexts-description/bounded-context-itineraries.md) |
 | **IAM** | Generic | Registro con términos, verificación de correo, login local y con Google, sesiones, recuperación de contraseña y eliminación de cuenta. | PostgreSQL + Redis | [iam](extended-bounded-contexts-description/bounded-context-iam.md) |
-| **Support** | Generic | Libro de Reclamaciones virtual (RL-03). | PostgreSQL | [support](extended-bounded-contexts-description/bounded-context-support.md) |
 | **Shared Kernel** | — | Clases base, `Result`, errores, outbox, Unit of Work y rate limiting. | — | [shared](extended-bounded-contexts-description/bounded-context-shared.md) |
 
 ## 4. Mapa de contextos
@@ -52,16 +51,13 @@ flowchart LR
         Quotes["Quotes"]
         Billing["Billing"]
         Itin["Itineraries"]
-        Support["Support"]
     end
 
     FlightAPI["FlightAPI"]
     Google["Google Identity"]
     Resend["Resend"]
 
-    Website["Website (Astro)"]
     Webapp --> IAM & Routing & Quotes & Billing & Itin
-    Website --> Support
     MP -- webhook --> Billing
 
     Quotes -- "OHS: select_pairs()" --> Routing
@@ -74,7 +70,6 @@ flowchart LR
     Billing -- ACL --> MP
     IAM -- ACL --> Google
     IAM -- ACL --> Resend
-    Support -- ACL --> Resend
 ```
 
 | Proveedor | Consumidor | Patrón | Contrato |
@@ -192,7 +187,6 @@ La VM solo expone los puertos 80, 443 y 22. El crédito de Azure de $100 USD alc
 | `WEBAPP_URL` | URL base para enlaces de recuperación y retorno de pagos. También es el único origen permitido por CORS con credenciales. |
 | `FLIGHT_API_MAX_CONCURRENCY` | Llamadas simultáneas permitidas por el plan de FlightAPI (5 en LITE, RN-16). |
 | `TERMS_VERSION` | Versión vigente de los Términos y la Política de Privacidad (RL-01). |
-| `SUPPORT_EMAIL`, `COMPANY_NAME`, `COMPANY_RUC`, `COMPANY_ADDRESS` | Datos del Libro de Reclamaciones (RL-03). |
 
 ### Modos de desarrollo (costo cero)
 

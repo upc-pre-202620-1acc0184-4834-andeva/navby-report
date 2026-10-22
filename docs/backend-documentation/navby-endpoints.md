@@ -32,7 +32,6 @@
 | Itineraries | `GET /itineraries` | JWT | Listar los itinerarios guardados. |
 | Itineraries | `GET /itineraries/{id}` | JWT | Ver el detalle de un itinerario. |
 | Itineraries | `DELETE /itineraries/{id}` | JWT | Eliminar un itinerario. |
-| Support | `POST /complaints` | Público | Registrar un reclamo o queja (RL-03). |
 | Sistema | `GET /health` | Público | Estado de PostgreSQL, Redis y grafo. |
 
 **Autenticación:**
@@ -326,27 +325,7 @@ Errores: `404 SEARCH_NOT_FOUND`, `404 OFFER_NOT_FOUND` y `409 ITINERARY_LIMIT_RE
 
 `204`. Error: `404 ITINERARY_NOT_FOUND`.
 
-## 7. Support
-
-### `POST /complaints`
-
-```json
-{
-  "kind": "CLAIM",
-  "consumer": { "full_name": "Ana Torres", "document_type": "DNI", "document_number": "45678912",
-                "address": "Av. Arequipa 123, Lima", "phone": "987654321", "email": "ana@mail.com",
-                "is_minor": false, "guardian_name": null },
-  "good_type": "PRODUCT",
-  "good_description": "Paquete Viajero Frecuente",
-  "amount_claimed": "16.90",
-  "detail": "Pagué el paquete y los créditos no aparecen en mi billetera.",
-  "request": "Que se acrediten los 100 créditos o se devuelva el pago."
-}
-```
-
-`201` → `{ "number": "LR-2026-000014", "created_at": "...", "response_due_at": "2026-11-05" }` y la constancia llega al correo del consumidor. Errores: `422 VALIDATION_ERROR` y `429 RATE_LIMITED`.
-
-## 8. Sistema
+## 7. Sistema
 
 ### `GET /health`
 

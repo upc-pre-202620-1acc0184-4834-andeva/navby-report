@@ -1,14 +1,13 @@
 # Navby Website
 
-> Sitio público de marketing (estático). Explica el producto y lleva al usuario a la webapp. Los mensajes comerciales salen de [product-marketing.md](../product-marketing.md) y los datos (créditos, paquetes y perfiles), de [navby-documentation.md](../navby-documentation.md). Solo llama al backend desde el Libro de Reclamaciones.
+> Sitio público de marketing (estático). Explica el producto y lleva al usuario a la webapp. Los mensajes comerciales salen de [product-marketing.md](../product-marketing.md) y los datos (créditos, paquetes y perfiles), de [navby-documentation.md](../navby-documentation.md). No llama al backend.
 
 ## 1. Páginas y secciones
 
 | Ruta | Contenido |
 | :--- | :--- |
 | `/es/`, `/en/` | **Hero** con el eslogan «El mejor vuelo. Al mejor precio.» y CTA `[Planificar vuelo]` hacia la webapp. **Cómo funciona** en 3 pasos: buscas por ciudad → Navby evalúa precio, duración y escalas a la vez → recibes un podio de 3 recomendaciones con compra directa. **Perfiles** Equilibrado, Ahorro y Rapidez. **Precios**: 10 créditos diarios gratis y paquetes Escapada, Viajero Frecuente y Nómada, en soles (con el equivalente en USD como referencia). **Preguntas frecuentes** y CTA final. |
-| `/es/privacidad`, `/es/terminos` (y en `/en/`) | Política de Privacidad y Términos de Servicio en Markdown. Muestran su versión (igual a `TERMS_VERSION`, RL-01), declaran que los precios son referenciales (RL-04) y explican cómo eliminar la cuenta (RL-02). |
-| `/es/reclamaciones` (y en `/en/`) | **Libro de Reclamaciones** (RL-03): isla React con el formulario oficial que envía `POST /complaints` y muestra el número de la hoja. Lo enlazan el pie de página del website y de la webapp, junto con el ícono del Libro de Reclamaciones. |
+| `/es/privacidad`, `/es/terminos` (y en `/en/`) | Política de Privacidad y Términos de Servicio en Markdown. Muestran su versión (igual a `TERMS_VERSION`, RL-01), declaran que los precios son referenciales (RL-03) y explican cómo eliminar la cuenta (RL-02). |
 
 Regla de contenido: el sitio **nunca** promete «el vuelo más barato» o «el más rápido» como categorías. El mensaje es siempre el balance de los tres criterios.
 

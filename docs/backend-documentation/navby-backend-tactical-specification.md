@@ -120,7 +120,6 @@ Eventos de integración vigentes:
 | :--- | :--- | :--- | :--- |
 | `iam.user_verified` | IAM | Billing | Crea la billetera del usuario (idempotente por `user_id`). |
 | `iam.user_deleted` | IAM | Billing, Itineraries | Billing anula los créditos y conserva las órdenes. Itineraries borra los itinerarios guardados. |
-| `support.complaint_filed` | Support | Support | Reintenta los correos del Libro de Reclamaciones que fallaron. |
 
 ## 5. Autenticación en los routers
 
@@ -140,7 +139,6 @@ Contador de ventana fija en Redis (`navby:ratelimit:{scope}:{key}:{window}`), ap
 | `forgot_password` | IP | 3 / min |
 | `routing_preview` | IP | 30 / min |
 | `quotes_search` | `user_id` | 10 / min |
-| `complaints` | IP | 3 / min |
 
 ## 7. Pruebas
 

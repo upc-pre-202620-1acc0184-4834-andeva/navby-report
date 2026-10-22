@@ -1,6 +1,6 @@
 # Navby — Historias Técnicas
 
-> Una historia por cada uno de los 28 endpoints (TS-01 a TS-23 y TS-29 a TS-33) y una por cada componente interno necesario para construir (TS-24 a TS-28 y TS-34 a TS-40). Cada una tiene al menos dos escenarios verificables con pruebas automatizadas. Los contratos están en [navby-endpoints.md](../backend-documentation/navby-endpoints.md), los errores en el [catálogo](../backend-documentation/navby-backend-tactical-specification.md#catálogo-de-códigos-de-error) y las reglas en [navby-documentation.md](../navby-documentation.md).
+> Una historia por cada uno de los 27 endpoints (TS-01 a TS-23 y TS-29 a TS-32) y una por cada componente interno necesario para construir (TS-24 a TS-28 y TS-33 a TS-39). Cada una tiene al menos dos escenarios verificables con pruebas automatizadas. Los contratos están en [navby-endpoints.md](../backend-documentation/navby-endpoints.md), los errores en el [catálogo](../backend-documentation/navby-backend-tactical-specification.md#catálogo-de-códigos-de-error) y las reglas en [navby-documentation.md](../navby-documentation.md).
 
 ## Definición de terminado (aplica a todas)
 
@@ -14,11 +14,11 @@
 
 | Sprint | Historias | Resultado |
 | :---: | :--- | :--- |
-| 1 | TS-34, TS-39, TS-23, TS-24, TS-25, TS-26, TS-12, TS-13, TS-38 | Plataforma base, grafo, BFS, A\*, ciudades, vista previa y benchmark. |
-| 2 | TS-01 a TS-11, TS-35 | Cuentas, sesiones y eventos. |
+| 1 | TS-33, TS-38, TS-23, TS-24, TS-25, TS-26, TS-12, TS-13, TS-37 | Plataforma base, grafo, BFS, A\*, ciudades, vista previa y benchmark. |
+| 2 | TS-01 a TS-11, TS-34 | Cuentas, sesiones y eventos. |
 | 3 | TS-27, TS-28, TS-14, TS-15, TS-16, TS-17 | Cotización, podio, perfiles y débito de créditos. |
-| 4 | TS-18 a TS-22, TS-36 | Compras con Mercado Pago y tareas periódicas. |
-| 5 | TS-29 a TS-33, TS-37, TS-40 | Itinerarios, reclamos, website y webapp completa. |
+| 4 | TS-18 a TS-22, TS-35 | Compras con Mercado Pago y tareas periódicas. |
+| 5 | TS-29 a TS-32, TS-36, TS-39 | Itinerarios, website y webapp completa. |
 
 ## Mapa con las historias de usuario
 
@@ -26,12 +26,11 @@
 | :--- | :--- |
 | TS-01 a TS-11 | US-01 a US-10 |
 | TS-12, TS-13 | US-11, US-12, US-14 |
-| TS-14, TS-27, TS-28 | US-13 a US-18, US-25, US-32, US-35 |
+| TS-14, TS-27, TS-28 | US-13 a US-18, US-25, US-31, US-34 |
 | TS-15, TS-16 | US-19 a US-21 |
 | TS-17 a TS-22 | US-25 a US-30 |
 | TS-29 a TS-32 | US-22 a US-24 |
-| TS-33 | US-31 |
-| TS-37 | US-33, US-34 |
+| TS-36 | US-32, US-33 |
 
 ---
 
@@ -586,7 +585,7 @@ Escenario: Aislamiento
 
 ### TS-31 · `GET /itineraries/{id}`
 
-**Como** desarrollador **quiero** devolver el detalle con su aviso de precio histórico **para** habilitar US-23 y US-32.
+**Como** desarrollador **quiero** devolver el detalle con su aviso de precio histórico **para** habilitar US-23 y US-31.
 
 ```gherkin
 Escenario: Detalle propio
@@ -609,34 +608,6 @@ Escenario: Ajeno o inexistente
 ```
 
 ---
-
-## Support
-
-### TS-33 · `POST /complaints`
-
-**Como** desarrollador **quiero** registrar reclamos con número correlativo y constancia por correo **para** cumplir RL-03 (US-31).
-
-```gherkin
-Escenario: Reclamo válido
-  Entonces responde 201 con number "LR-{año}-{6 dígitos}" correlativo
-  Y response_due_at = 15 días hábiles después, sin fines de semana ni feriados de pe_holidays.json
-  Y se envían la constancia al consumidor y el aviso a SUPPORT_EMAIL con COMPANY_NAME, COMPANY_RUC y COMPANY_ADDRESS
-
-Escenario: Correlativo concurrente
-  Cuando se registran 10 reclamos en paralelo
-  Entonces los 10 números son distintos y consecutivos
-
-Escenario: Validaciones
-  Cuando el DNI no tiene 8 dígitos, falta request o is_minor = true sin guardian_name → 422 VALIDATION_ERROR
-
-Escenario: Falla de correo
-  Dado que el proveedor de correo falla
-  Entonces responde 201 igual y el outbox contiene support.complaint_filed para reintentar
-
-Escenario: Límite de tasa
-  Cuando una misma IP envía 4 reclamos en un minuto
-  Entonces el cuarto responde 429 RATE_LIMITED con cabecera Retry-After
-```
 
 ---
 
@@ -701,7 +672,7 @@ Escenario: Selección de pares
   Y en ida y vuelta se descartan los pares sin regreso
 ```
 
-### TS-34 · Shared Kernel
+### TS-33 · Shared Kernel
 
 **Como** desarrollador **quiero** las piezas comunes (**Result**, errores RFC 7807, *get_current_user*, *get_verified_user*, *rate_limit*, **UnitOfWork**) **para** que todos los contextos las reutilicen.
 
@@ -720,9 +691,9 @@ Escenario: Rate limiting
   Entonces el undécimo responde 429 RATE_LIMITED con cabecera Retry-After
 ```
 
-### TS-35 · Outbox, bus de eventos y consumidores
+### TS-34 · Outbox, bus de eventos y consumidores
 
-**Como** desarrollador **quiero** el relay del outbox y los handlers de `iam.user_verified`, `iam.user_deleted` y `support.complaint_filed` **para** integrar contextos de forma confiable.
+**Como** desarrollador **quiero** el relay del outbox y los handlers de `iam.user_verified` y `iam.user_deleted` **para** integrar contextos de forma confiable.
 
 ```gherkin
 Escenario: Entrega
@@ -739,7 +710,7 @@ Escenario: Evento envenenado
   Y `uv run python -m src.shared.outbox retry <id>` lo vuelve a poner pendiente
 ```
 
-### TS-36 · Tareas periódicas
+### TS-35 · Tareas periódicas
 
 **Como** desarrollador **quiero** **ExpirePendingOrders** y **PurgeExpiredTokens** **para** mantener el estado limpio sin intervención manual.
 
@@ -755,25 +726,24 @@ Escenario: Tokens viejos
   Entonces solo se borra el de 31 días
 ```
 
-### TS-37 · Website
+### TS-36 · Website
 
-**Como** desarrollador frontend **quiero** construir el website estático **para** habilitar US-33, US-34 y el formulario de US-31.
+**Como** desarrollador frontend **quiero** construir el website estático **para** habilitar US-32 y US-33.
 
 ```gherkin
 Escenario: Contenido
   Entonces /es/ y /en/ muestran hero, cómo funciona, perfiles, precios en PEN con referencia en USD, FAQ y CTA a la webapp
   Y ningún texto presenta "el más barato" o "el más rápido" como categorías
 
-Escenario: Legales y reclamos
+Escenario: Legales
   Entonces /es/terminos y /es/privacidad muestran la versión igual a TERMS_VERSION
-  Y /es/reclamaciones envía POST /complaints y muestra el número de hoja
-  Y el pie de página enlaza las tres páginas
+  Y el pie de página enlaza ambas páginas
 
 Escenario: Calidad
   Entonces Playwright con axe-core no reporta infracciones WCAG 2.1 AA y Lighthouse Performance ≥ 90 en móvil
 ```
 
-### TS-38 · Script de benchmark
+### TS-37 · Script de benchmark
 
 **Como** equipo **quiero** medir los tres algoritmos del producto **para** la validación del informe (sección 9).
 
@@ -787,7 +757,7 @@ Escenario: Motor multicriterio
   Entonces genera un CSV con el tiempo del motor para N = 10, 50, 100, 500 y 1,000 ofertas sintéticas, 30 repeticiones cada una
 ```
 
-### TS-39 · Despliegue
+### TS-38 · Despliegue
 
 **Como** operador **quiero** el `docker-compose.yml`, el `Caddyfile` y las migraciones de Alembic **para** desplegar en la VM de Azure.
 
@@ -801,7 +771,7 @@ Escenario: Un solo worker
   Entonces Uvicorn corre con --workers 1 y CORS permite credenciales solo para WEBAPP_URL
 ```
 
-### TS-40 · Webapp: sesión y flujo de búsqueda
+### TS-39 · Webapp: sesión y flujo de búsqueda
 
 **Como** desarrollador frontend **quiero** el cliente HTTP con renovación de sesión y el flujo de búsqueda en paralelo **para** conectar la webapp con la API.
 

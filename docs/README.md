@@ -28,7 +28,6 @@ Navby recomienda los 3 mejores vuelos entre dos ciudades combinando precio, dura
 | [bounded-context-quotes.md](backend-documentation/extended-bounded-contexts-description/bounded-context-quotes.md) | FlightAPI, caché, motor multicriterio y podio. |
 | [bounded-context-billing.md](backend-documentation/extended-bounded-contexts-description/bounded-context-billing.md) | Billetera, créditos diarios, paquetes y Mercado Pago. |
 | [bounded-context-itineraries.md](backend-documentation/extended-bounded-contexts-description/bounded-context-itineraries.md) | Guardar, listar, ver y eliminar ofertas del podio. |
-| [bounded-context-support.md](backend-documentation/extended-bounded-contexts-description/bounded-context-support.md) | Libro de Reclamaciones virtual. |
 | **Backlog** | |
 | [user-stories.md](backlog/user-stories.md) | Historias de usuario con criterios de aceptación en Gherkin (comportamiento, sin diseño). |
 | [technical-stories.md](backlog/technical-stories.md) | Historias técnicas: una por endpoint y por tarea de plataforma. |
