@@ -1,22 +1,39 @@
-## 3.3. Metodología de Resolución y Criterios de Poda
+## 3.3. Metodología de Resolución
 
-La resolución del problema se articula mediante una metodología secuencial estructurada en dos etapas operativas complementarias, orientada a blindar la infraestructura computacional frente a la explosión combinatoria y minimizar el consumo de recursos externos.
+Cada búsqueda se resuelve en dos etapas. La primera usa solo el grafo en memoria y no tiene costo. La segunda consulta las ofertas reales y las ordena.
 
-La primera etapa comprende la exploración topológica y poda algorítmica sobre el grafo en memoria principal. Al recibir una solicitud compuesta por el aeropuerto de origen $u$, destino $v$ y los parámetros de viaje, el sistema ejecuta de manera inmediata una consulta sobre la estructura UFDS. Si $\text{Find}(u) \neq \text{Find}(v)$, se dictamina la desconexión topológica en tiempo $O(\alpha(|V|))$, interrumpiendo el flujo sin incurrir en cómputos innecesarios.
+### Etapa 1: exploración del grafo
 
-Superada la validación de conexidad, se disparan en paralelo las estrategias algorítmicas de optimización. Dijkstra y A\* obtienen el camino óptimo geodésico y establecen la cota temporal de referencia $T^* = f_{\text{tiempo}}^*(P_{\text{Dijkstra}})$. Simultáneamente, BFS computa la ruta con el menor número de transbordos $S^* = f_{\text{escalas}}^*(P_{\text{BFS}})$. Con estos valores umbral, el algoritmo de Backtracking inicia la exploración de trayectos alternativos aplicando tres criterios formales de poda matemática:
+**BFS.** El sistema recorre el grafo por niveles desde el aeropuerto de origen: primero los destinos directos, luego los alcanzables con una escala y finalmente con dos. Si el destino no aparece en esos tres niveles, la búsqueda termina sin consultar tarifas. Si aparece, el nivel en que se encontró indica el mínimo de escalas posible. El usuario elige ciudades y no aeropuertos. Cuando una ciudad tiene varios aeropuertos, BFS y A\* evalúan todas las combinaciones de origen y destino, y solo se cotizan las dos más prometedoras: las de menos escalas y, entre ellas, las de aeropuertos con más rutas directas y menor tiempo estimado.
 
-1. **Poda por cardinalidad de transbordos:** Se descarta de forma inmediata cualquier rama cuya profundidad acumulada exceda $k - 1 > 2$, restringiendo el espacio de itinerarios a vuelos directos, con una o con dos escalas intermedias.
-2. **Poda por cota temporal relativa:** Se interrumpe la expansión de un camino parcial $P_{\text{parcial}}$ si su tiempo acumulado excede el umbral de tolerancia respecto al óptimo calculado:
-   $$f_{\text{tiempo}}(P_{\text{parcial}}) > 1.5 \times T^*$$
-3. **Poda por desvío geométrico ortodrómico:** Se evalúa el ángulo geodésico formado entre el vector de avance hacia el nodo adyacente y el vector director hacia el destino final. Se podan aristas que impliquen retrocesos angulares superiores a $90^\circ$ o cuya distancia ortodrómica remanente supere la distancia entre origen y destino:
-   $$d_H(v_{\text{actual}}, v_{\text{destino}}) > d_H(v_{\text{origen}}, v_{\text{destino}})$$
-4. **Dominancia de Pareto:** En el espacio de soluciones candidatas, un itinerario $P_A$ domina a $P_B$ ($P_A \succ P_B$) si satisface:
-   $$\left( f_{\text{tiempo}}(P_A) \le f_{\text{tiempo}}(P_B) \land f_{\text{escalas}}(P_A) \le f_{\text{escalas}}(P_B) \right) \land \left( F(P_A) \neq F(P_B) \right)$$
-   Las soluciones dominadas son descartadas, reteniendo únicamente el conjunto eficiente de Pareto [@shovan2025parallel].
+**A\*.** Con la ruta confirmada, A\* calcula la ruta más rápida. El tiempo de cada tramo es el definido en la sección 1.2, y cada escala agrega 60 minutos de conexión. Así, el tiempo estimado de una ruta $P = (v_0, v_1, \ldots, v_k)$ de $k$ tramos es:
 
-Los itinerarios supervivientes son evaluados mediante DFS para validar la aciclicidad estricta y se procesan a través de ordenamiento topológico para garantizar la coherencia cronológica en el grafo acíclico dirigido del plan de vuelo.
+$$T(P) = \sum_{i=0}^{k-1} w_t(v_i, v_{i+1}) + (k - 1)\, t_{\text{conexión}}$$
 
-La segunda etapa consiste en la validación y cotización selectiva en el mercado. En lugar de interrogar a proveedores comerciales de manera abierta sobre miles de combinaciones posibles, el conjunto de rutas se reduce estrictamente a las tres mejores alternativas del grafo. Estas opciones se someten a consulta contra las interfaces de programación de vuelos para extraer tarifas reales en moneda local, duraciones efectivas y enlaces directos de reserva. Esta delimitación metodológica garantiza un rendimiento determinista de alta velocidad y sostiene la viabilidad económica del sistema.
+La penalización por escala evita que la ruta óptima se fragmente en muchos tramos cortos, algo que no ocurre en la operación real. Para decidir qué aeropuerto explorar primero, A\* estima el tiempo que falta hasta el destino desde el aeropuerto evaluado:
+
+$$h(u) = \frac{d_H(u, \text{destino})}{v_{\text{crucero}}}$$
+
+Esta estimación nunca supera el tiempo real, porque ningún vuelo recorre menos que el arco de círculo máximo ni viaja más rápido que la velocidad de crucero. Por ello A\* encuentra siempre la ruta óptima. La búsqueda se limita a tres tramos para respetar el máximo de dos escalas. El resultado entrega dos datos: la duración mínima físicamente posible, denotada $T_{\min}$, y la secuencia de aeropuertos que el mapa dibuja mientras se obtienen las tarifas.
+
+### Etapa 2: selección multicriterio
+
+El sistema consulta al proveedor de tarifas, que devuelve las ofertas vigentes con su precio total, duración real y número de escalas. Sobre ellas se aplican cuatro pasos.
+
+Primero, se eliminan las ofertas **dominadas**: aquellas para las que existe otra igual o mejor en los tres criterios y estrictamente mejor en al menos uno. Las ofertas restantes forman la frontera de Pareto.
+
+Segundo, cada criterio se normaliza entre 0 y 1 respecto a la mejor y la peor oferta de la frontera:
+
+$$x_i' = \frac{x_i - x_{\min}}{x_{\max} - x_{\min}}$$
+
+El valor 0 corresponde a la mejor oferta disponible en ese criterio. Se usa la mejor oferta real y no $T_{\min}$ porque $T_{\min}$ no incluye los tiempos de espera en aeropuertos. Si se usara, ninguna oferta alcanzaría el valor 0 en duración y el precio terminaría pesando más de lo indicado.
+
+Tercero, cada oferta recibe un puntaje igual a su distancia ponderada al punto ideal $(0, 0, 0)$:
+
+$$S_i = \sqrt{\alpha\, p_i'^2 + \beta\, t_i'^2 + \gamma\, e_i'^2}, \qquad \alpha + \beta + \gamma = 1$$
+
+donde $p_i'$, $t_i'$ y $e_i'$ son el precio, la duración y las escalas normalizados. Los pesos predeterminados son 0.5 para el precio, 0.3 para la duración y 0.2 para las escalas, porque el segmento de viajeros objetivo es especialmente sensible al precio. El usuario puede cambiarlos. Como la frontera de Pareto no depende de los pesos, cambiarlos solo reordena las ofertas ya obtenidas, sin una nueva consulta [@shovan2025parallel].
+
+Cuarto, las ofertas se ordenan de menor a mayor puntaje y se eligen las tres primeras como recomendaciones, descartando las que repiten exactamente la misma secuencia de aeropuertos que una ya elegida. Así, las tres recomendaciones salen de un mismo criterio de equilibrio y no de optimizar cada criterio por separado. Cada recomendación muestra además cuánto supera a $T_{\min}$, lo que indica al usuario el tiempo extra que añaden las esperas reales.
 
 \newpage

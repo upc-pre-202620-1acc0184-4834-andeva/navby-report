@@ -43,7 +43,7 @@ La paleta cromática oficial de Navby parte de los valores definidos en [`brandi
 | `primary-soft` | `#DFDBFF` | `■` | **Púrpura suave:** Fondos tenues de insignias, etiquetas y selecciones secundarias. |
 | `accent` | `#FF6B35` | `■` | **Color de acento (Aviation Sunset Orange):** Destacar la mejor tarifa encontrada, arcos de vuelo seleccionados, llamadas a la acción (CTAs) de oferta y microinteracciones de alta prioridad. |
 | `accent-dark` | `#E8551E` | `■` | **Acento oscuro:** Hover de botones de acento (`hover:bg-accent-dark`). |
-| `accent-soft` | `#FFE8DF` | `■` | **Acento suave:** Fondo de tarjetas de descuento, etiquetas de vuelos baratos y alertas suaves. |
+| `accent-soft` | `#FFE8DF` | `■` | **Acento suave:** Fondo de insignias del podio (afinidad, «sin costo»), resaltados secundarios y alertas suaves. |
 | `surface-black` | `#262626` | `■` | **Fondo oscuro:** Fondo principal de la aplicación y de la landing en modo nocturno (`dark`). |
 | `surface-white` | `#F8F8FA` | `■` | **Fondo claro:** Fondo principal en modo claro (`light`). Tono suave para evitar deslumbramiento. |
 | `card-black` | `#272727` | `■` | **Tarjeta oscura:** Contenedores, tarjetas de vuelo y paneles flotantes en modo oscuro. |

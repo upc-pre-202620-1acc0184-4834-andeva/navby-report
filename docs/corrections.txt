@@ -1,0 +1,7 @@
+Se podría recomendar explicar de manera más directa, en un párrafo, cuál es el problema que se resolverá y cuál sería la “mejor solución”. Actualmente la explicación es bastante técnica y puede resultar más compleja de lo necesario para el TB1.
+
+En la visualización del grafo se podría mejorar agregando al menos un subgrafo ampliado: Un conjunto de aeropuertos de Sudamérica
+
+Esto permitiría visualizar qué representa un nodo y qué representa una conexión, porque el grafo global con 3,354 nodos puede ser difícil de interpretar.
+
+Por último, como comentario el documento incorpora muchas técnicas y componentes para la TB1. Esto puede hacer que la propuesta parezca demasiado ambiciosa, por lo cual se recomendaría dejar muy claro cuáles son las técnicas principales que serán evaluadas y cuáles son complementarias.

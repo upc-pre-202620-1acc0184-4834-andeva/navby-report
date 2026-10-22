@@ -3,31 +3,33 @@
  */
 
 @theme {
-  --font-sans: 'Albert Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'Albert Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
   --font-isologo: 'Raptor V3', 'Albert Sans', sans-serif;
 
-  --color-primary: #604AFF;
-  --color-primary-dark: #4B37FB;
-  --color-primary-soft: #DFDBFF;
+  --color-primary: #604aff;
+  --color-primary-dark: #4b37fb;
+  --color-primary-soft: #dfdbff;
 
-  --color-accent: #FF6B35;
-  --color-accent-dark: #E8551E;
-  --color-accent-soft: #FFE8DF;
+  --color-accent: #ff6b35;
+  --color-accent-dark: #e8551e;
+  --color-accent-soft: #ffe8df;
 
   --color-surface-black: #262626;
-  --color-surface-white: #F8F8FA;
+  --color-surface-white: #f8f8fa;
 
   --color-card-black: #272727;
-  --color-card-white: #FFFFFF;
+  --color-card-white: #ffffff;
 
   --color-text-black: #262626;
-  --color-text-white: #FFFFFF;
-  --color-text-subtitles: #C6C6C6;
+  --color-text-white: #ffffff;
+  --color-text-subtitles: #c6c6c6;
 
-  --color-border-card-dark: #EBEBEB;
-  --color-border-card-light: #C6C6C6;
+  --color-border-card-dark: #ebebeb;
+  --color-border-card-light: #c6c6c6;
 
-  --color-success: #3AC530;
-  --color-error: #FB2C36;
-  --color-warning: #F0B100;
+  --color-success: #3ac530;
+  --color-error: #fb2c36;
+  --color-warning: #f0b100;
 }

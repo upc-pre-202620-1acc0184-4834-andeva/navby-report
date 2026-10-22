@@ -266,7 +266,7 @@ Para tablas que requieran combinación de celdas (`colspan` / `rowspan`), bordes
 ```
 
 > [!NOTE]
-> Para conocer todas las macros disponibles (`\thfirst`, `\thcell`, `\thc`, `\thspan`) y directrices para solicitar tablas a modelos de IA, revisa [docs/guidelines_tables_figures_apa7.md](docs/guidelines_tables_figures_apa7.md).
+> Para conocer todas las macros disponibles (`\thfirst`, `\thcell`, `\thc`, `\thspan`) y directrices para solicitar tablas a modelos de IA, revisa [tables-figures-apa-7-guidelines.md](tables-figures-apa-7-guidelines.md).
 
 ---
 
@@ -325,13 +325,13 @@ Para previsualización interactiva en tiempo real de los diagramas C4 en tu nave
 
 ## Documentación Adicional
 
-- [Guía de Tablas y Figuras APA 7](docs/guidelines_tables_figures_apa7.md): Guía de referencia técnica para tablas Markdown, tablas complejas LaTeX y figuras.
+- [Guía de Tablas y Figuras APA 7](tables-figures-apa-7-guidelines.md): Guía de referencia técnica para tablas Markdown, tablas complejas LaTeX y figuras.
 - [Guía de Arquitectura C4](report/assets/diagram-sources/c4-diagrams/c4-guidelines.md): Estructura modular del modelo Structurizr DSL y servidor local en Docker.
 
 ---
 
 ## Licencia
 
-Este proyecto se distribuye bajo la [Licencia MIT](LICENSE).
+Este proyecto se distribuye bajo la [Licencia MIT](../LICENSE).
 
 Eres completamente libre de clonar este repositorio, modificar su estructura, agregar soporte para nuevos idiomas o dialectos y personalizar la plantilla según los estándares y normativas académicas que tu institución o proyecto requieran.
